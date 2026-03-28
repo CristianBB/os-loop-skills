@@ -1,0 +1,88 @@
+{
+  "name": "note-organizer",
+  "description": "Captures, tags, and retrieves notes with optional workspace persistence for cross-session organization",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["note-taking", "search"],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "llm",
+      "scope": "classification",
+      "description": "Auto-tag notes based on content"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["add", "search", "list", "tag", "export"],
+        "description": "The note action to perform"
+      },
+      "title": {
+        "type": "string",
+        "description": "Note title"
+      },
+      "content": {
+        "type": "string",
+        "description": "Note body text"
+      },
+      "tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Tags to assign or search by"
+      },
+      "query": {
+        "type": "string",
+        "description": "Search query for finding notes"
+      }
+    },
+    "required": ["action"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": { "type": "boolean" },
+      "message": { "type": "string" },
+      "notes": {
+        "type": "array",
+        "items": { "type": "object" },
+        "description": "Matching notes"
+      },
+      "artifact": {
+        "type": "object",
+        "description": "Artifact created for exports"
+      }
+    },
+    "required": ["success", "message"]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [
+    {
+      "purposeId": "auto-tag",
+      "kind": "classification",
+      "description": "Classify note content to suggest tags",
+      "estimatedTokenBudget": 500,
+      "modelPreference": null,
+      "temperatureHint": 0.1
+    }
+  ],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 10000,
+    "maxMemoryMB": 64,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "optional",
+  "workspaceSchemaVersion": "1.0.0"
+}

@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "tsx scripts/validate.ts"
+    "validate": "tsx scripts/validate.ts",
+    "test:workspace": "tsx scripts/validate-workspace-fields.test.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.0"

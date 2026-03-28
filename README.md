@@ -53,6 +53,8 @@ The manifest declares everything about a skill: what it does, what it needs, and
 | `requiredMcpTools`          | `SkillRequiredMcpTool[]`      | No       | Required MCP tools                                             |
 | `supportedPlatforms`        | `BridgePlatform[]`            | No       | Platforms the skill supports: `"macos"`, `"windows"`, `"linux"`. Empty or absent means all platforms. |
 | `bridgeRequirement`         | `BridgeRequirement`           | No       | Bridge dependency: `"never"` (default), `"optional"`, or `"required"` |
+| `workspaceSupport`          | `SkillWorkspaceSupport`       | No       | Workspace support: `"none"` (default), `"optional"`, or `"required"` |
+| `workspaceSchemaVersion`    | `string \| null`              | No       | Semver version of the workspace state schema (required when `workspaceSupport` is `"optional"` or `"required"`) |
 
 #### SkillPermission
 
@@ -226,6 +228,7 @@ The `host` object provides the following APIs:
 | `host.wasm`      | `instantiate(moduleId)` — Instantiate a declared WASM module           |
 | `host.log`       | `debug(msg, data?)`, `info(msg, data?)`, `warn(msg, data?)`, `error(msg, data?)` |
 | `host.filesystem`| `openFile()`, `openDirectory()`, `readFile(handleId)`, `writeFile(handleId, data)`, `listHandles()` — Optional |
+| `host.workspace` | `getState()`, `setState(state)`, `createArtifact(artifact)`, `setPhase(phase)` — Optional, present when a workspace is active |
 | `host.skillId`   | `string` — The skill instance ID                                      |
 | `host.executionId`| `string` — Unique ID for this execution                               |
 | `host.runId`     | `string` — The agent run ID                                           |
@@ -492,6 +495,131 @@ Both fields are optional. Skills without these fields are treated as cross-platf
 ### Validation
 
 Run `npm run validate` to check all skills against the manifest standard. The validator verifies platform values, bridge requirement consistency, module existence, and absence of raw secrets in documentation.
+
+---
+
+## Workspace Support
+
+Skills that manage persistent, structured state across sessions can declare workspace support. Workspaces are **runtime-owned by os-loop-ai** — they are created, persisted, and managed in the browser via IndexedDB. Skills do not manage workspace storage directly.
+
+### When to Use Workspaces
+
+Declare `workspaceSupport` when your skill:
+- Maintains structured state that persists across multiple conversations or runs (e.g., a project tracker, a multi-step research workflow)
+- Produces artifacts that need lifecycle management (draft, pending approval, approved, rejected, superseded)
+- Needs to track phases, roles, or approval linkage as first-class persistent data
+
+Do **not** use workspaces for:
+- Simple stateless skills (use `"none"`, the default)
+- State that fits in a single key-value store entry (use `host.storage` instead)
+- Ephemeral state that only matters within a single conversation
+
+### Manifest Fields
+
+```json
+{
+  "workspaceSupport": "required",
+  "workspaceSchemaVersion": "1.0.0"
+}
+```
+
+- `workspaceSupport`:
+  - `"none"` (default) — skill does not use workspaces
+  - `"optional"` — skill can use workspaces for enhanced functionality but works without one
+  - `"required"` — skill requires an active workspace to function
+- `workspaceSchemaVersion`: semver string that declares the structure of the workspace `state` and `metadata` objects. Must be set when `workspaceSupport` is `"optional"` or `"required"`.
+
+### Decision Guide
+
+| Use case | `workspaceSupport` | Why |
+|----------|-------------------|-----|
+| Stateless computation (calculator, text transform) | `"none"` | No state to persist. Every invocation is self-contained. |
+| Note-taking, data collection, iterative research | `"optional"` | Works in a single session without a workspace, but benefits from cross-session persistence. |
+| Project tracking, multi-phase workflows, artifact production | `"required"` | The skill's core value depends on structured persistent state. Without a workspace, there is nothing to operate on. |
+
+**Rule of thumb:** If your skill's `execute()` function reads or writes `host.workspace`, it needs `"optional"` or `"required"`. If removing the workspace would make the skill meaningless (not just less useful), use `"required"`.
+
+### How the `workspace_manage` Tool Works at Runtime
+
+The agent uses the `workspace_manage` runtime tool to manage workspaces. This tool is automatically available when workspace-aware skills are installed.
+
+**Supported actions:**
+
+| Action | Description |
+|--------|-------------|
+| `create` | Creates a new workspace for a skill |
+| `get` | Retrieves workspace details |
+| `list` | Lists workspaces for a skill |
+| `update` | Updates workspace metadata or state |
+| `pause` | Pauses a workspace (excluded from active snapshot) |
+| `resume` | Resumes a paused workspace |
+| `archive` | Archives a workspace (soft delete) |
+| `set_phase` | Sets the current workflow phase |
+| `set_role` | Sets the current agent role |
+| `create_artifact` | Creates a tracked artifact in the workspace |
+| `update_artifact` | Updates artifact content or status |
+| `list_artifacts` | Lists artifacts for a workspace |
+
+**Context fallback:** When a workspace is active in the current run, the `workspaceId` is automatically available in the tool execution context. Explicit `workspaceId` in args takes precedence over the context value.
+
+### Artifact Lifecycle
+
+Artifacts produced by skills follow a status lifecycle:
+
+```
+draft → pending_approval → approved
+                         → rejected
+                         → superseded
+```
+
+- **draft**: Initial state when created via `host.workspace.createArtifact()`.
+- **pending_approval**: Submitted for review. The runtime links this to an approval ref.
+- **approved / rejected**: Terminal states set through the approval system.
+- **superseded**: A newer artifact replaces this one.
+
+Skills create artifacts; the runtime and user manage their lifecycle.
+
+### Workspace State Schema
+
+The `state` object in a workspace is skill-defined. Declare the schema version in `workspaceSchemaVersion` and document the shape.
+
+**Example — project-tracker state (v1.0.0):**
+```json
+{
+  "projectName": "Q2 Launch",
+  "tasks": [
+    { "id": "task-abc", "title": "Design API", "status": "done", "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-16T14:00:00Z" },
+    { "id": "task-def", "title": "Implement auth", "status": "in-progress", "createdAt": "2025-01-16T09:00:00Z", "updatedAt": "2025-01-17T11:00:00Z" }
+  ],
+  "createdAt": "2025-01-15T09:00:00Z"
+}
+```
+
+**Example — note-organizer state (v1.0.0):**
+```json
+{
+  "notes": [
+    { "id": "note-xyz", "title": "API design notes", "content": "...", "tags": ["api", "design"], "createdAt": "2025-01-15T10:00:00Z" }
+  ]
+}
+```
+
+When evolving state schemas, bump `workspaceSchemaVersion` and handle migration in your module's `execute()` function.
+
+### Validation
+
+The validator enforces:
+- `workspaceSupport` must be one of: `"none"`, `"optional"`, `"required"`
+- `workspaceSchemaVersion` must be a string or null
+- If `workspaceSupport` is `"optional"` or `"required"`, `workspaceSchemaVersion` should be set (warning if missing)
+
+### Example Skills
+
+| Skill | `workspaceSupport` | Description |
+|-------|-------------------|-------------|
+| `quick-calculator` | `"none"` | Stateless math and unit conversion |
+| `note-organizer` | `"optional"` | Notes with optional persistence |
+| `project-tracker` | `"required"` | Multi-phase project management with artifacts |
 
 ---
 

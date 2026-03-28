@@ -50,5 +50,40 @@
     "supportedPlatforms": ["macos"],
     "bridgeRequirement": "required",
     "compatibilityRequirements": ["system_tools"]
+  },
+  {
+    "name": "project-tracker",
+    "description": "Tracks projects through planning, execution, and review phases with structured artifacts and approval workflows",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/project-tracker",
+    "tags": ["project-management", "workspace", "artifacts"],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "required",
+    "workspaceSchemaVersion": "1.0.0"
+  },
+  {
+    "name": "note-organizer",
+    "description": "Captures, tags, and retrieves notes with optional workspace persistence for cross-session organization",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/note-organizer",
+    "tags": ["notes", "organization", "workspace"],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "optional",
+    "workspaceSchemaVersion": "1.0.0"
+  },
+  {
+    "name": "quick-calculator",
+    "description": "Evaluates mathematical expressions and unit conversions without any persistent state",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/quick-calculator",
+    "tags": ["math", "utility", "conversion"],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "none"
   }
 ]

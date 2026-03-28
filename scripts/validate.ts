@@ -7,6 +7,7 @@ const ROOT = join(__dirname, '..');
 
 const VALID_PLATFORMS = ['macos', 'windows', 'linux'] as const;
 const VALID_BRIDGE_REQUIREMENTS = ['never', 'optional', 'required'] as const;
+const VALID_WORKSPACE_SUPPORT = ['none', 'optional', 'required'] as const;
 const VALID_COMPATIBILITY_REQUIREMENTS = [
   // Bridge capabilities
   'system_tools', 'system_info', 'filesystem', 'mcp_proxy',
@@ -85,6 +86,23 @@ function validateIndexEntry(entry: IndexEntry, index: number): void {
       error(ctx, `Invalid bridgeRequirement "${entry.bridgeRequirement}". Must be one of: ${VALID_BRIDGE_REQUIREMENTS.join(', ')}`);
     }
   }
+
+  if ((entry as Record<string, unknown>).workspaceSupport !== undefined) {
+    const ws = (entry as Record<string, unknown>).workspaceSupport;
+    if (typeof ws !== 'string' || !(VALID_WORKSPACE_SUPPORT as readonly string[]).includes(ws)) {
+      error(ctx, `Invalid workspaceSupport "${ws}". Must be one of: ${VALID_WORKSPACE_SUPPORT.join(', ')}`);
+    }
+
+    // Index entries with optional/required workspace must also carry workspaceSchemaVersion
+    if (ws === 'optional' || ws === 'required') {
+      const wsv = (entry as Record<string, unknown>).workspaceSchemaVersion;
+      if (wsv === undefined || wsv === null) {
+        error(ctx, `workspaceSupport is "${ws}" but workspaceSchemaVersion is missing from index entry. Add it so the runtime can check schema compatibility.`);
+      } else if (typeof wsv !== 'string') {
+        error(ctx, `workspaceSchemaVersion must be a string, got "${typeof wsv}"`);
+      }
+    }
+  }
 }
 
 function validateManifest(manifestPath: string, entry: IndexEntry): void {
@@ -135,6 +153,27 @@ function validateManifest(manifestPath: string, entry: IndexEntry): void {
     const platforms = manifest.supportedPlatforms;
     if (!Array.isArray(platforms) || platforms.length === 0) {
       warn(manifestPath, 'bridgeRequirement is "required" but supportedPlatforms is empty — bridge-required skills should specify which platforms they support');
+    }
+  }
+
+  // Validate workspaceSupport
+  if (manifest.workspaceSupport !== undefined) {
+    if (!(VALID_WORKSPACE_SUPPORT as readonly string[]).includes(manifest.workspaceSupport as string)) {
+      error(manifestPath, `Invalid workspaceSupport "${manifest.workspaceSupport}" in manifest. Must be one of: ${VALID_WORKSPACE_SUPPORT.join(', ')}`);
+    }
+  }
+
+  // Validate workspaceSchemaVersion
+  if (manifest.workspaceSchemaVersion !== undefined && manifest.workspaceSchemaVersion !== null) {
+    if (typeof manifest.workspaceSchemaVersion !== 'string') {
+      error(manifestPath, `workspaceSchemaVersion must be a string or null, got "${typeof manifest.workspaceSchemaVersion}"`);
+    }
+  }
+
+  // Cross-check: if workspaceSupport is optional/required, workspaceSchemaVersion should be set
+  if (manifest.workspaceSupport === 'optional' || manifest.workspaceSupport === 'required') {
+    if (manifest.workspaceSchemaVersion === undefined || manifest.workspaceSchemaVersion === null) {
+      warn(manifestPath, `workspaceSupport is "${manifest.workspaceSupport}" but workspaceSchemaVersion is not set. Declare a schema version for workspace state.`);
     }
   }
 
@@ -236,6 +275,17 @@ for (let i = 0; i < entries.length; i++) {
   }
 
   validateManifest(manifestPath, entry);
+
+  // Cross-check: index.json workspaceSchemaVersion must match manifest
+  const manifestData = readJson<Record<string, unknown>>(manifestPath);
+  if (manifestData) {
+    const indexWsv = (entry as Record<string, unknown>).workspaceSchemaVersion;
+    const manifestWsv = manifestData.workspaceSchemaVersion;
+    if (indexWsv !== undefined && manifestWsv !== undefined && indexWsv !== manifestWsv) {
+      error(`index.json[${i}]`, `workspaceSchemaVersion mismatch: index has "${indexWsv}" but manifest has "${manifestWsv}"`);
+    }
+  }
+
   validateModule(skillDir);
   validateDocs(skillDir);
 }

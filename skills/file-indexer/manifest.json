@@ -1,0 +1,64 @@
+{
+  "name": "file-indexer",
+  "description": "Indexes files in a directory, with optional bridge filesystem for enhanced access",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["file-indexing"],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "filesystem",
+      "scope": "read",
+      "description": "Read files to build the index"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "directory": { "type": "string", "description": "Directory path to index" },
+      "extensions": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "File extensions to include (e.g. [\".ts\", \".js\"]). Empty means all files."
+      }
+    },
+    "required": ["directory"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "files": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "name": { "type": "string" },
+            "extension": { "type": "string" }
+          }
+        },
+        "description": "Indexed file entries"
+      },
+      "totalCount": { "type": "number", "description": "Total number of indexed files" },
+      "source": { "type": "string", "enum": ["bridge", "browser"], "description": "Which filesystem access method was used" }
+    },
+    "required": ["files", "totalCount", "source"]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 30000,
+    "maxMemoryMB": 128,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "optional"
+}

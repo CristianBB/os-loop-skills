@@ -1,0 +1,54 @@
+[
+  {
+    "name": "web-summary",
+    "description": "Fetches a web page and produces an LLM-generated summary",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/web-summary",
+    "tags": ["web", "llm", "summarization"],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never"
+  },
+  {
+    "name": "text-transform",
+    "description": "Transforms text between cases and formats",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/text-transform",
+    "tags": ["text", "transform", "utility"],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never"
+  },
+  {
+    "name": "git-status-checker",
+    "description": "Checks the current git repository status via bridge command execution",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/git-status-checker",
+    "tags": ["git", "dev-tools", "system"],
+    "supportedPlatforms": ["macos", "linux", "windows"],
+    "bridgeRequirement": "required",
+    "compatibilityRequirements": ["system_tools"]
+  },
+  {
+    "name": "file-indexer",
+    "description": "Indexes files in a directory, with optional bridge filesystem for enhanced access",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/file-indexer",
+    "tags": ["files", "indexing", "search"],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "optional"
+  },
+  {
+    "name": "macos-shortcuts",
+    "description": "Runs macOS Shortcuts app automations via bridge command execution",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/macos-shortcuts",
+    "tags": ["macos", "automation", "shortcuts"],
+    "supportedPlatforms": ["macos"],
+    "bridgeRequirement": "required",
+    "compatibilityRequirements": ["system_tools"]
+  }
+]

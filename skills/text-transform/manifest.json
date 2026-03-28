@@ -1,0 +1,41 @@
+{
+  "name": "text-transform",
+  "description": "Transforms text between cases and formats",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["text-transform"],
+  "requiredBindings": [],
+  "permissions": [],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "text": { "type": "string", "description": "The text to transform" },
+      "mode": { "type": "string", "enum": ["uppercase", "lowercase", "title", "camel", "snake", "kebab"], "description": "Transformation mode" }
+    },
+    "required": ["text", "mode"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "result": { "type": "string", "description": "The transformed text" }
+    },
+    "required": ["result"]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 5000,
+    "maxMemoryMB": 32,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never"
+}

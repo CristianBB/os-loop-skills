@@ -1,0 +1,42 @@
+{
+  "name": "git-status-checker",
+  "description": "Checks the current git repository status via bridge command execution",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["git-status"],
+  "requiredBindings": [],
+  "permissions": [],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "workingDirectory": { "type": "string", "description": "Path to the git repository" }
+    },
+    "required": ["workingDirectory"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "branch": { "type": "string", "description": "Current branch name" },
+      "clean": { "type": "boolean", "description": "Whether the working tree is clean" },
+      "output": { "type": "string", "description": "Raw git status output" }
+    },
+    "required": ["branch", "clean", "output"]
+  },
+  "compatibilityRequirements": ["system_tools"],
+  "oauth": [],
+  "llmUsage": [],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 15000,
+    "maxMemoryMB": 64,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": ["macos", "linux", "windows"],
+  "bridgeRequirement": "required"
+}

@@ -38,5 +38,8 @@
     "networkRules": []
   },
   "supportedPlatforms": ["macos", "linux", "windows"],
-  "bridgeRequirement": "required"
+  "bridgeRequirement": "required",
+  "longRunningSupport": "none",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false
 }

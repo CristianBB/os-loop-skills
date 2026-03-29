@@ -579,6 +579,30 @@ draft → pending_approval → approved
 
 Skills create artifacts; the runtime and user manage their lifecycle.
 
+### Artifact Versioning & Provenance
+
+Artifacts support version chains. When an artifact is superseded, the runtime links the new version to the old one:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `parentArtifactId` | `UUIDv7 \| null` | Previous version in the chain (`null` for first version) |
+| `version` | `number` | Incrementing version within the chain (1-based) |
+| `createdByRunId` | `UUIDv7 \| null` | Which run produced this artifact |
+| `createdByRole` | `string \| null` | Which agent role produced this artifact |
+
+The runtime provides version chain queries:
+- `getVersionChain(artifactId)` — returns the full chain oldest-first
+- `getLatestVersion(workspaceId, type)` — returns the highest-version non-superseded artifact
+- `supersede(currentId, newArtifact)` — atomically marks the current artifact as superseded and links the new one
+
+Skills create artifacts via `host.workspace.createArtifact()`. The runtime automatically populates `createdByRunId` and `createdByRole` from the current execution context. Skills do not need to manage version chains directly — the runtime handles this when artifacts are superseded.
+
+### Multi-Tab Safety & Optimistic Concurrency
+
+Workspaces use optimistic concurrency control via a `lockVersion` field. Every write to workspace state increments the version, and stale writes (where the caller's version doesn't match the current version) are rejected with a `ConflictError`.
+
+This prevents silent data corruption when multiple browser tabs modify the same workspace. Skills do not need to handle `ConflictError` directly — the runtime catches it and surfaces a user-facing error.
+
 ### Workspace State Schema
 
 The `state` object in a workspace is skill-defined. Declare the schema version in `workspaceSchemaVersion` and document the shape.
@@ -620,6 +644,119 @@ The validator enforces:
 | `quick-calculator` | `"none"` | Stateless math and unit conversion |
 | `note-organizer` | `"optional"` | Notes with optional persistence |
 | `project-tracker` | `"required"` | Multi-phase project management with artifacts |
+
+---
+
+## Long-Running Skills & Runtime State
+
+The OS Loop runtime owns the lifecycle of long-running skill work. Skills that perform multi-step, resumable, or background work **must not** invent their own ad hoc persistence for run state, checkpoints, or event logs.
+
+### What the runtime provides
+
+| Concern | Owner | Mechanism |
+|---------|-------|-----------|
+| Run lifecycle (start, progress, pause, resume, complete, fail) | Runtime | `WorkspaceRun` persistence + state machine |
+| Checkpoints (snapshots for safe resumption) | Runtime | `WorkspaceRunCheckpoint` store |
+| Event logs (structured history of run activity) | Runtime | `WorkspaceRunEvent` store |
+| User input requests (blocking prompts during a run) | Runtime | `UserInputRequest` store |
+| Bridge job tracking (async system commands) | Runtime | `BridgeJobRef` store |
+| Bridge job concurrency control | Bridge | Global concurrency limit with automatic queuing |
+| Recovery after reload, tab closure, bridge interruption | Runtime | Reconciliation service |
+
+### What skills should do
+
+- **Report progress** via host capabilities: `host.run.updateProgress({ phase, step, percent, message })`.
+- **Request checkpoints** via `host.run.createCheckpoint()` at meaningful milestones so the runtime can resume from them.
+- **Request user input** via `host.run.requestUserInput({ title, message, inputSchema })` instead of inventing custom prompt flows.
+- **Store workspace-scoped application data** (notes, project tasks, artifacts) in workspace state as usual — this is skill-owned data, not run state.
+- **Resume from checkpoints** by reading the latest checkpoint from the host when restarted, and determining where to pick up based on the checkpoint's `currentPhase`, `currentStep`, and `runStateSnapshot`.
+
+### Authoring Workspace-Aware Long-Running Skills
+
+Skills with `workspaceSupport: "required"` and `longRunningSupport` enabled that perform multi-step workflows must model blocking points and recovery explicitly:
+
+1. **Model blocking points as structured requests, not prompt text.**
+   When the skill needs a user decision mid-run, call `host.run.requestUserInput({ title, message, inputSchema })`. This transitions the run to `waiting_user_input` and surfaces the prompt in the inbox and workspace detail view. Do not embed decision logic inside freeform LLM prompts — the runtime cannot track or resume from those.
+
+2. **Use artifacts and phases to surface intermediate work.**
+   Instead of accumulating results inside hidden conversation context, create artifacts via `host.workspace.createArtifact()` and advance the phase via `host.workspace.setPhase()`. This makes progress visible to the user and inspectable by the agent through the `run_manage` and `workspace_manage` tools.
+
+3. **Assume interruptions and recovery are normal runtime events.**
+   A long-running skill execution may be interrupted by browser reload, bridge disconnection, user-initiated pause, or session expiry. Design the skill so it can resume from the last checkpoint: persist meaningful progress via `host.run.createCheckpoint()` at each milestone, and on restart, read the latest checkpoint to determine where to continue.
+
+4. **Do not conflate workspace runs with periodic/scheduled tasks.**
+   A workspace run is a single continuous execution of a skill within a workspace context, with explicit waiting states and recovery semantics. A scheduled task is a recurring trigger that creates agent runs on a schedule. They serve different purposes and use different runtime APIs.
+
+### Bridge Job Concurrency
+
+The bridge enforces a **global concurrency limit** on system jobs (commands and tool installations). Skills that launch bridge jobs benefit from this automatically:
+
+- Jobs that exceed the bridge's concurrency limit are **queued** and start automatically when capacity becomes available.
+- The bridge emits `bridge.job.created` and `bridge.job.updated` events as jobs transition through `Queued → Running → Completed/Failed/Terminated`.
+- The runtime reconciler detects bridge job status changes (including `Queued → Running`) and updates local `BridgeJobRef` records accordingly.
+- Skills that launch multiple bridge jobs (e.g., parallel installs or chained commands) will see them managed concurrently up to the bridge limit, with overflow queued transparently.
+
+Skills do **not** need to implement queuing, throttling, or concurrency control for bridge jobs — the bridge manages this independently.
+
+### Dirty State & Recovery Design
+
+When a run terminates abnormally (bridge restart, timeout, browser reload), the runtime marks it as **dirty** — meaning the workspace may be in an inconsistent state. Dirty runs with partial execution are flagged as `reviewRequired`, which **blocks new runs** on the same workspace until the user takes one of these actions:
+
+| Action | Effect |
+|--------|--------|
+| **Acknowledge** | Clears dirty + reviewRequired. User accepts the current state as-is. |
+| **Retry from checkpoint** | Creates a new run from the last checkpoint. Clears the old run's dirty state. |
+| **Discard** | Clears dirty + reviewRequired. Treats the partial state as abandoned. |
+
+The runtime classifies dirty state based on the bridge's `recoveryHint`:
+- `"bridge_restart"` or `"timeout"` → dirty (something ran, side-effects unknown)
+- `"spawn_failure"` → **not dirty** (nothing actually executed)
+- `null` → dirty (conservative default)
+
+Skills do not participate in dirty-state classification or resolution — this is entirely runtime-owned. Skills should focus on creating checkpoints at meaningful milestones so the runtime has good recovery points.
+
+### What skills must not do
+
+- Do not persist run status, progress, or step counters independently.
+- Do not implement custom recovery logic for browser reload or bridge disconnection.
+- Do not poll the bridge directly for job status — the runtime reconciler handles this.
+- Do not assume a run completed successfully without the runtime confirming it.
+- Do not implement concurrency throttling for bridge jobs — the bridge manages this.
+
+## Runtime Surfaces for Workspace-Aware Skills
+
+The OS Loop runtime provides dedicated user-facing management surfaces that automatically present workspace and run information to the user. Skill authors do not need to build their own UI — the runtime derives everything from standard API usage.
+
+### Inbox / Activity Center
+
+A global inbox surfaces items requiring user attention. The runtime automatically derives inbox entries from:
+
+- **Pending `UserInputRequest`** items (created via `host.run.requestUserInput()`) — shown as actionable cards the user can answer directly.
+- **Pending approval requests** — shown with a link to the approval center.
+- **Recoverable run failures** — shown with a retry action.
+- **Bridge rejections and bridge-unavailable states** — shown with reconnect or workspace navigation actions.
+- **Recently completed runs** — shown as informational items.
+
+Skills that use `host.run.requestUserInput()` get their prompts surfaced in both the inbox and the workspace detail view. No additional skill-side work is needed.
+
+### Workspace Detail View
+
+Each workspace has a dedicated detail page showing:
+
+- **Workspace metadata**: name, description, status, current phase and role.
+- **Active run panel**: status badge, progress bar, current step, waiting-for indicator.
+- **Run controls**: Continue, Pause, Cancel, and Retry buttons — available based on the current run state machine transitions.
+- **Pending user input forms**: inline forms for answering `UserInputRequest` items.
+- **Artifacts list**: all workspace artifacts with their approval status.
+- **Bridge jobs**: active and completed bridge jobs with command and status.
+- **Run history**: past completed/failed/cancelled runs.
+
+### What this means for skill authors
+
+- Skills that use `host.workspace.*` (state, artifacts) and `host.run.*` (progress, checkpoints, user input) automatically benefit from these surfaces.
+- Skills should produce structured state, artifacts, and events suitable for these surfaces — but they already do so via the existing host APIs.
+- Skills should **not** implement their own inbox, notification, or dashboard logic. The runtime handles this.
+- Long-running workspace-aware skills should assume the runtime provides: workspace page, inbox, and explicit continue/pause/retry actions.
 
 ---
 

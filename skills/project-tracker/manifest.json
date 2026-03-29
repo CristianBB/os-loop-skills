@@ -84,5 +84,8 @@
   "supportedPlatforms": [],
   "bridgeRequirement": "never",
   "workspaceSupport": "required",
-  "workspaceSchemaVersion": "1.0.0"
+  "workspaceSchemaVersion": "1.0.0",
+  "longRunningSupport": "optional",
+  "userInputSupport": true,
+  "artifactVersioningSupport": true
 }

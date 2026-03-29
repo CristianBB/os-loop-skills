@@ -8,6 +8,7 @@ const ROOT = join(__dirname, '..');
 const VALID_PLATFORMS = ['macos', 'windows', 'linux'] as const;
 const VALID_BRIDGE_REQUIREMENTS = ['never', 'optional', 'required'] as const;
 const VALID_WORKSPACE_SUPPORT = ['none', 'optional', 'required'] as const;
+const VALID_LONG_RUNNING_SUPPORT = ['none', 'optional', 'required'] as const;
 const VALID_COMPATIBILITY_REQUIREMENTS = [
   // Bridge capabilities
   'system_tools', 'system_info', 'filesystem', 'mcp_proxy',
@@ -33,6 +34,9 @@ interface IndexEntry {
   supportedPlatforms?: string[];
   bridgeRequirement?: string;
   compatibilityRequirements?: string[];
+  longRunningSupport?: string;
+  userInputSupport?: boolean;
+  artifactVersioningSupport?: boolean;
 }
 
 interface ValidationError {
@@ -101,6 +105,27 @@ function validateIndexEntry(entry: IndexEntry, index: number): void {
       } else if (typeof wsv !== 'string') {
         error(ctx, `workspaceSchemaVersion must be a string, got "${typeof wsv}"`);
       }
+    }
+  }
+
+  if ((entry as Record<string, unknown>).longRunningSupport !== undefined) {
+    const lrs = (entry as Record<string, unknown>).longRunningSupport;
+    if (typeof lrs !== 'string' || !(VALID_LONG_RUNNING_SUPPORT as readonly string[]).includes(lrs)) {
+      error(ctx, `Invalid longRunningSupport "${lrs}". Must be one of: ${VALID_LONG_RUNNING_SUPPORT.join(', ')}`);
+    }
+  }
+
+  if ((entry as Record<string, unknown>).userInputSupport !== undefined) {
+    const uis = (entry as Record<string, unknown>).userInputSupport;
+    if (typeof uis !== 'boolean') {
+      error(ctx, `Invalid userInputSupport "${uis}". Must be a boolean`);
+    }
+  }
+
+  if ((entry as Record<string, unknown>).artifactVersioningSupport !== undefined) {
+    const avs = (entry as Record<string, unknown>).artifactVersioningSupport;
+    if (typeof avs !== 'boolean') {
+      error(ctx, `Invalid artifactVersioningSupport "${avs}". Must be a boolean`);
     }
   }
 }
@@ -174,6 +199,35 @@ function validateManifest(manifestPath: string, entry: IndexEntry): void {
   if (manifest.workspaceSupport === 'optional' || manifest.workspaceSupport === 'required') {
     if (manifest.workspaceSchemaVersion === undefined || manifest.workspaceSchemaVersion === null) {
       warn(manifestPath, `workspaceSupport is "${manifest.workspaceSupport}" but workspaceSchemaVersion is not set. Declare a schema version for workspace state.`);
+    }
+  }
+
+  // Validate longRunningSupport
+  if (manifest.longRunningSupport !== undefined) {
+    if (!(VALID_LONG_RUNNING_SUPPORT as readonly string[]).includes(manifest.longRunningSupport as string)) {
+      error(manifestPath, `Invalid longRunningSupport "${manifest.longRunningSupport}" in manifest. Must be one of: ${VALID_LONG_RUNNING_SUPPORT.join(', ')}`);
+    }
+  }
+
+  // Validate userInputSupport
+  if (manifest.userInputSupport !== undefined) {
+    if (typeof manifest.userInputSupport !== 'boolean') {
+      error(manifestPath, `Invalid userInputSupport "${manifest.userInputSupport}" in manifest. Must be a boolean`);
+    }
+  }
+
+  // Validate artifactVersioningSupport
+  if (manifest.artifactVersioningSupport !== undefined) {
+    if (typeof manifest.artifactVersioningSupport !== 'boolean') {
+      error(manifestPath, `Invalid artifactVersioningSupport "${manifest.artifactVersioningSupport}" in manifest. Must be a boolean`);
+    }
+  }
+
+  // Cross-check: if longRunningSupport is "required", workspaceSupport should be "optional" or "required"
+  if (manifest.longRunningSupport === 'required') {
+    const ws = manifest.workspaceSupport;
+    if (ws !== 'optional' && ws !== 'required') {
+      warn(manifestPath, 'longRunningSupport is "required" but workspaceSupport is not "optional" or "required"');
     }
   }
 

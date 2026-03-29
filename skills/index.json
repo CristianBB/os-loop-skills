@@ -7,7 +7,10 @@
     "folderPath": "skills/web-summary",
     "tags": ["web", "llm", "summarization"],
     "supportedPlatforms": [],
-    "bridgeRequirement": "never"
+    "bridgeRequirement": "never",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   },
   {
     "name": "text-transform",
@@ -17,7 +20,10 @@
     "folderPath": "skills/text-transform",
     "tags": ["text", "transform", "utility"],
     "supportedPlatforms": [],
-    "bridgeRequirement": "never"
+    "bridgeRequirement": "never",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   },
   {
     "name": "git-status-checker",
@@ -28,7 +34,10 @@
     "tags": ["git", "dev-tools", "system"],
     "supportedPlatforms": ["macos", "linux", "windows"],
     "bridgeRequirement": "required",
-    "compatibilityRequirements": ["system_tools"]
+    "compatibilityRequirements": ["system_tools"],
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   },
   {
     "name": "file-indexer",
@@ -38,7 +47,10 @@
     "folderPath": "skills/file-indexer",
     "tags": ["files", "indexing", "search"],
     "supportedPlatforms": [],
-    "bridgeRequirement": "optional"
+    "bridgeRequirement": "optional",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   },
   {
     "name": "macos-shortcuts",
@@ -49,7 +61,10 @@
     "tags": ["macos", "automation", "shortcuts"],
     "supportedPlatforms": ["macos"],
     "bridgeRequirement": "required",
-    "compatibilityRequirements": ["system_tools"]
+    "compatibilityRequirements": ["system_tools"],
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   },
   {
     "name": "project-tracker",
@@ -61,7 +76,10 @@
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
     "workspaceSupport": "required",
-    "workspaceSchemaVersion": "1.0.0"
+    "workspaceSchemaVersion": "1.0.0",
+    "longRunningSupport": "optional",
+    "userInputSupport": true,
+    "artifactVersioningSupport": true
   },
   {
     "name": "note-organizer",
@@ -73,7 +91,10 @@
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
     "workspaceSupport": "optional",
-    "workspaceSchemaVersion": "1.0.0"
+    "workspaceSchemaVersion": "1.0.0",
+    "longRunningSupport": "optional",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   },
   {
     "name": "quick-calculator",
@@ -84,6 +105,9 @@
     "tags": ["math", "utility", "conversion"],
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
-    "workspaceSupport": "none"
+    "workspaceSupport": "none",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false
   }
 ]

@@ -37,5 +37,8 @@
     "networkRules": []
   },
   "supportedPlatforms": [],
-  "bridgeRequirement": "never"
+  "bridgeRequirement": "never",
+  "longRunningSupport": "none",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false
 }

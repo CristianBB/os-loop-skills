@@ -57,5 +57,8 @@
   },
   "supportedPlatforms": [],
   "bridgeRequirement": "never",
-  "workspaceSupport": "none"
+  "workspaceSupport": "none",
+  "longRunningSupport": "none",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false
 }

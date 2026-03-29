@@ -700,6 +700,7 @@ The validator enforces:
 | `quick-calculator` | `"none"` | Stateless math and unit conversion |
 | `note-organizer` | `"optional"` | Notes with optional persistence |
 | `project-tracker` | `"required"` | Multi-phase project management with artifacts |
+| `startup-product-studio` | `"required"` | Agentic multi-project product development with role-based execution |
 
 ---
 

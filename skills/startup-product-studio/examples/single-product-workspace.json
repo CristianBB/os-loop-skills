@@ -1,0 +1,143 @@
+{
+  "description": "Example workspace state for a single-product studio mid-way through the ux-definition phase",
+  "studioState": {
+    "studioName": "TaskFlow Studio",
+    "projects": [
+      {
+        "id": "1711900000000-abc12345",
+        "name": "TaskFlow",
+        "description": "A collaborative task management app for small teams with real-time updates, kanban boards, and time tracking. Targets freelancers and small agencies who outgrow simple to-do lists but find enterprise tools overwhelming.",
+        "currentPhase": "ux-definition",
+        "completedPhases": ["discovery", "roadmap-definition", "product-definition"],
+        "roadmap": [
+          {
+            "phase": "discovery",
+            "milestones": ["Market opportunity validated", "Target persona defined"],
+            "deliverables": ["Market analysis report", "User needs matrix", "Competitive landscape map", "Business context"],
+            "estimatedDuration": "1 week",
+            "dependencies": []
+          },
+          {
+            "phase": "roadmap-definition",
+            "milestones": ["Feature backlog prioritized", "MVP scope locked"],
+            "deliverables": ["Feature priority matrix", "Product roadmap", "Milestone definitions"],
+            "estimatedDuration": "1 week",
+            "dependencies": ["discovery"]
+          },
+          {
+            "phase": "product-definition",
+            "milestones": ["Product vision articulated", "MVP scope defined", "User personas validated"],
+            "deliverables": ["Product vision document", "MVP definition", "User personas"],
+            "estimatedDuration": "1 week",
+            "dependencies": ["roadmap-definition"]
+          },
+          {
+            "phase": "ux-definition",
+            "milestones": ["User flows finalized", "Design system established"],
+            "deliverables": ["User flow diagrams", "Wireframe specifications", "Design token definitions", "UX/UI spec"],
+            "estimatedDuration": "2 weeks",
+            "dependencies": ["product-definition"]
+          },
+          {
+            "phase": "architecture-definition",
+            "milestones": ["System design approved", "API contracts defined"],
+            "deliverables": ["Architecture plan", "API contract specifications", "Data model"],
+            "estimatedDuration": "1 week",
+            "dependencies": ["ux-definition"]
+          },
+          {
+            "phase": "implementation-phase",
+            "milestones": ["Core features implemented", "Integration tested"],
+            "deliverables": ["Task breakdown", "Implementation phase plan", "Working codebase", "Implementation report"],
+            "estimatedDuration": "4 weeks",
+            "dependencies": ["architecture-definition"]
+          },
+          {
+            "phase": "qa-validation",
+            "milestones": ["All quality gates passed"],
+            "deliverables": ["Test strategy", "Test reports", "QA report"],
+            "estimatedDuration": "2 weeks",
+            "dependencies": ["implementation-phase"]
+          },
+          {
+            "phase": "release-readiness",
+            "milestones": ["Launch readiness confirmed"],
+            "deliverables": ["Release readiness report", "Launch checklist", "Monitoring dashboards", "GTM brief"],
+            "estimatedDuration": "1 week",
+            "dependencies": ["qa-validation"]
+          }
+        ],
+        "codeProjects": [
+          {
+            "id": "1711900000001-web00001",
+            "name": "taskflow-web",
+            "type": "web",
+            "techStack": "Next.js, TypeScript, Tailwind CSS, shadcn/ui",
+            "repoPath": null
+          },
+          {
+            "id": "1711900000002-api00001",
+            "name": "taskflow-api",
+            "type": "backend",
+            "techStack": "Node.js, Express, PostgreSQL, Prisma",
+            "repoPath": null
+          }
+        ],
+        "artifactIds": [
+          "art-001", "art-002", "art-003", "art-004", "art-005",
+          "art-006", "art-007", "art-008", "art-009", "art-010",
+          "art-011", "art-012"
+        ],
+        "businessContext": {
+          "industry": "SaaS / Productivity",
+          "marketSegment": "Small teams and freelancers",
+          "revenueModel": "Freemium with team-based subscription tiers",
+          "competitiveAdvantage": "Simplicity-first design targeting the gap between consumer to-do apps and enterprise project management"
+        },
+        "targetUsers": [
+          {
+            "persona": "Freelance Creative",
+            "description": "Independent designer or developer managing multiple client projects",
+            "painPoints": ["Switching between too many tools", "No simple way to track time per project", "Losing context between projects"]
+          },
+          {
+            "persona": "Small Agency Lead",
+            "description": "Team lead at a 3-10 person agency coordinating work across team members",
+            "painPoints": ["Enterprise tools are too complex", "Need visibility without micromanagement", "Client reporting is manual"]
+          }
+        ],
+        "constraints": {
+          "timeline": "3 months to MVP launch",
+          "budget": null,
+          "technical": ["Must work offline-first", "Real-time sync required"],
+          "regulatory": []
+        },
+        "implementationStatus": null,
+        "validationHistory": [
+          {
+            "phase": "discovery",
+            "decision": "approved",
+            "feedback": null,
+            "decidedAt": "2026-03-26T10:00:00.000Z"
+          },
+          {
+            "phase": "roadmap-definition",
+            "decision": "approved",
+            "feedback": "Looks good, proceed with product definition",
+            "decidedAt": "2026-03-27T09:00:00.000Z"
+          },
+          {
+            "phase": "product-definition",
+            "decision": "approved",
+            "feedback": null,
+            "decidedAt": "2026-03-28T11:00:00.000Z"
+          }
+        ],
+        "createdAt": "2026-03-25T10:00:00.000Z",
+        "updatedAt": "2026-03-28T14:30:00.000Z"
+      }
+    ],
+    "activeProjectId": "1711900000000-abc12345",
+    "createdAt": "2026-03-25T10:00:00.000Z"
+  }
+}

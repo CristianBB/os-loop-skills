@@ -164,5 +164,38 @@
     "userInputSupport": false,
     "artifactVersioningSupport": false,
     "executionMode": "declarative"
+  },
+  {
+    "name": "startup-product-studio",
+    "description": "Agentic multi-workspace skill for planning, designing, architecting, implementing, validating, and iterating production-grade software products end-to-end using a startup-style workflow with CEO, Product, UX/UI, Architecture, Development, and QA roles",
+    "version": "2.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/startup-product-studio",
+    "tags": [
+      "startup",
+      "product",
+      "roadmap",
+      "planning",
+      "software-architecture",
+      "ux-ui",
+      "development",
+      "qa",
+      "claude-code",
+      "multi-agent",
+      "workspace",
+      "agentic"
+    ],
+    "supportedPlatforms": [
+      "macos",
+      "windows",
+      "linux"
+    ],
+    "bridgeRequirement": "optional",
+    "workspaceSupport": "required",
+    "workspaceSchemaVersion": "2.0.0",
+    "longRunningSupport": "required",
+    "userInputSupport": true,
+    "artifactVersioningSupport": true,
+    "executionMode": "agentic"
   }
 ]

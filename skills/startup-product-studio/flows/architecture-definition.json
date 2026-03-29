@@ -1,0 +1,43 @@
+{
+  "phaseId": "architecture-definition",
+  "primaryRole": "software-architect",
+  "steps": [
+    {
+      "id": "architecture-plan",
+      "role": "software-architect",
+      "purposeId": "architecture-design",
+      "artifactType": "architecture-plan",
+      "description": "Design high-level system architecture and component boundaries"
+    },
+    {
+      "id": "api-contracts",
+      "role": "software-architect",
+      "purposeId": "architecture-design",
+      "artifactType": "api-contracts",
+      "description": "Define API contracts, endpoints, and data transfer objects"
+    },
+    {
+      "id": "data-model",
+      "role": "software-architect",
+      "purposeId": "architecture-design",
+      "artifactType": "data-model",
+      "description": "Design data models, schemas, and storage strategy"
+    },
+    {
+      "id": "infrastructure-plan",
+      "role": "software-architect",
+      "purposeId": "architecture-design",
+      "artifactType": "infrastructure-plan",
+      "description": "Plan infrastructure topology, deployment strategy, and environments"
+    },
+    {
+      "id": "tech-stack-decision",
+      "role": "software-architect",
+      "purposeId": "architecture-design",
+      "artifactType": "tech-stack-decision",
+      "description": "Document technology stack decisions with rationale"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "implementation-phase"
+}

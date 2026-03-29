@@ -1,0 +1,43 @@
+{
+  "phaseId": "qa-validation",
+  "primaryRole": "qa",
+  "steps": [
+    {
+      "id": "test-strategy",
+      "role": "qa",
+      "purposeId": "qa-strategy",
+      "artifactType": "test-strategy",
+      "description": "Define overall test strategy (unit, integration, e2e, performance)"
+    },
+    {
+      "id": "acceptance-criteria",
+      "role": "qa",
+      "purposeId": "qa-strategy",
+      "artifactType": "acceptance-criteria",
+      "description": "Derive acceptance criteria from product requirements"
+    },
+    {
+      "id": "quality-gates",
+      "role": "qa",
+      "purposeId": "qa-strategy",
+      "artifactType": "quality-gates",
+      "description": "Define quality gates per phase and release criteria"
+    },
+    {
+      "id": "test-plan",
+      "role": "qa",
+      "purposeId": "qa-strategy",
+      "artifactType": "test-plan",
+      "description": "Create detailed test plan with coverage targets per code project"
+    },
+    {
+      "id": "qa-report",
+      "role": "qa",
+      "purposeId": "qa-strategy",
+      "artifactType": "qa-report",
+      "description": "Generate QA validation report with test results and quality assessment"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "release-readiness"
+}

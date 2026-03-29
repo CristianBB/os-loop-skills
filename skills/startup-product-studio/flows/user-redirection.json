@@ -1,0 +1,84 @@
+{
+  "flowId": "user-redirection",
+  "description": "User redirection actions that can modify roadmap, phases, or execution at any point",
+  "actions": [
+    {
+      "id": "redefine-roadmap",
+      "description": "Regenerate the roadmap with new direction or feedback",
+      "requiresRoadmap": true,
+      "resultAction": "Creates new RoadmapVersion, supersedes previous roadmap artifact"
+    },
+    {
+      "id": "redefine-phase",
+      "description": "Re-run the current phase with new direction",
+      "requiresRoadmap": false,
+      "resultAction": "Clears current phase completion, re-executes phase steps"
+    },
+    {
+      "id": "reorder-phases",
+      "description": "Change the execution order of roadmap phases",
+      "requiresRoadmap": true,
+      "resultAction": "Reorders roadmap entries, creates new RoadmapVersion"
+    },
+    {
+      "id": "reduce-scope",
+      "description": "Remove phases or deliverables from the roadmap",
+      "requiresRoadmap": true,
+      "resultAction": "Re-generates roadmap with reduced scope, creates new RoadmapVersion"
+    },
+    {
+      "id": "expand-scope",
+      "description": "Add phases or deliverables to the roadmap",
+      "requiresRoadmap": true,
+      "resultAction": "Re-generates roadmap with expanded scope, creates new RoadmapVersion"
+    },
+    {
+      "id": "pivot",
+      "description": "Restart from discovery with context preservation",
+      "requiresRoadmap": false,
+      "resultAction": "Resets to discovery phase, creates pivot-context artifact"
+    },
+    {
+      "id": "change-priorities",
+      "description": "Reorder implementation sub-phases",
+      "requiresRoadmap": true,
+      "requiresImplementation": true,
+      "resultAction": "Reorders roadmapPhaseRecords"
+    },
+    {
+      "id": "pause",
+      "description": "Checkpoint and pause execution",
+      "requiresRoadmap": false,
+      "resultAction": "Creates checkpoint, returns paused status"
+    },
+    {
+      "id": "continue",
+      "description": "Resume from last checkpoint",
+      "requiresRoadmap": false,
+      "resultAction": "Returns current state for continuation"
+    },
+    {
+      "id": "stop",
+      "description": "Cancel all remaining phases",
+      "requiresRoadmap": false,
+      "resultAction": "Marks not-started/planning sub-phases as failed with cancel decision"
+    }
+  ],
+  "validFromAnyPhase": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string", "const": "redirect" },
+      "redirectionAction": {
+        "type": "string",
+        "enum": [
+          "redefine-roadmap", "redefine-phase", "reorder-phases",
+          "reduce-scope", "expand-scope", "pivot",
+          "change-priorities", "pause", "continue", "stop"
+        ]
+      },
+      "feedback": { "type": "string", "description": "Context for the redirection" }
+    },
+    "required": ["action", "redirectionAction"]
+  }
+}

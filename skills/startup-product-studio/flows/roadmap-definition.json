@@ -1,0 +1,36 @@
+{
+  "phaseId": "roadmap-definition",
+  "primaryRole": "product-manager",
+  "steps": [
+    {
+      "id": "feature-prioritization",
+      "role": "product-manager",
+      "purposeId": "roadmap-generation",
+      "artifactType": "feature-prioritization",
+      "description": "Prioritize features using MoSCoW or weighted scoring"
+    },
+    {
+      "id": "roadmap-generation",
+      "role": "product-manager",
+      "purposeId": "roadmap-generation",
+      "artifactType": "roadmap",
+      "description": "Generate phased product roadmap with milestones"
+    },
+    {
+      "id": "milestone-definition",
+      "role": "product-manager",
+      "purposeId": "roadmap-generation",
+      "artifactType": "milestone-definitions",
+      "description": "Define concrete milestones and success criteria per phase"
+    },
+    {
+      "id": "resource-planning",
+      "role": "product-manager",
+      "purposeId": "roadmap-generation",
+      "artifactType": "resource-plan",
+      "description": "Plan resource allocation across code projects"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "product-definition"
+}

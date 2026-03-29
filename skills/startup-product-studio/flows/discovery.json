@@ -1,0 +1,43 @@
+{
+  "phaseId": "discovery",
+  "primaryRole": "ceo",
+  "steps": [
+    {
+      "id": "market-analysis",
+      "role": "ceo",
+      "purposeId": "discovery-analysis",
+      "artifactType": "market-analysis",
+      "description": "Analyze target market size, trends, and opportunity"
+    },
+    {
+      "id": "user-needs",
+      "role": "ceo",
+      "purposeId": "discovery-analysis",
+      "artifactType": "user-needs-analysis",
+      "description": "Identify target users, pain points, and needs"
+    },
+    {
+      "id": "competitive-landscape",
+      "role": "ceo",
+      "purposeId": "discovery-analysis",
+      "artifactType": "competitive-analysis",
+      "description": "Map competitive landscape and differentiation opportunities"
+    },
+    {
+      "id": "opportunity-assessment",
+      "role": "ceo",
+      "purposeId": "discovery-analysis",
+      "artifactType": "opportunity-assessment",
+      "description": "Assess business viability and strategic fit"
+    },
+    {
+      "id": "business-context",
+      "role": "ceo",
+      "purposeId": "discovery-analysis",
+      "artifactType": "business-context",
+      "description": "Define business context: industry, market segment, revenue model, and competitive advantage"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "roadmap-definition"
+}

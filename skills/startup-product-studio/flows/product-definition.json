@@ -1,0 +1,29 @@
+{
+  "phaseId": "product-definition",
+  "primaryRole": "product-manager",
+  "steps": [
+    {
+      "id": "product-vision",
+      "role": "product-manager",
+      "purposeId": "product-definition",
+      "artifactType": "product-vision",
+      "description": "Define product vision, value proposition, and target market positioning"
+    },
+    {
+      "id": "mvp-definition",
+      "role": "product-manager",
+      "purposeId": "product-definition",
+      "artifactType": "mvp-definition",
+      "description": "Define MVP scope, core features, and success criteria"
+    },
+    {
+      "id": "user-personas",
+      "role": "product-manager",
+      "purposeId": "product-definition",
+      "artifactType": "user-personas",
+      "description": "Define detailed user personas with goals, behaviors, and pain points"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "ux-definition"
+}

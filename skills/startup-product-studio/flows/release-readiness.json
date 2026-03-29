@@ -1,0 +1,36 @@
+{
+  "phaseId": "release-readiness",
+  "primaryRole": "product-manager",
+  "steps": [
+    {
+      "id": "release-readiness-report",
+      "role": "product-manager",
+      "purposeId": "status-report",
+      "artifactType": "release-readiness-report",
+      "description": "Assess release readiness across all code projects and quality gates"
+    },
+    {
+      "id": "launch-checklist",
+      "role": "product-manager",
+      "purposeId": "roadmap-generation",
+      "artifactType": "launch-checklist",
+      "description": "Create comprehensive launch checklist across all code projects"
+    },
+    {
+      "id": "go-to-market-brief",
+      "role": "ceo",
+      "purposeId": "discovery-analysis",
+      "artifactType": "go-to-market-brief",
+      "description": "Define go-to-market strategy and launch positioning"
+    },
+    {
+      "id": "monitoring-plan",
+      "role": "software-architect",
+      "purposeId": "architecture-design",
+      "artifactType": "monitoring-plan",
+      "description": "Plan observability, alerting, and post-launch monitoring"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": null
+}

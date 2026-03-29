@@ -66,3 +66,16 @@ Moves the project to a new phase.
 4. Advance phase: `project-tracker { action: "advance-phase", targetPhase: "execution" }`
 5. Track progress: `project-tracker { action: "update-task", taskTitle: "Design API contracts", taskStatus: "done" }`
 6. Generate report: `project-tracker { action: "generate-report" }` → saves artifact
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | Required |
+| Long-Running Support | Optional |
+| User Input Support | true |
+| Artifact Versioning | true |
+| Platform Compatibility | All platforms |
+| Bridge Requirement | Never |
+| Secret Bindings | None |

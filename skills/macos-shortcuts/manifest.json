@@ -4,26 +4,47 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["macos-shortcuts"],
+  "capabilities": [
+    "macos-shortcuts"
+  ],
   "requiredBindings": [],
   "permissions": [],
   "inputSchema": {
     "type": "object",
     "properties": {
-      "shortcutName": { "type": "string", "description": "Name of the macOS Shortcut to run" },
-      "input": { "type": "string", "description": "Optional input to pass to the shortcut" }
+      "shortcutName": {
+        "type": "string",
+        "description": "Name of the macOS Shortcut to run"
+      },
+      "input": {
+        "type": "string",
+        "description": "Optional input to pass to the shortcut"
+      }
     },
-    "required": ["shortcutName"]
+    "required": [
+      "shortcutName"
+    ]
   },
   "outputSchema": {
     "type": "object",
     "properties": {
-      "output": { "type": "string", "description": "Shortcut execution output" },
-      "exitCode": { "type": "number", "description": "Exit code of the shortcuts command" }
+      "output": {
+        "type": "string",
+        "description": "Shortcut execution output"
+      },
+      "exitCode": {
+        "type": "number",
+        "description": "Exit code of the shortcuts command"
+      }
     },
-    "required": ["output", "exitCode"]
+    "required": [
+      "output",
+      "exitCode"
+    ]
   },
-  "compatibilityRequirements": ["system_tools"],
+  "compatibilityRequirements": [
+    "system_tools"
+  ],
   "oauth": [],
   "llmUsage": [],
   "wasm": [],
@@ -37,9 +58,22 @@
     "allowedGlobals": [],
     "networkRules": []
   },
-  "supportedPlatforms": ["macos"],
+  "supportedPlatforms": [
+    "macos"
+  ],
   "bridgeRequirement": "required",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
   "longRunningSupport": "none",
   "userInputSupport": false,
-  "artifactVersioningSupport": false
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

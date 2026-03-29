@@ -5,12 +5,18 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/web-summary",
-    "tags": ["web", "llm", "summarization"],
+    "tags": [
+      "web",
+      "llm",
+      "summarization"
+    ],
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
+    "workspaceSupport": "none",
     "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   },
   {
     "name": "text-transform",
@@ -18,12 +24,18 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/text-transform",
-    "tags": ["text", "transform", "utility"],
+    "tags": [
+      "text",
+      "transform",
+      "utility"
+    ],
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
+    "workspaceSupport": "none",
     "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   },
   {
     "name": "git-status-checker",
@@ -31,13 +43,25 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/git-status-checker",
-    "tags": ["git", "dev-tools", "system"],
-    "supportedPlatforms": ["macos", "linux", "windows"],
+    "tags": [
+      "git",
+      "dev-tools",
+      "system"
+    ],
+    "supportedPlatforms": [
+      "macos",
+      "linux",
+      "windows"
+    ],
     "bridgeRequirement": "required",
-    "compatibilityRequirements": ["system_tools"],
+    "workspaceSupport": "none",
+    "compatibilityRequirements": [
+      "system_tools"
+    ],
     "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   },
   {
     "name": "file-indexer",
@@ -45,12 +69,18 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/file-indexer",
-    "tags": ["files", "indexing", "search"],
+    "tags": [
+      "files",
+      "indexing",
+      "search"
+    ],
     "supportedPlatforms": [],
     "bridgeRequirement": "optional",
+    "workspaceSupport": "none",
     "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   },
   {
     "name": "macos-shortcuts",
@@ -58,13 +88,23 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/macos-shortcuts",
-    "tags": ["macos", "automation", "shortcuts"],
-    "supportedPlatforms": ["macos"],
+    "tags": [
+      "macos",
+      "automation",
+      "shortcuts"
+    ],
+    "supportedPlatforms": [
+      "macos"
+    ],
     "bridgeRequirement": "required",
-    "compatibilityRequirements": ["system_tools"],
+    "workspaceSupport": "none",
+    "compatibilityRequirements": [
+      "system_tools"
+    ],
     "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   },
   {
     "name": "project-tracker",
@@ -72,14 +112,19 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/project-tracker",
-    "tags": ["project-management", "workspace", "artifacts"],
+    "tags": [
+      "project-management",
+      "workspace",
+      "artifacts"
+    ],
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
     "workspaceSupport": "required",
     "workspaceSchemaVersion": "1.0.0",
     "longRunningSupport": "optional",
-    "userInputSupport": true,
-    "artifactVersioningSupport": true
+    "userInputSupport": false,
+    "artifactVersioningSupport": true,
+    "executionMode": "declarative"
   },
   {
     "name": "note-organizer",
@@ -87,14 +132,19 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/note-organizer",
-    "tags": ["notes", "organization", "workspace"],
+    "tags": [
+      "notes",
+      "organization",
+      "workspace"
+    ],
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
     "workspaceSupport": "optional",
     "workspaceSchemaVersion": "1.0.0",
-    "longRunningSupport": "optional",
+    "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   },
   {
     "name": "quick-calculator",
@@ -102,12 +152,17 @@
     "version": "1.0.0",
     "author": "OS Loop",
     "folderPath": "skills/quick-calculator",
-    "tags": ["math", "utility", "conversion"],
+    "tags": [
+      "math",
+      "utility",
+      "conversion"
+    ],
     "supportedPlatforms": [],
     "bridgeRequirement": "never",
     "workspaceSupport": "none",
     "longRunningSupport": "none",
     "userInputSupport": false,
-    "artifactVersioningSupport": false
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
   }
 ]

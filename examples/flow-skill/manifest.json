@@ -1,0 +1,84 @@
+{
+  "name": "example-flow",
+  "description": "Multi-step greeting flow that pauses for user input to personalize the result",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["multi-step-greeting"],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "llm",
+      "scope": "generation",
+      "description": "Generate personalized greetings"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Name of the person to greet"
+      },
+      "occasion": {
+        "type": "string",
+        "description": "Occasion for the greeting (e.g., birthday, welcome, congratulations)"
+      }
+    },
+    "required": ["name"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "greeting": {
+        "type": "string",
+        "description": "The final personalized greeting"
+      },
+      "steps": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Labels of completed flow steps"
+      }
+    },
+    "required": ["greeting", "steps"]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [
+    {
+      "purposeId": "greeting-generation",
+      "kind": "generation",
+      "description": "Generate a personalized greeting message",
+      "estimatedTokenBudget": 500,
+      "modelPreference": null,
+      "temperatureHint": 0.7
+    }
+  ],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 30000,
+    "maxMemoryMB": 64,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "optional",
+  "workspaceSchemaVersion": "1.0.0",
+  "longRunningSupport": "optional",
+  "userInputSupport": true,
+  "artifactVersioningSupport": false,
+  "executionMode": "flow",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
+}

@@ -30,3 +30,16 @@ Fetches a web page and produces an LLM-generated summary of its content.
 4. Truncates content to 12,000 characters for LLM context
 5. Sends the content to the LLM with a summarization prompt
 6. Returns the summary, title, and fetch timestamp
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | None |
+| Long-Running Support | None |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | All platforms |
+| Bridge Requirement | Never |
+| Secret Bindings | None |

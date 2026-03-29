@@ -51,10 +51,15 @@ The manifest declares everything about a skill: what it does, what it needs, and
 | `sandbox`                   | `SkillSandboxRequirements`    | No       | Sandbox configuration (defaults provided)                      |
 | `requiredMcpServers`        | `SkillRequiredMcpServer[]`    | No       | Required MCP servers                                           |
 | `requiredMcpTools`          | `SkillRequiredMcpTool[]`      | No       | Required MCP tools                                             |
-| `supportedPlatforms`        | `BridgePlatform[]`            | No       | Platforms the skill supports: `"macos"`, `"windows"`, `"linux"`. Empty or absent means all platforms. |
-| `bridgeRequirement`         | `BridgeRequirement`           | No       | Bridge dependency: `"never"` (default), `"optional"`, or `"required"` |
-| `workspaceSupport`          | `SkillWorkspaceSupport`       | No       | Workspace support: `"none"` (default), `"optional"`, or `"required"` |
-| `workspaceSchemaVersion`    | `string \| null`              | No       | Semver version of the workspace state schema (required when `workspaceSupport` is `"optional"` or `"required"`) |
+| `supportedPlatforms`        | `BridgePlatform[]`            | **Yes**  | Platforms the skill supports: `"macos"`, `"windows"`, `"linux"`. Empty array means all platforms. |
+| `bridgeRequirement`         | `BridgeRequirement`           | **Yes**  | Bridge dependency: `"never"`, `"optional"`, or `"required"` |
+| `workspaceSupport`          | `SkillWorkspaceSupport`       | **Yes**  | Workspace support: `"none"`, `"optional"`, or `"required"` |
+| `workspaceSchemaVersion`    | `string \| null`              | **Yes**  | Semver version of the workspace state schema. Use `null` when `workspaceSupport` is `"none"`. |
+| `longRunningSupport`        | `string`                      | **Yes**  | Long-running support: `"none"`, `"optional"`, or `"required"` |
+| `userInputSupport`          | `boolean`                     | **Yes**  | Whether the skill requests user input during execution |
+| `artifactVersioningSupport` | `boolean`                     | **Yes**  | Whether the skill creates versioned artifacts |
+| `executionMode`             | `SkillExecutionMode`          | **Yes**  | Execution mode: `"declarative"`, `"flow"`, or `"agentic"` |
+| `agenticConfig`             | `SkillAgenticConfig`          | **Yes**  | Agentic execution configuration (see below). Must be present even for non-agentic skills with `enabled: false`. |
 
 #### SkillPermission
 
@@ -169,6 +174,30 @@ The manifest declares everything about a skill: what it does, what it needs, and
   ]
 }
 ```
+
+#### SkillAgenticConfig
+
+```json
+{
+  "enabled": false,
+  "requiresWorkspace": false,
+  "supportsBackgroundExecution": false,
+  "supportsRoleBasedExecution": false,
+  "maxStepsPerRun": null,
+  "defaultStepBudget": null
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `enabled` | `boolean` | `true` for agentic skills, `false` for declarative/flow |
+| `requiresWorkspace` | `boolean` | If `true`, `workspaceSupport` must be `"required"` |
+| `supportsBackgroundExecution` | `boolean` | Whether the skill can run in the background |
+| `supportsRoleBasedExecution` | `boolean` | Whether the skill switches between named roles |
+| `maxStepsPerRun` | `number \| null` | Hard step limit (halts execution when reached) |
+| `defaultStepBudget` | `number \| null` | Soft step limit (auto-checkpoint when reached) |
+
+For non-agentic skills, set `enabled: false` and all other fields to their zero values.
 
 #### SkillRequiredMcpServer / SkillRequiredMcpTool
 
@@ -321,6 +350,7 @@ The OS Loop runtime resolves skills from GitHub repositories through this pipeli
 2. **Create `manifest.json`** with all required fields:
    - Set `schemaVersion` to `"2.0"`
    - Declare `capabilities`, `permissions`, `inputSchema`, `outputSchema`
+   - Declare all execution-model fields explicitly: `executionMode`, `workspaceSupport`, `workspaceSchemaVersion`, `longRunningSupport`, `userInputSupport`, `artifactVersioningSupport`, `supportedPlatforms`, `bridgeRequirement`, `agenticConfig`
    - Declare `llmUsage` if the skill calls `host.llm.complete()`
    - Declare `requiredBindings` if the skill needs secrets
    - Configure `sandbox.networkRules` if the skill makes HTTP requests
@@ -347,6 +377,22 @@ The OS Loop runtime resolves skills from GitHub repositories through this pipeli
    ```
 
 6. **Submit a pull request**
+
+---
+
+## Examples
+
+The `examples/` directory contains reference skill skeletons for each execution mode:
+
+| Example | Execution Mode | Key Features |
+|---------|---------------|--------------|
+| `examples/declarative-skill/` | `declarative` | Minimal complete skill, no workspace, no bridge |
+| `examples/flow-skill/` | `flow` | Multi-step with pause, user input, and checkpoint |
+| `examples/agentic-skill/` | `agentic` | Full agentic loop with phases, roles, artifacts, step budgets |
+| `examples/workspace-aware-skill/` | `declarative` | Optional workspace persistence for cross-session state |
+| `examples/background-agentic-skill/` | `agentic` | Background execution with heavy checkpointing |
+
+Each example includes a `manifest.json`, `module.ts`, and `docs.md` with a working implementation. See `docs/execution-modes.md` for detailed documentation of each mode.
 
 ---
 
@@ -771,6 +817,22 @@ Each workspace has a dedicated detail page showing:
 - **Network rules**: Every URL the skill fetches must be covered by a `sandbox.networkRules` entry
 - **Secret kinds**: When declaring `requiredBindings`, use appropriate secret kinds: `token`, `password`, `api_key`, `oauth_client`, `oauth_refresh_token`, `certificate`, `generic`
 - **Platform & bridge**: Declare `supportedPlatforms` and `bridgeRequirement` in both `manifest.json` and `index.json`. Bridge-required skills must include `"system_tools"` in `compatibilityRequirements`
+
+---
+
+## Execution Modes
+
+Skills declare an `executionMode` in their manifest that determines runtime orchestration behavior. See [docs/execution-modes.md](docs/execution-modes.md) for the full authoring guide, including how to describe skills so the main agent can reason about them correctly.
+
+| Mode | Description | `host.run` |
+|------|-------------|------------|
+| `declarative` (default) | Single invocation, no loop | Not available |
+| `flow` | Step-driven, deterministic, can pause/checkpoint/request input | Available |
+| `agentic` | Supervised sub-run with step budgets, checkpoints, pause/resume | Available with step tracking |
+
+The main OS Loop AI agent uses `executionMode`, `agenticConfig`, `workspaceSupport`, and `bridgeRequirement` to decide how to launch, supervise, and explain skills to the user. Always declare these fields explicitly for flow and agentic skills. See [Describing Skills for Agent Reasoning](docs/execution-modes.md#describing-skills-for-agent-reasoning) for authoring guidelines.
+
+All existing skills in this repository use `declarative` mode.
 
 ---
 

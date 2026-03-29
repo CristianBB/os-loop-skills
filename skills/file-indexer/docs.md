@@ -32,3 +32,16 @@ When the bridge is not connected, the skill falls back to the browser's File Sys
 2. Otherwise, prompts the user to select a directory via the browser dialog.
 3. Filters files by extension if specified.
 4. Returns the indexed entries with metadata.
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | None |
+| Long-Running Support | None |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | All platforms |
+| Bridge Requirement | Optional |
+| Secret Bindings | None |

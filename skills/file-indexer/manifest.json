@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["file-indexing"],
+  "capabilities": [
+    "file-indexing"
+  ],
   "requiredBindings": [],
   "permissions": [
     {
@@ -16,14 +18,21 @@
   "inputSchema": {
     "type": "object",
     "properties": {
-      "directory": { "type": "string", "description": "Directory path to index" },
+      "directory": {
+        "type": "string",
+        "description": "Directory path to index"
+      },
       "extensions": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "File extensions to include (e.g. [\".ts\", \".js\"]). Empty means all files."
       }
     },
-    "required": ["directory"]
+    "required": [
+      "directory"
+    ]
   },
   "outputSchema": {
     "type": "object",
@@ -33,17 +42,37 @@
         "items": {
           "type": "object",
           "properties": {
-            "path": { "type": "string" },
-            "name": { "type": "string" },
-            "extension": { "type": "string" }
+            "path": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "extension": {
+              "type": "string"
+            }
           }
         },
         "description": "Indexed file entries"
       },
-      "totalCount": { "type": "number", "description": "Total number of indexed files" },
-      "source": { "type": "string", "enum": ["bridge", "browser"], "description": "Which filesystem access method was used" }
+      "totalCount": {
+        "type": "number",
+        "description": "Total number of indexed files"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "bridge",
+          "browser"
+        ],
+        "description": "Which filesystem access method was used"
+      }
     },
-    "required": ["files", "totalCount", "source"]
+    "required": [
+      "files",
+      "totalCount",
+      "source"
+    ]
   },
   "compatibilityRequirements": [],
   "oauth": [],
@@ -61,7 +90,18 @@
   },
   "supportedPlatforms": [],
   "bridgeRequirement": "optional",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
   "longRunningSupport": "none",
   "userInputSupport": false,
-  "artifactVersioningSupport": false
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

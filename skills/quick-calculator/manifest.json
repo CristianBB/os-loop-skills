@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["math", "conversion"],
+  "capabilities": [
+    "math",
+    "conversion"
+  ],
   "requiredBindings": [],
   "permissions": [],
   "inputSchema": {
@@ -17,11 +20,24 @@
       "convert": {
         "type": "object",
         "properties": {
-          "value": { "type": "number", "description": "Value to convert" },
-          "from": { "type": "string", "description": "Source unit" },
-          "to": { "type": "string", "description": "Target unit" }
+          "value": {
+            "type": "number",
+            "description": "Value to convert"
+          },
+          "from": {
+            "type": "string",
+            "description": "Source unit"
+          },
+          "to": {
+            "type": "string",
+            "description": "Target unit"
+          }
         },
-        "required": ["value", "from", "to"],
+        "required": [
+          "value",
+          "from",
+          "to"
+        ],
         "description": "Unit conversion request"
       },
       "precision": {
@@ -34,12 +50,25 @@
   "outputSchema": {
     "type": "object",
     "properties": {
-      "success": { "type": "boolean" },
-      "result": { "type": "number", "description": "Computed result" },
-      "formatted": { "type": "string", "description": "Human-readable result" },
-      "error": { "type": "string", "description": "Error message if computation failed" }
+      "success": {
+        "type": "boolean"
+      },
+      "result": {
+        "type": "number",
+        "description": "Computed result"
+      },
+      "formatted": {
+        "type": "string",
+        "description": "Human-readable result"
+      },
+      "error": {
+        "type": "string",
+        "description": "Error message if computation failed"
+      }
     },
-    "required": ["success"]
+    "required": [
+      "success"
+    ]
   },
   "compatibilityRequirements": [],
   "oauth": [],
@@ -58,7 +87,17 @@
   "supportedPlatforms": [],
   "bridgeRequirement": "never",
   "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
   "longRunningSupport": "none",
   "userInputSupport": false,
-  "artifactVersioningSupport": false
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

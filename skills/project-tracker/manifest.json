@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["project-management", "artifact-tracking"],
+  "capabilities": [
+    "project-management",
+    "artifact-tracking"
+  ],
   "requiredBindings": [],
   "permissions": [
     {
@@ -18,7 +21,13 @@
     "properties": {
       "action": {
         "type": "string",
-        "enum": ["init", "add-task", "update-task", "generate-report", "advance-phase"],
+        "enum": [
+          "init",
+          "add-task",
+          "update-task",
+          "generate-report",
+          "advance-phase"
+        ],
         "description": "The project tracking action to perform"
       },
       "projectName": {
@@ -31,22 +40,38 @@
       },
       "taskStatus": {
         "type": "string",
-        "enum": ["todo", "in-progress", "blocked", "done"],
+        "enum": [
+          "todo",
+          "in-progress",
+          "blocked",
+          "done"
+        ],
         "description": "Status for a task update"
       },
       "targetPhase": {
         "type": "string",
-        "enum": ["planning", "execution", "review", "complete"],
+        "enum": [
+          "planning",
+          "execution",
+          "review",
+          "complete"
+        ],
         "description": "Phase to advance to"
       }
     },
-    "required": ["action"]
+    "required": [
+      "action"
+    ]
   },
   "outputSchema": {
     "type": "object",
     "properties": {
-      "success": { "type": "boolean" },
-      "message": { "type": "string" },
+      "success": {
+        "type": "boolean"
+      },
+      "message": {
+        "type": "string"
+      },
       "projectState": {
         "type": "object",
         "description": "Current state of the project"
@@ -56,7 +81,10 @@
         "description": "An artifact produced by the action, if any"
       }
     },
-    "required": ["success", "message"]
+    "required": [
+      "success",
+      "message"
+    ]
   },
   "compatibilityRequirements": [],
   "oauth": [],
@@ -86,6 +114,15 @@
   "workspaceSupport": "required",
   "workspaceSchemaVersion": "1.0.0",
   "longRunningSupport": "optional",
-  "userInputSupport": true,
-  "artifactVersioningSupport": true
+  "userInputSupport": false,
+  "artifactVersioningSupport": true,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

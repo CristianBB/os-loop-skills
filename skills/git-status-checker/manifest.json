@@ -4,26 +4,48 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["git-status"],
+  "capabilities": [
+    "git-status"
+  ],
   "requiredBindings": [],
   "permissions": [],
   "inputSchema": {
     "type": "object",
     "properties": {
-      "workingDirectory": { "type": "string", "description": "Path to the git repository" }
+      "workingDirectory": {
+        "type": "string",
+        "description": "Path to the git repository"
+      }
     },
-    "required": ["workingDirectory"]
+    "required": [
+      "workingDirectory"
+    ]
   },
   "outputSchema": {
     "type": "object",
     "properties": {
-      "branch": { "type": "string", "description": "Current branch name" },
-      "clean": { "type": "boolean", "description": "Whether the working tree is clean" },
-      "output": { "type": "string", "description": "Raw git status output" }
+      "branch": {
+        "type": "string",
+        "description": "Current branch name"
+      },
+      "clean": {
+        "type": "boolean",
+        "description": "Whether the working tree is clean"
+      },
+      "output": {
+        "type": "string",
+        "description": "Raw git status output"
+      }
     },
-    "required": ["branch", "clean", "output"]
+    "required": [
+      "branch",
+      "clean",
+      "output"
+    ]
   },
-  "compatibilityRequirements": ["system_tools"],
+  "compatibilityRequirements": [
+    "system_tools"
+  ],
   "oauth": [],
   "llmUsage": [],
   "wasm": [],
@@ -37,9 +59,24 @@
     "allowedGlobals": [],
     "networkRules": []
   },
-  "supportedPlatforms": ["macos", "linux", "windows"],
+  "supportedPlatforms": [
+    "macos",
+    "linux",
+    "windows"
+  ],
   "bridgeRequirement": "required",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
   "longRunningSupport": "none",
   "userInputSupport": false,
-  "artifactVersioningSupport": false
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

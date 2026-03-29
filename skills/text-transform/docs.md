@@ -23,3 +23,16 @@ Transforms text between different cases and formats.
 ## How It Works
 
 Applies the selected string transformation directly. No LLM or network access required.
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | None |
+| Long-Running Support | None |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | All platforms |
+| Bridge Requirement | Never |
+| Secret Bindings | None |

@@ -63,3 +63,16 @@ Exports all notes as a markdown artifact. Requires an active workspace.
 | Search/list | Current session | All accumulated notes |
 | Export | Not available | Creates artifact |
 | Auto-tag | Works | Works |
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | Optional |
+| Long-Running Support | Optional |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | All platforms |
+| Bridge Requirement | Never |
+| Secret Bindings | None |

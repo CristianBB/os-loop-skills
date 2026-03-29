@@ -9,6 +9,11 @@ const VALID_PLATFORMS = ['macos', 'windows', 'linux'] as const;
 const VALID_BRIDGE_REQUIREMENTS = ['never', 'optional', 'required'] as const;
 const VALID_WORKSPACE_SUPPORT = ['none', 'optional', 'required'] as const;
 const VALID_LONG_RUNNING_SUPPORT = ['none', 'optional', 'required'] as const;
+const VALID_EXECUTION_MODES = ['declarative', 'flow', 'agentic'] as const;
+const VALID_LLM_USAGE_KINDS = [
+  'classification', 'generation', 'extraction', 'summarization',
+  'analysis', 'structured-output', 'custom',
+] as const;
 const VALID_COMPATIBILITY_REQUIREMENTS = [
   // Bridge capabilities
   'system_tools', 'system_info', 'filesystem', 'mcp_proxy',
@@ -37,6 +42,7 @@ interface IndexEntry {
   longRunningSupport?: string;
   userInputSupport?: boolean;
   artifactVersioningSupport?: boolean;
+  executionMode?: string;
 }
 
 interface ValidationError {
@@ -128,6 +134,12 @@ function validateIndexEntry(entry: IndexEntry, index: number): void {
       error(ctx, `Invalid artifactVersioningSupport "${avs}". Must be a boolean`);
     }
   }
+
+  if (entry.executionMode !== undefined) {
+    if (!(VALID_EXECUTION_MODES as readonly string[]).includes(entry.executionMode)) {
+      error(ctx, `Invalid executionMode "${entry.executionMode}". Must be one of: ${VALID_EXECUTION_MODES.join(', ')}`);
+    }
+  }
 }
 
 function validateManifest(manifestPath: string, entry: IndexEntry): void {
@@ -136,6 +148,29 @@ function validateManifest(manifestPath: string, entry: IndexEntry): void {
 
   if (manifest.schemaVersion !== '2.0') {
     error(manifestPath, `schemaVersion must be "2.0", got "${manifest.schemaVersion}"`);
+  }
+
+  // Enforce explicit field declarations
+  const requiredExplicitFields: Array<{ key: string; label: string }> = [
+    { key: 'executionMode', label: 'executionMode' },
+    { key: 'workspaceSupport', label: 'workspaceSupport' },
+    { key: 'longRunningSupport', label: 'longRunningSupport' },
+    { key: 'userInputSupport', label: 'userInputSupport' },
+    { key: 'artifactVersioningSupport', label: 'artifactVersioningSupport' },
+    { key: 'supportedPlatforms', label: 'supportedPlatforms' },
+    { key: 'bridgeRequirement', label: 'bridgeRequirement' },
+    { key: 'agenticConfig', label: 'agenticConfig' },
+  ];
+
+  for (const { key, label } of requiredExplicitFields) {
+    if (manifest[key] === undefined) {
+      error(manifestPath, `"${label}" must be explicitly declared in manifest`);
+    }
+  }
+
+  // workspaceSchemaVersion must be present (can be null)
+  if (!('workspaceSchemaVersion' in manifest)) {
+    error(manifestPath, '"workspaceSchemaVersion" must be explicitly declared in manifest (use null when workspaceSupport is "none")');
   }
 
   if (manifest.supportedPlatforms !== undefined) {
@@ -220,6 +255,86 @@ function validateManifest(manifestPath: string, entry: IndexEntry): void {
   if (manifest.artifactVersioningSupport !== undefined) {
     if (typeof manifest.artifactVersioningSupport !== 'boolean') {
       error(manifestPath, `Invalid artifactVersioningSupport "${manifest.artifactVersioningSupport}" in manifest. Must be a boolean`);
+    }
+  }
+
+  // Validate executionMode
+  if (manifest.executionMode !== undefined) {
+    if (!(VALID_EXECUTION_MODES as readonly string[]).includes(manifest.executionMode as string)) {
+      error(manifestPath, `Invalid executionMode "${manifest.executionMode}" in manifest. Must be one of: ${VALID_EXECUTION_MODES.join(', ')}`);
+    }
+  }
+
+  // Validate agenticConfig
+  const agenticConfig = manifest.agenticConfig as Record<string, unknown> | undefined;
+  if (agenticConfig !== undefined && agenticConfig !== null) {
+    if (typeof agenticConfig !== 'object') {
+      error(manifestPath, 'agenticConfig must be an object');
+    } else {
+      if (typeof agenticConfig.enabled !== 'boolean') {
+        error(manifestPath, 'agenticConfig.enabled must be a boolean');
+      }
+      if (typeof agenticConfig.requiresWorkspace !== 'boolean') {
+        error(manifestPath, 'agenticConfig.requiresWorkspace must be a boolean');
+      }
+      if (typeof agenticConfig.supportsBackgroundExecution !== 'boolean') {
+        error(manifestPath, 'agenticConfig.supportsBackgroundExecution must be a boolean');
+      }
+      if (typeof agenticConfig.supportsRoleBasedExecution !== 'boolean') {
+        error(manifestPath, 'agenticConfig.supportsRoleBasedExecution must be a boolean');
+      }
+      if (agenticConfig.maxStepsPerRun !== null && typeof agenticConfig.maxStepsPerRun !== 'number') {
+        error(manifestPath, 'agenticConfig.maxStepsPerRun must be a number or null');
+      }
+      if (agenticConfig.defaultStepBudget !== null && typeof agenticConfig.defaultStepBudget !== 'number') {
+        error(manifestPath, 'agenticConfig.defaultStepBudget must be a number or null');
+      }
+    }
+  }
+
+  // Cross-check: executionMode vs agenticConfig consistency
+  const effectiveMode = (manifest.executionMode as string) ?? 'declarative';
+  if (effectiveMode === 'declarative' && agenticConfig?.enabled === true) {
+    error(manifestPath, 'declarative skills must not have agenticConfig.enabled = true');
+  }
+  if (effectiveMode === 'flow' && agenticConfig?.enabled === true) {
+    error(manifestPath, 'flow skills must not have agenticConfig.enabled = true');
+  }
+  if (effectiveMode === 'agentic') {
+    if (!agenticConfig) {
+      error(manifestPath, 'agentic skills must declare agenticConfig');
+    } else if (agenticConfig.enabled !== true) {
+      error(manifestPath, 'agentic skills must have agenticConfig.enabled = true');
+    }
+    if (agenticConfig?.requiresWorkspace === true && manifest.workspaceSupport !== 'required') {
+      error(manifestPath, 'agenticConfig.requiresWorkspace is true but workspaceSupport is not "required"');
+    }
+    if (!manifest.workspaceSupport || manifest.workspaceSupport === 'none') {
+      warn(manifestPath, 'agentic skills typically require workspaceSupport to be "optional" or "required"');
+    }
+    if (!manifest.longRunningSupport || manifest.longRunningSupport === 'none') {
+      warn(manifestPath, 'agentic skills typically require longRunningSupport to be "optional" or "required"');
+    }
+  }
+
+  // Cross-check: declarative skills cannot use flow/agentic-only capabilities
+  if (effectiveMode === 'declarative') {
+    if (manifest.userInputSupport === true) {
+      warn(manifestPath, 'declarative skills cannot call host.run.requestInput() — userInputSupport should be false');
+    }
+    if (manifest.longRunningSupport !== undefined && manifest.longRunningSupport !== 'none') {
+      warn(manifestPath, `declarative skills have no WorkspaceRun lifecycle — longRunningSupport should be "none", got "${manifest.longRunningSupport}"`);
+    }
+  }
+
+  // Validate llmUsage entries
+  if (Array.isArray(manifest.llmUsage)) {
+    for (const usage of manifest.llmUsage as Array<Record<string, unknown>>) {
+      if (usage.kind !== undefined) {
+        if (!(VALID_LLM_USAGE_KINDS as readonly string[]).includes(usage.kind as string)) {
+          error(manifestPath, `Invalid llmUsage.kind "${usage.kind}". Must be one of: ${VALID_LLM_USAGE_KINDS.join(', ')}`);
+        }
+      }
     }
   }
 
@@ -337,6 +452,12 @@ for (let i = 0; i < entries.length; i++) {
     const manifestWsv = manifestData.workspaceSchemaVersion;
     if (indexWsv !== undefined && manifestWsv !== undefined && indexWsv !== manifestWsv) {
       error(`index.json[${i}]`, `workspaceSchemaVersion mismatch: index has "${indexWsv}" but manifest has "${manifestWsv}"`);
+    }
+
+    const indexExecMode = entry.executionMode;
+    const manifestExecMode = manifestData.executionMode;
+    if (indexExecMode !== undefined && manifestExecMode !== undefined && indexExecMode !== manifestExecMode) {
+      error(`index.json[${i}]`, `executionMode mismatch: index has "${indexExecMode}" but manifest has "${manifestExecMode}"`);
     }
   }
 

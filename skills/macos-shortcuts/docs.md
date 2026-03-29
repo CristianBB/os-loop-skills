@@ -31,3 +31,16 @@ Runs automations from the macOS Shortcuts app via the OS Loop Bridge.
 
 - macOS 12 (Monterey) or later
 - The named Shortcut must already exist in the Shortcuts app
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | None |
+| Long-Running Support | None |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | macOS |
+| Bridge Requirement | Required |
+| Secret Bindings | None |

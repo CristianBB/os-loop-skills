@@ -52,3 +52,16 @@ Pass a `convert` object:
 | `precision` | No | Decimal places (default: 6) |
 
 *One of `expression` or `convert` must be provided.
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | None |
+| Long-Running Support | None |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | All platforms |
+| Bridge Requirement | Never |
+| Secret Bindings | None |

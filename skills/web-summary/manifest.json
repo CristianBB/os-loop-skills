@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["web-fetch", "summarization"],
+  "capabilities": [
+    "web-fetch",
+    "summarization"
+  ],
   "requiredBindings": [],
   "permissions": [
     {
@@ -31,7 +34,9 @@
         "default": 500
       }
     },
-    "required": ["url"]
+    "required": [
+      "url"
+    ]
   },
   "outputSchema": {
     "type": "object",
@@ -49,7 +54,10 @@
         "description": "ISO timestamp of when the page was fetched"
       }
     },
-    "required": ["summary", "fetchedAt"]
+    "required": [
+      "summary",
+      "fetchedAt"
+    ]
   },
   "compatibilityRequirements": [],
   "oauth": [],
@@ -75,14 +83,27 @@
     "networkRules": [
       {
         "urlPattern": "*",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "description": "Fetch the target URL"
       }
     ]
   },
   "supportedPlatforms": [],
   "bridgeRequirement": "never",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
   "longRunningSupport": "none",
   "userInputSupport": false,
-  "artifactVersioningSupport": false
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

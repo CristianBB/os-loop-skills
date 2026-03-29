@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "author": "OS Loop",
   "schemaVersion": "2.0",
-  "capabilities": ["note-taking", "search"],
+  "capabilities": [
+    "note-taking",
+    "search"
+  ],
   "requiredBindings": [],
   "permissions": [
     {
@@ -18,7 +21,13 @@
     "properties": {
       "action": {
         "type": "string",
-        "enum": ["add", "search", "list", "tag", "export"],
+        "enum": [
+          "add",
+          "search",
+          "list",
+          "tag",
+          "export"
+        ],
         "description": "The note action to perform"
       },
       "title": {
@@ -31,7 +40,9 @@
       },
       "tags": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "Tags to assign or search by"
       },
       "query": {
@@ -39,16 +50,24 @@
         "description": "Search query for finding notes"
       }
     },
-    "required": ["action"]
+    "required": [
+      "action"
+    ]
   },
   "outputSchema": {
     "type": "object",
     "properties": {
-      "success": { "type": "boolean" },
-      "message": { "type": "string" },
+      "success": {
+        "type": "boolean"
+      },
+      "message": {
+        "type": "string"
+      },
       "notes": {
         "type": "array",
-        "items": { "type": "object" },
+        "items": {
+          "type": "object"
+        },
         "description": "Matching notes"
       },
       "artifact": {
@@ -56,7 +75,10 @@
         "description": "Artifact created for exports"
       }
     },
-    "required": ["success", "message"]
+    "required": [
+      "success",
+      "message"
+    ]
   },
   "compatibilityRequirements": [],
   "oauth": [],
@@ -85,7 +107,16 @@
   "bridgeRequirement": "never",
   "workspaceSupport": "optional",
   "workspaceSchemaVersion": "1.0.0",
-  "longRunningSupport": "optional",
+  "longRunningSupport": "none",
   "userInputSupport": false,
-  "artifactVersioningSupport": false
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
 }

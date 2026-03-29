@@ -26,3 +26,16 @@ Checks the current git repository status using the OS Loop Bridge.
 1. Invokes `git status --porcelain --branch` via the bridge's command execution capability.
 2. Parses the branch name from the first line of output.
 3. Determines if the working tree is clean (no status lines beyond the branch header).
+
+## Execution Model
+
+| Field | Value |
+|-------|-------|
+| Execution Mode | Declarative |
+| Workspace Support | None |
+| Long-Running Support | None |
+| User Input Support | false |
+| Artifact Versioning | false |
+| Platform Compatibility | macOS, Linux, Windows |
+| Bridge Requirement | Required |
+| Secret Bindings | None |

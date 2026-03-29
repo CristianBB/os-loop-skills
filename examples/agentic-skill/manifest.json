@@ -1,0 +1,94 @@
+{
+  "name": "example-agentic",
+  "description": "Research assistant that explores a topic through multiple phases, producing structured findings with role-based execution and step budgets",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["research-assistant"],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "llm",
+      "scope": "research",
+      "description": "Analyze research queries and synthesize findings"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "The research question or topic to investigate"
+      },
+      "depth": {
+        "type": "string",
+        "enum": ["shallow", "moderate", "deep"],
+        "description": "How deeply to research the topic (affects step budget usage)"
+      }
+    },
+    "required": ["query"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "summary": {
+        "type": "string",
+        "description": "Executive summary of the research"
+      },
+      "artifactIds": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "IDs of artifacts created during the research"
+      },
+      "stepsUsed": {
+        "type": "number",
+        "description": "Total number of steps executed"
+      },
+      "phases": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Phases completed during execution"
+      }
+    },
+    "required": ["summary", "artifactIds", "stepsUsed", "phases"]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [
+    {
+      "purposeId": "research",
+      "kind": "analysis",
+      "description": "Analyze research queries, identify subtopics, synthesize findings, and generate reports",
+      "estimatedTokenBudget": 10000,
+      "modelPreference": null,
+      "temperatureHint": 0.3
+    }
+  ],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 120000,
+    "maxMemoryMB": 128,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "required",
+  "workspaceSchemaVersion": "1.0.0",
+  "longRunningSupport": "required",
+  "userInputSupport": true,
+  "artifactVersioningSupport": true,
+  "executionMode": "agentic",
+  "agenticConfig": {
+    "enabled": true,
+    "requiresWorkspace": true,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": true,
+    "maxStepsPerRun": 50,
+    "defaultStepBudget": 20
+  }
+}

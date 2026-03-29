@@ -110,7 +110,7 @@ The manifest declares everything about a skill: what it does, what it needs, and
 ```json
 {
   "purposeId": "string — unique ID referenced in module code",
-  "kind": "classification | generation | extraction | summarization | custom",
+  "kind": "classification | generation | extraction | summarization | analysis | structured-output | custom",
   "description": "string",
   "estimatedTokenBudget": 2000,
   "modelPreference": "string | null",
@@ -319,8 +319,18 @@ Each entry:
 | `version`                   | string     | Yes      | Semver version                           |
 | `author`                    | string     | Yes      | Author name                              |
 | `folderPath`                | string     | Yes      | Path from repo root (e.g., `skills/web-summary`) |
-| `tags`                      | string[]   | Yes      | Searchable tags                          |
+| `tags`                      | string[]   | Yes      | Searchable tags (registry-level, not a manifest field) |
+| `supportedPlatforms`        | string[]   | No       | Platform identifiers (mirrors manifest)  |
+| `bridgeRequirement`         | string     | No       | Bridge dependency (mirrors manifest)     |
+| `workspaceSupport`          | string     | No       | Workspace support level (mirrors manifest) |
+| `workspaceSchemaVersion`    | string     | No       | Workspace state schema version (mirrors manifest) |
 | `compatibilityRequirements` | string[]   | No       | Runtime compatibility requirements       |
+| `longRunningSupport`        | string     | No       | Long-running support level (mirrors manifest) |
+| `userInputSupport`          | boolean    | No       | Whether the skill requests user input    |
+| `artifactVersioningSupport` | boolean    | No       | Whether the skill creates versioned artifacts |
+| `executionMode`             | string     | No       | Execution mode (mirrors manifest)        |
+
+> **Note on `tags` vs `requiredBindings`:** Tags are registry-level metadata used for search and discovery — they live in `index.json`, not in the manifest. Secret bindings are declared as `requiredBindings` in the manifest (not `secretBindings`).
 
 ---
 

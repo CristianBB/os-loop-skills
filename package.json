@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "validate": "tsx scripts/validate.ts",
+    "validate:all": "tsx scripts/validate.ts --examples",
     "test:workspace": "tsx scripts/validate-workspace-fields.test.ts"
   },
   "devDependencies": {

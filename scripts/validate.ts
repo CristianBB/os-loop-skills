@@ -15,7 +15,8 @@ const VALID_LLM_USAGE_KINDS = [
   'analysis', 'structured-output', 'custom',
 ] as const;
 const VALID_COMPATIBILITY_REQUIREMENTS = [
-  // Bridge capabilities
+  // Bridge capabilities — must stay in sync with porto CAPABILITIES constant
+  // and seoul BridgeCapabilityName type (protocol.ts)
   'system_tools', 'system_info', 'filesystem', 'mcp_proxy',
   'awake', 'tool_install_recipes', 'command_permissions',
   // Browser capabilities
@@ -38,6 +39,8 @@ interface IndexEntry {
   tags: string[];
   supportedPlatforms?: string[];
   bridgeRequirement?: string;
+  workspaceSupport?: string;
+  workspaceSchemaVersion?: string;
   compatibilityRequirements?: string[];
   longRunningSupport?: string;
   userInputSupport?: boolean;
@@ -97,41 +100,36 @@ function validateIndexEntry(entry: IndexEntry, index: number): void {
     }
   }
 
-  if ((entry as Record<string, unknown>).workspaceSupport !== undefined) {
-    const ws = (entry as Record<string, unknown>).workspaceSupport;
-    if (typeof ws !== 'string' || !(VALID_WORKSPACE_SUPPORT as readonly string[]).includes(ws)) {
-      error(ctx, `Invalid workspaceSupport "${ws}". Must be one of: ${VALID_WORKSPACE_SUPPORT.join(', ')}`);
+  if (entry.workspaceSupport !== undefined) {
+    if (typeof entry.workspaceSupport !== 'string' || !(VALID_WORKSPACE_SUPPORT as readonly string[]).includes(entry.workspaceSupport)) {
+      error(ctx, `Invalid workspaceSupport "${entry.workspaceSupport}". Must be one of: ${VALID_WORKSPACE_SUPPORT.join(', ')}`);
     }
 
     // Index entries with optional/required workspace must also carry workspaceSchemaVersion
-    if (ws === 'optional' || ws === 'required') {
-      const wsv = (entry as Record<string, unknown>).workspaceSchemaVersion;
-      if (wsv === undefined || wsv === null) {
-        error(ctx, `workspaceSupport is "${ws}" but workspaceSchemaVersion is missing from index entry. Add it so the runtime can check schema compatibility.`);
-      } else if (typeof wsv !== 'string') {
-        error(ctx, `workspaceSchemaVersion must be a string, got "${typeof wsv}"`);
+    if (entry.workspaceSupport === 'optional' || entry.workspaceSupport === 'required') {
+      if (entry.workspaceSchemaVersion === undefined || entry.workspaceSchemaVersion === null) {
+        error(ctx, `workspaceSupport is "${entry.workspaceSupport}" but workspaceSchemaVersion is missing from index entry. Add it so the runtime can check schema compatibility.`);
+      } else if (typeof entry.workspaceSchemaVersion !== 'string') {
+        error(ctx, `workspaceSchemaVersion must be a string, got "${typeof entry.workspaceSchemaVersion}"`);
       }
     }
   }
 
-  if ((entry as Record<string, unknown>).longRunningSupport !== undefined) {
-    const lrs = (entry as Record<string, unknown>).longRunningSupport;
-    if (typeof lrs !== 'string' || !(VALID_LONG_RUNNING_SUPPORT as readonly string[]).includes(lrs)) {
-      error(ctx, `Invalid longRunningSupport "${lrs}". Must be one of: ${VALID_LONG_RUNNING_SUPPORT.join(', ')}`);
+  if (entry.longRunningSupport !== undefined) {
+    if (typeof entry.longRunningSupport !== 'string' || !(VALID_LONG_RUNNING_SUPPORT as readonly string[]).includes(entry.longRunningSupport)) {
+      error(ctx, `Invalid longRunningSupport "${entry.longRunningSupport}". Must be one of: ${VALID_LONG_RUNNING_SUPPORT.join(', ')}`);
     }
   }
 
-  if ((entry as Record<string, unknown>).userInputSupport !== undefined) {
-    const uis = (entry as Record<string, unknown>).userInputSupport;
-    if (typeof uis !== 'boolean') {
-      error(ctx, `Invalid userInputSupport "${uis}". Must be a boolean`);
+  if (entry.userInputSupport !== undefined) {
+    if (typeof entry.userInputSupport !== 'boolean') {
+      error(ctx, `Invalid userInputSupport "${entry.userInputSupport}". Must be a boolean`);
     }
   }
 
-  if ((entry as Record<string, unknown>).artifactVersioningSupport !== undefined) {
-    const avs = (entry as Record<string, unknown>).artifactVersioningSupport;
-    if (typeof avs !== 'boolean') {
-      error(ctx, `Invalid artifactVersioningSupport "${avs}". Must be a boolean`);
+  if (entry.artifactVersioningSupport !== undefined) {
+    if (typeof entry.artifactVersioningSupport !== 'boolean') {
+      error(ctx, `Invalid artifactVersioningSupport "${entry.artifactVersioningSupport}". Must be a boolean`);
     }
   }
 
@@ -315,6 +313,14 @@ function validateManifest(manifestPath: string, entry: IndexEntry): void {
     if (!manifest.longRunningSupport || manifest.longRunningSupport === 'none') {
       warn(manifestPath, 'agentic skills typically require longRunningSupport to be "optional" or "required"');
     }
+    if (agenticConfig?.enabled === true) {
+      if (agenticConfig.maxStepsPerRun === null) {
+        warn(manifestPath, 'agentic skill has maxStepsPerRun: null. The runtime will apply a ceiling of 1000 steps. Set an explicit limit appropriate for your skill.');
+      }
+      if (agenticConfig.defaultStepBudget === null) {
+        warn(manifestPath, 'agentic skill has defaultStepBudget: null. No automatic checkpoints will be created at a soft boundary. Consider setting a soft budget.');
+      }
+    }
   }
 
   // Cross-check: declarative skills cannot use flow/agentic-only capabilities
@@ -376,6 +382,15 @@ function validateModule(skillDir: string): void {
   const modulePath = join(skillDir, 'module.ts');
   if (!existsSync(modulePath)) {
     error(modulePath, 'module.ts is missing');
+    return;
+  }
+
+  const content = readFileSync(modulePath, 'utf-8');
+  const hasExecuteExport =
+    /export\s+(async\s+)?function\s+execute\b/.test(content) ||
+    /exports\.execute\s*=/.test(content);
+  if (!hasExecuteExport) {
+    warn(modulePath, 'module.ts does not appear to export an execute function. Skills must export: export async function execute(args, host)');
   }
 }
 
@@ -413,6 +428,8 @@ function validateDocs(skillDir: string): void {
 
 // --- Main validation ---
 
+const includeExamples = process.argv.includes('--examples');
+
 console.log('Validating os-loop-skills repository...\n');
 
 const indexPath = join(ROOT, 'skills', 'index.json');
@@ -448,7 +465,7 @@ for (let i = 0; i < entries.length; i++) {
   // Cross-check: index.json workspaceSchemaVersion must match manifest
   const manifestData = readJson<Record<string, unknown>>(manifestPath);
   if (manifestData) {
-    const indexWsv = (entry as Record<string, unknown>).workspaceSchemaVersion;
+    const indexWsv = entry.workspaceSchemaVersion;
     const manifestWsv = manifestData.workspaceSchemaVersion;
     if (indexWsv !== undefined && manifestWsv !== undefined && indexWsv !== manifestWsv) {
       error(`index.json[${i}]`, `workspaceSchemaVersion mismatch: index has "${indexWsv}" but manifest has "${manifestWsv}"`);
@@ -463,6 +480,50 @@ for (let i = 0; i < entries.length; i++) {
 
   validateModule(skillDir);
   validateDocs(skillDir);
+}
+
+// --- Example validation (--examples flag) ---
+
+if (includeExamples) {
+  const examplesDir = join(ROOT, 'examples');
+  if (existsSync(examplesDir)) {
+    const { readdirSync, statSync } = await import('node:fs');
+    const exampleDirs = readdirSync(examplesDir).filter(
+      d => statSync(join(examplesDir, d)).isDirectory(),
+    );
+
+    console.log(`\nValidating ${exampleDirs.length} example(s)...\n`);
+
+    for (const dir of exampleDirs) {
+      const skillDir = join(examplesDir, dir);
+      const manifestPath = join(skillDir, 'manifest.json');
+
+      if (!existsSync(manifestPath)) {
+        error(`examples/${dir}`, 'manifest.json is missing');
+        continue;
+      }
+
+      const manifestData = readJson<Record<string, unknown>>(manifestPath);
+      if (!manifestData) continue;
+
+      console.log(`  Validating example: ${dir}`);
+
+      // Build a synthetic index entry from the manifest
+      const syntheticEntry: IndexEntry = {
+        name: (manifestData.name as string) ?? dir,
+        description: (manifestData.description as string) ?? '',
+        version: (manifestData.version as string) ?? '0.0.0',
+        author: (manifestData.author as string) ?? 'example',
+        folderPath: `examples/${dir}`,
+        tags: [],
+        executionMode: manifestData.executionMode as string | undefined,
+      };
+
+      validateManifest(manifestPath, syntheticEntry);
+      validateModule(skillDir);
+      validateDocs(skillDir);
+    }
+  }
 }
 
 // --- Report ---

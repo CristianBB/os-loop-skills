@@ -67,10 +67,32 @@ All fields below must be explicitly declared in every manifest — no implicit d
 
 | Method | Description |
 |--------|-------------|
-| `host.run.pause(reason)` | Pause the run. The module should return after calling this. |
-| `host.run.requestInput(opts)` | Request user input. Returns user response when answered. |
+| `host.run.pause(reason)` | Pause the run. **Never returns** — throws a signal to unwind the stack. |
+| `host.run.requestInput(opts)` | Request user input. **Never returns** — throws a signal to unwind the stack. |
 | `host.run.checkpoint()` | Create a checkpoint of current workspace + run state. |
 | `host.run.reportStep(label)` | Report a named step for progress tracking. |
+
+### Signal-Based Control Flow (Flow & Agentic)
+
+`host.run.pause()` and `host.run.requestInput()` use **signal-based control flow**: they throw special signal objects (`SkillPausedSignal`, `SkillWaitingInputSignal`) that unwind the call stack. They **never return to the caller**.
+
+This means:
+- Code after `await host.run.pause(reason)` is **unreachable**. Do not place cleanup or continuation logic after these calls.
+- Code after `await host.run.requestInput(opts)` is **unreachable**. The declared return type (`Promise<Record<string, unknown>>`) exists for typing convenience, but the promise never resolves.
+- Skills must be designed to **resume from checkpoint**, not to await the return value of these methods. When the user provides input or resumes the run, the runtime restores from the last checkpoint and re-invokes the skill module — it does not continue from the point where the signal was thrown.
+- Always call `host.run.checkpoint()` **before** calling `pause()` or `requestInput()` if you need to preserve intermediate state.
+
+```typescript
+// CORRECT: checkpoint before pause, no code after pause
+host.run.reportStep('phase-1-complete');
+await host.run.checkpoint();
+await host.run.pause('Awaiting user review');
+// ← unreachable
+
+// WRONG: code after requestInput will never execute
+const response = await host.run.requestInput({ title: '...', message: '...', inputSchema: {} });
+console.log(response); // ← never reached
+```
 
 ---
 
@@ -106,8 +128,8 @@ All fields below must be explicitly declared in every manifest — no implicit d
 | `host.run.reportStep(label, role?)` | Report a step. Increments step counter. May halt if budget exceeded. |
 | `host.run.getStepCount()` | Get current step count. |
 | `host.run.getStepBudget()` | Get the soft step budget (null = unlimited). |
-| `host.run.pause(reason)` | Checkpoint and pause the run. |
-| `host.run.requestInput(opts)` | Checkpoint and request user input. |
+| `host.run.pause(reason)` | Checkpoint and pause the run. **Never returns** — throws signal. |
+| `host.run.requestInput(opts)` | Checkpoint and request user input. **Never returns** — throws signal. |
 | `host.run.checkpoint()` | Create a checkpoint. |
 
 ### Step Budget Enforcement
@@ -115,6 +137,7 @@ All fields below must be explicitly declared in every manifest — no implicit d
 - **`maxStepsPerRun`** (hard limit): If set, the runtime halts execution when this count is reached. A checkpoint is created automatically.
 - **`defaultStepBudget`** (soft limit): If set, the runtime auto-creates a checkpoint when this count is reached, but execution continues.
 - Both limits are **cooperative** — the module must call `host.run.reportStep()` for the runtime to track progress. The execution timeout remains the absolute hard boundary.
+- When `maxStepsPerRun` is `null`, the runtime applies a ceiling of **1000 steps** as a safety bound to prevent runaway execution. Skill authors should set an explicit `maxStepsPerRun` appropriate for their use case rather than relying on the runtime ceiling.
 
 ### Role-Based Execution
 
@@ -161,6 +184,21 @@ Agentic skill runs must correctly use the following waiting states — do not co
 | `waiting_bridge_job` | `lifecycle.trackBridgeJob()` | Run is waiting for a bridge command/install to complete. |
 | `paused` | `host.run.pause(reason)` | Run is explicitly paused by the skill. |
 | `recovering` | Runtime reconciler | Run has dirty state and needs checkpoint recovery. |
+
+### Execution Result States
+
+A skill execution returns one of these statuses. The main agent uses them to communicate with the user:
+
+| Status | Meaning |
+|--------|---------|
+| `completed` | Skill finished successfully. The result is available. |
+| `failed` | Skill encountered an error. If `recovery.dirty` is true, a checkpoint exists and the run can be retried. Otherwise, no checkpoint was saved. |
+| `timeout` | Skill exceeded its sandbox execution time limit (`maxExecutionMs`). No more steps were executed. |
+| `budget_exceeded` | Skill reached `maxStepsPerRun` (or the runtime ceiling of 1000). A checkpoint was created automatically. The run can be resumed. |
+| `paused` | Skill paused itself via `host.run.pause(reason)`. A checkpoint was created. The run can be resumed. |
+| `waiting_input` | Skill called `host.run.requestInput()` and is waiting for user input. A checkpoint was created. |
+
+Skill authors should design their modules to produce meaningful results for each state — especially for `budget_exceeded` and `paused`, where the user may resume later.
 
 ### Agentic Skill Authoring Checklist
 
@@ -240,7 +278,15 @@ export async function execute(
   await host.workspace!.setPhase('review');
   host.run!.reportStep('request-review', 'reviewer');
 
-  const feedback = await host.run!.requestInput({
+  // Checkpoint workspace state before requesting input.
+  // On resume, the runtime re-invokes execute() from this checkpoint.
+  // The skill should read workspace phase via host.workspace.getState()
+  // to determine which phase to execute (e.g., skip research/drafting
+  // if phase is already 'review' or 'finalization').
+  await host.run!.checkpoint();
+
+  // Execution suspends here — requestInput() throws a signal and never returns.
+  await host.run!.requestInput({
     title: 'Review Draft Report',
     message: 'Please review the draft report and provide feedback.',
     inputSchema: {
@@ -251,13 +297,11 @@ export async function execute(
       },
     },
   });
-
-  // If approved, finalize; otherwise revise
-  if ((feedback as { approved: boolean }).approved) {
-    await host.workspace!.updateArtifact(artifact.id, { status: 'approved' });
-  }
-
-  return { reportId: artifact.id };
+  // ← unreachable: the signal unwinds the stack.
+  // When the user provides input and the run resumes, the runtime
+  // restores from the checkpoint above and re-invokes execute().
+  // The resumed invocation should check workspace phase/state to
+  // branch into finalization logic instead of repeating earlier phases.
 }
 ```
 

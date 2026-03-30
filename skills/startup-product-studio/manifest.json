@@ -96,7 +96,7 @@
       },
       "decision": {
         "type": "string",
-        "enum": ["approve", "reject", "revise"],
+        "enum": ["approve", "reject", "revise", "approve-with-changes", "pause", "cancel"],
         "description": "Decision for review-artifact action"
       },
       "feedback": {
@@ -156,7 +156,7 @@
     },
     "required": ["success", "message"]
   },
-  "compatibilityRequirements": [],
+  "compatibilityRequirements": ["system_tools"],
   "oauth": [],
   "llmUsage": [
     {
@@ -225,7 +225,20 @@
     }
   ],
   "wasm": [],
-  "views": [],
+  "views": [
+    {
+      "viewId": "workspace-list",
+      "kind": "panel",
+      "entryComponent": "WorkspaceListView",
+      "description": "Studio workspace list with project overview cards and create dialog"
+    },
+    {
+      "viewId": "workspace-detail",
+      "kind": "panel",
+      "entryComponent": "WorkspaceDetailView",
+      "description": "Studio workspace detail with phase timeline, artifacts, run controls, and gate decisions"
+    }
+  ],
   "tools": [],
   "lifecycleHooks": [],
   "sandbox": {
@@ -236,7 +249,7 @@
     "networkRules": []
   },
   "supportedPlatforms": ["macos", "windows", "linux"],
-  "bridgeRequirement": "optional",
+  "bridgeRequirement": "required",
   "workspaceSupport": "required",
   "workspaceSchemaVersion": "2.0.0",
   "longRunningSupport": "required",

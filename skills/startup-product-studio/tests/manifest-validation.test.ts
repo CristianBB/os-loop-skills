@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -88,252 +89,484 @@ interface IndexEntry {
   executionMode: string;
 }
 
-// ── File existence ──────────────────────────────────────────────────────
+describe('Startup Product Studio — Manifest Validation', () => {
+  describe('file existence', () => {
+    it('manifest.json exists', () => {
+      expect(existsSync(MANIFEST_PATH)).toBe(true);
+    });
 
-console.log('=== Startup Product Studio — Manifest Validation ===\n');
+    it('module.ts exists', () => {
+      expect(existsSync(MODULE_PATH)).toBe(true);
+    });
 
-let passed = 0;
-let failed = 0;
+    it('skills/index.json exists', () => {
+      expect(existsSync(INDEX_PATH)).toBe(true);
+    });
+  });
 
-function assert(condition: boolean, label: string): void {
-  if (condition) {
-    console.log(`  PASS  ${label}`);
-    passed++;
-  } else {
-    console.error(`  FAIL  ${label}`);
-    failed++;
-  }
-}
+  describe('manifest field validation', () => {
+    const manifest = loadJson(MANIFEST_PATH) as Manifest;
 
-assert(existsSync(MANIFEST_PATH), 'manifest.json exists');
-assert(existsSync(MODULE_PATH), 'module.ts exists');
-assert(existsSync(INDEX_PATH), 'skills/index.json exists');
+    describe('identity', () => {
+      it('name is startup-product-studio', () => {
+        expect(manifest.name).toBe('startup-product-studio');
+      });
 
-// ── Manifest field validation ───────────────────────────────────────────
+      it('description is substantial', () => {
+        expect(typeof manifest.description).toBe('string');
+        expect(manifest.description.length).toBeGreaterThan(50);
+      });
 
-const manifest = loadJson(MANIFEST_PATH) as Manifest;
+      it('version is 2.0.0', () => {
+        expect(manifest.version).toBe('2.0.0');
+      });
 
-// Identity
-assert(manifest.name === 'startup-product-studio', 'name is startup-product-studio');
-assert(typeof manifest.description === 'string' && manifest.description.length > 50, 'description is substantial');
-assert(manifest.version === '2.0.0', 'version is 2.0.0');
-assert(manifest.author === 'OS Loop', 'author is OS Loop');
-assert(manifest.schemaVersion === '2.0', 'schemaVersion is 2.0');
+      it('author is OS Loop', () => {
+        expect(manifest.author).toBe('OS Loop');
+      });
 
-// Capabilities
-assert(Array.isArray(manifest.capabilities) && manifest.capabilities.length >= 1, 'capabilities is a non-empty array');
-assert(manifest.capabilities.includes('product-development'), 'capabilities includes product-development');
+      it('schemaVersion is 2.0', () => {
+        expect(manifest.schemaVersion).toBe('2.0');
+      });
+    });
 
-// Permissions
-assert(Array.isArray(manifest.permissions) && manifest.permissions.length >= 1, 'permissions is a non-empty array');
-assert(manifest.permissions.some((p) => p.kind === 'llm'), 'permissions include llm');
+    describe('capabilities', () => {
+      it('capabilities is a non-empty array', () => {
+        expect(Array.isArray(manifest.capabilities)).toBe(true);
+        expect(manifest.capabilities.length).toBeGreaterThanOrEqual(1);
+      });
 
-// Execution mode & agentic config
-assert(manifest.executionMode === 'agentic', 'executionMode is agentic');
-assert(manifest.agenticConfig.enabled === true, 'agenticConfig.enabled is true');
-assert(manifest.agenticConfig.requiresWorkspace === true, 'agenticConfig.requiresWorkspace is true');
-assert(manifest.agenticConfig.supportsBackgroundExecution === true, 'agenticConfig.supportsBackgroundExecution is true');
-assert(manifest.agenticConfig.supportsRoleBasedExecution === true, 'agenticConfig.supportsRoleBasedExecution is true');
-assert(typeof manifest.agenticConfig.maxStepsPerRun === 'number' && manifest.agenticConfig.maxStepsPerRun > 0, 'agenticConfig.maxStepsPerRun is a positive number');
-assert(typeof manifest.agenticConfig.defaultStepBudget === 'number' && manifest.agenticConfig.defaultStepBudget > 0, 'agenticConfig.defaultStepBudget is a positive number');
-assert(
-  manifest.agenticConfig.defaultStepBudget! <= manifest.agenticConfig.maxStepsPerRun!,
-  'defaultStepBudget <= maxStepsPerRun',
-);
+      it('capabilities includes product-development', () => {
+        expect(manifest.capabilities).toContain('product-development');
+      });
+    });
 
-// Workspace
-assert(manifest.workspaceSupport === 'required', 'workspaceSupport is required');
-assert(manifest.workspaceSchemaVersion === '2.0.0', 'workspaceSchemaVersion is 2.0.0');
+    describe('permissions', () => {
+      it('permissions is a non-empty array', () => {
+        expect(Array.isArray(manifest.permissions)).toBe(true);
+        expect(manifest.permissions.length).toBeGreaterThanOrEqual(1);
+      });
 
-// Consistency: agenticConfig.requiresWorkspace matches workspaceSupport
-assert(
-  manifest.agenticConfig.requiresWorkspace === true && manifest.workspaceSupport === 'required',
-  'agenticConfig.requiresWorkspace consistent with workspaceSupport=required',
-);
+      it('permissions include llm', () => {
+        expect(manifest.permissions.some((p) => p.kind === 'llm')).toBe(true);
+      });
+    });
 
-// Long-running & user input
-assert(manifest.longRunningSupport === 'required', 'longRunningSupport is required');
-assert(manifest.userInputSupport === true, 'userInputSupport is true');
-assert(manifest.artifactVersioningSupport === true, 'artifactVersioningSupport is true');
+    describe('execution mode & agentic config', () => {
+      it('executionMode is agentic', () => {
+        expect(manifest.executionMode).toBe('agentic');
+      });
 
-// Platform & bridge
-assert(
-  Array.isArray(manifest.supportedPlatforms) &&
-    manifest.supportedPlatforms.includes('macos') &&
-    manifest.supportedPlatforms.includes('windows') &&
-    manifest.supportedPlatforms.includes('linux'),
-  'supportedPlatforms includes macos, windows, linux',
-);
-assert(manifest.bridgeRequirement === 'optional', 'bridgeRequirement is optional');
+      it('agenticConfig.enabled is true', () => {
+        expect(manifest.agenticConfig.enabled).toBe(true);
+      });
 
-// LLM usage declarations
-const expectedPurposeIds = [
-  'discovery-analysis',
-  'roadmap-generation',
-  'product-definition',
-  'design-spec',
-  'architecture-design',
-  'development-plan',
-  'qa-strategy',
-  'status-report',
-];
-assert(Array.isArray(manifest.llmUsage) && manifest.llmUsage.length === 8, 'llmUsage has exactly 8 entries');
-for (const pid of expectedPurposeIds) {
-  assert(
-    manifest.llmUsage.some((u) => u.purposeId === pid),
-    `llmUsage includes purposeId "${pid}"`,
-  );
-}
-for (const usage of manifest.llmUsage) {
-  assert(typeof usage.kind === 'string' && usage.kind.length > 0, `llmUsage "${usage.purposeId}" has a valid kind`);
-  assert(typeof usage.estimatedTokenBudget === 'number' && usage.estimatedTokenBudget > 0, `llmUsage "${usage.purposeId}" has positive estimatedTokenBudget`);
-}
+      it('agenticConfig.requiresWorkspace is true', () => {
+        expect(manifest.agenticConfig.requiresWorkspace).toBe(true);
+      });
 
-// Input schema actions
-const expectedActions = [
-  'init-studio',
-  'create-project',
-  'run-phase',
-  'advance-phase',
-  'switch-project',
-  'generate-roadmap',
-  'review-artifact',
-  'status-report',
-  'run-implementation-subphase',
-  'redirect',
-];
-const actionEnum = (manifest.inputSchema.properties?.action as { enum?: string[] })?.enum ?? [];
-assert(actionEnum.length === expectedActions.length, `inputSchema action enum has ${expectedActions.length} values`);
-for (const action of expectedActions) {
-  assert(actionEnum.includes(action), `inputSchema action enum includes "${action}"`);
-}
+      it('agenticConfig.supportsBackgroundExecution is true', () => {
+        expect(manifest.agenticConfig.supportsBackgroundExecution).toBe(true);
+      });
 
-// Input schema roles
-const expectedRoleEnum = ['ceo', 'product-manager', 'ux-ui', 'software-architect', 'developer', 'qa'];
-const roleEnum = (manifest.inputSchema.properties?.role as { enum?: string[] })?.enum ?? [];
-assert(roleEnum.length === expectedRoleEnum.length, `inputSchema role enum has ${expectedRoleEnum.length} values`);
-for (const role of expectedRoleEnum) {
-  assert(roleEnum.includes(role), `inputSchema role enum includes "${role}"`);
-}
+      it('agenticConfig.supportsRoleBasedExecution is true', () => {
+        expect(manifest.agenticConfig.supportsRoleBasedExecution).toBe(true);
+      });
 
-// Input schema redirection actions
-const expectedRedirections = [
-  'redefine-roadmap', 'redefine-phase', 'reorder-phases', 'reduce-scope',
-  'expand-scope', 'pivot', 'change-priorities', 'pause', 'continue', 'stop',
-];
-const redirectEnum = (manifest.inputSchema.properties?.redirectionAction as { enum?: string[] })?.enum ?? [];
-assert(redirectEnum.length === expectedRedirections.length, `inputSchema redirectionAction enum has ${expectedRedirections.length} values`);
-for (const action of expectedRedirections) {
-  assert(redirectEnum.includes(action), `inputSchema redirectionAction enum includes "${action}"`);
-}
+      it('agenticConfig.maxStepsPerRun is a positive number', () => {
+        expect(typeof manifest.agenticConfig.maxStepsPerRun).toBe('number');
+        expect(manifest.agenticConfig.maxStepsPerRun).toBeGreaterThan(0);
+      });
 
-// Output schema required fields
-assert(manifest.outputSchema.type === 'object', 'outputSchema type is object');
-assert(manifest.outputSchema.required.includes('success'), 'outputSchema requires success');
-assert(manifest.outputSchema.required.includes('message'), 'outputSchema requires message');
+      it('agenticConfig.defaultStepBudget is a positive number', () => {
+        expect(typeof manifest.agenticConfig.defaultStepBudget).toBe('number');
+        expect(manifest.agenticConfig.defaultStepBudget).toBeGreaterThan(0);
+      });
 
-// Input schema phases (canonical)
-const expectedPhaseEnum = [
-  'discovery',
-  'roadmap-definition',
-  'product-definition',
-  'ux-definition',
-  'architecture-definition',
-  'implementation-phase',
-  'qa-validation',
-  'release-readiness',
-];
-const phaseEnum = (manifest.inputSchema.properties?.targetPhase as { enum?: string[] })?.enum ?? [];
-assert(phaseEnum.length === expectedPhaseEnum.length, `inputSchema targetPhase enum has ${expectedPhaseEnum.length} values`);
-for (const phase of expectedPhaseEnum) {
-  assert(phaseEnum.includes(phase), `inputSchema targetPhase enum includes "${phase}"`);
-}
+      it('defaultStepBudget <= maxStepsPerRun', () => {
+        expect(manifest.agenticConfig.defaultStepBudget!).toBeLessThanOrEqual(manifest.agenticConfig.maxStepsPerRun!);
+      });
+    });
 
-// Required bindings (empty initially)
-assert(Array.isArray(manifest.requiredBindings) && manifest.requiredBindings.length === 0, 'requiredBindings is empty');
+    describe('workspace', () => {
+      it('workspaceSupport is required', () => {
+        expect(manifest.workspaceSupport).toBe('required');
+      });
 
-// Sandbox
-assert(manifest.sandbox.maxExecutionMs >= 300000, 'sandbox.maxExecutionMs >= 300000');
-assert(manifest.sandbox.maxMemoryMB >= 128, 'sandbox.maxMemoryMB >= 128');
+      it('workspaceSchemaVersion is 2.0.0', () => {
+        expect(manifest.workspaceSchemaVersion).toBe('2.0.0');
+      });
 
-// Empty arrays that must exist
-assert(Array.isArray(manifest.compatibilityRequirements), 'compatibilityRequirements is an array');
-assert(Array.isArray(manifest.oauth), 'oauth is an array');
-assert(Array.isArray(manifest.wasm), 'wasm is an array');
-assert(Array.isArray(manifest.views), 'views is an array');
-assert(Array.isArray(manifest.tools), 'tools is an array');
-assert(Array.isArray(manifest.lifecycleHooks), 'lifecycleHooks is an array');
+      it('agenticConfig.requiresWorkspace consistent with workspaceSupport=required', () => {
+        expect(manifest.agenticConfig.requiresWorkspace).toBe(true);
+        expect(manifest.workspaceSupport).toBe('required');
+      });
+    });
 
-// ── Index.json entry validation ─────────────────────────────────────────
+    describe('long-running & user input', () => {
+      it('longRunningSupport is required', () => {
+        expect(manifest.longRunningSupport).toBe('required');
+      });
 
-const index = loadJson(INDEX_PATH) as IndexEntry[];
-const entry = index.find((e) => e.name === 'startup-product-studio');
-assert(entry !== undefined, 'index.json contains startup-product-studio entry');
+      it('userInputSupport is true', () => {
+        expect(manifest.userInputSupport).toBe(true);
+      });
 
-if (entry) {
-  assert(entry.folderPath === 'skills/startup-product-studio', 'index entry folderPath is correct');
-  assert(entry.executionMode === manifest.executionMode, 'index entry executionMode matches manifest');
-  assert(entry.bridgeRequirement === manifest.bridgeRequirement, 'index entry bridgeRequirement matches manifest');
-  assert(entry.workspaceSupport === manifest.workspaceSupport, 'index entry workspaceSupport matches manifest');
-  assert(entry.longRunningSupport === manifest.longRunningSupport, 'index entry longRunningSupport matches manifest');
-  assert(entry.userInputSupport === manifest.userInputSupport, 'index entry userInputSupport matches manifest');
-  assert(entry.artifactVersioningSupport === manifest.artifactVersioningSupport, 'index entry artifactVersioningSupport matches manifest');
-  assert(Array.isArray(entry.tags) && entry.tags.length >= 5, 'index entry has sufficient tags');
-  assert(entry.tags.includes('agentic'), 'index entry tags include "agentic"');
-  assert(entry.tags.includes('startup'), 'index entry tags include "startup"');
-}
+      it('artifactVersioningSupport is true', () => {
+        expect(manifest.artifactVersioningSupport).toBe(true);
+      });
+    });
 
-// ── Module export validation ────────────────────────────────────────────
+    describe('platform & bridge', () => {
+      it('supportedPlatforms includes macos, windows, linux', () => {
+        expect(Array.isArray(manifest.supportedPlatforms)).toBe(true);
+        expect(manifest.supportedPlatforms).toContain('macos');
+        expect(manifest.supportedPlatforms).toContain('windows');
+        expect(manifest.supportedPlatforms).toContain('linux');
+      });
 
-const moduleSource = readFileSync(MODULE_PATH, 'utf-8');
-assert(moduleSource.includes('export async function execute'), 'module.ts exports async execute function');
-assert(moduleSource.includes('host.workspace.getState'), 'module.ts uses host.workspace.getState');
-assert(moduleSource.includes('host.workspace.setState'), 'module.ts uses host.workspace.setState');
-assert(moduleSource.includes('host.workspace.createArtifact'), 'module.ts uses host.workspace.createArtifact');
-assert(moduleSource.includes('host.run.reportStep'), 'module.ts uses host.run.reportStep');
-assert(moduleSource.includes('host.run.requestInput'), 'module.ts uses host.run.requestInput');
-assert(moduleSource.includes('host.run.checkpoint'), 'module.ts uses host.run.checkpoint');
-assert(moduleSource.includes('host.workspace.setPhase'), 'module.ts uses host.workspace.setPhase');
-assert(moduleSource.includes('host.workspace.setRole'), 'module.ts uses host.workspace.setRole');
-assert(moduleSource.includes('host.llm.complete'), 'module.ts uses host.llm.complete');
-assert(moduleSource.includes('host.events.emitProgress'), 'module.ts uses host.events.emitProgress');
+      it('bridgeRequirement is required', () => {
+        expect(manifest.bridgeRequirement).toBe('required');
+      });
+    });
 
-// Verify all 6 roles are referenced
-const expectedRoles = ['ceo', 'product-manager', 'ux-ui', 'software-architect', 'developer', 'qa'];
-for (const role of expectedRoles) {
-  assert(moduleSource.includes(`'${role}'`), `module.ts references role "${role}"`);
-}
+    describe('LLM usage declarations', () => {
+      const expectedPurposeIds = [
+        'discovery-analysis',
+        'roadmap-generation',
+        'product-definition',
+        'design-spec',
+        'architecture-design',
+        'development-plan',
+        'qa-strategy',
+        'status-report',
+      ];
 
-// Verify all 8 canonical phases are referenced
-const expectedPhases = ['discovery', 'roadmap-definition', 'product-definition', 'ux-definition', 'architecture-definition', 'implementation-phase', 'qa-validation', 'release-readiness'];
-for (const phase of expectedPhases) {
-  assert(moduleSource.includes(`'${phase}'`), `module.ts references phase "${phase}"`);
-}
+      it('llmUsage has exactly 8 entries', () => {
+        expect(Array.isArray(manifest.llmUsage)).toBe(true);
+        expect(manifest.llmUsage.length).toBe(8);
+      });
 
-// Verify canonical artifact types are referenced
-const canonicalArtifactTypes = [
-  'product-vision', 'business-context', 'roadmap', 'mvp-definition',
-  'user-personas', 'ux-ui-spec', 'architecture-plan', 'implementation-phase-plan',
-  'implementation-report', 'qa-report', 'release-readiness-report',
-];
-for (const artifactType of canonicalArtifactTypes) {
-  assert(moduleSource.includes(`'${artifactType}'`), `module.ts references canonical artifact type "${artifactType}"`);
-}
+      for (const pid of expectedPurposeIds) {
+        it(`llmUsage includes purposeId "${pid}"`, () => {
+          expect(manifest.llmUsage.some((u) => u.purposeId === pid)).toBe(true);
+        });
+      }
 
-// Verify enriched ProjectRecord fields
-assert(moduleSource.includes('businessContext'), 'module.ts includes businessContext field');
-assert(moduleSource.includes('targetUsers'), 'module.ts includes targetUsers field');
-assert(moduleSource.includes('constraints'), 'module.ts includes constraints field');
-assert(moduleSource.includes('implementationStatus'), 'module.ts includes implementationStatus field');
-assert(moduleSource.includes('validationHistory'), 'module.ts includes validationHistory field');
+      it('each llmUsage entry has a valid kind and positive estimatedTokenBudget', () => {
+        for (const usage of manifest.llmUsage) {
+          expect(typeof usage.kind).toBe('string');
+          expect(usage.kind.length).toBeGreaterThan(0);
+          expect(typeof usage.estimatedTokenBudget).toBe('number');
+          expect(usage.estimatedTokenBudget).toBeGreaterThan(0);
+        }
+      });
+    });
 
-// Verify gate decision options
-assert(moduleSource.includes("'pause'"), 'module.ts supports pause gate decision');
-assert(moduleSource.includes("'cancel'"), 'module.ts supports cancel gate decision');
+    describe('input schema actions', () => {
+      const expectedActions = [
+        'init-studio',
+        'create-project',
+        'run-phase',
+        'advance-phase',
+        'switch-project',
+        'generate-roadmap',
+        'review-artifact',
+        'status-report',
+        'run-implementation-subphase',
+        'redirect',
+      ];
+      const actionEnum = (manifest.inputSchema.properties?.action as { enum?: string[] })?.enum ?? [];
 
-// ── Summary ─────────────────────────────────────────────────────────────
+      it(`inputSchema action enum has ${expectedActions.length} values`, () => {
+        expect(actionEnum.length).toBe(expectedActions.length);
+      });
 
-console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
-if (failed > 0) {
-  process.exit(1);
-}
+      for (const action of expectedActions) {
+        it(`inputSchema action enum includes "${action}"`, () => {
+          expect(actionEnum).toContain(action);
+        });
+      }
+    });
+
+    describe('input schema roles', () => {
+      const expectedRoleEnum = ['ceo', 'product-manager', 'ux-ui', 'software-architect', 'developer', 'qa'];
+      const roleEnum = (manifest.inputSchema.properties?.role as { enum?: string[] })?.enum ?? [];
+
+      it(`inputSchema role enum has ${expectedRoleEnum.length} values`, () => {
+        expect(roleEnum.length).toBe(expectedRoleEnum.length);
+      });
+
+      for (const role of expectedRoleEnum) {
+        it(`inputSchema role enum includes "${role}"`, () => {
+          expect(roleEnum).toContain(role);
+        });
+      }
+    });
+
+    describe('input schema redirection actions', () => {
+      const expectedRedirections = [
+        'redefine-roadmap', 'redefine-phase', 'reorder-phases', 'reduce-scope',
+        'expand-scope', 'pivot', 'change-priorities', 'pause', 'continue', 'stop',
+      ];
+      const redirectEnum = (manifest.inputSchema.properties?.redirectionAction as { enum?: string[] })?.enum ?? [];
+
+      it(`inputSchema redirectionAction enum has ${expectedRedirections.length} values`, () => {
+        expect(redirectEnum.length).toBe(expectedRedirections.length);
+      });
+
+      for (const action of expectedRedirections) {
+        it(`inputSchema redirectionAction enum includes "${action}"`, () => {
+          expect(redirectEnum).toContain(action);
+        });
+      }
+    });
+
+    describe('output schema', () => {
+      it('outputSchema type is object', () => {
+        expect(manifest.outputSchema.type).toBe('object');
+      });
+
+      it('outputSchema requires success', () => {
+        expect(manifest.outputSchema.required).toContain('success');
+      });
+
+      it('outputSchema requires message', () => {
+        expect(manifest.outputSchema.required).toContain('message');
+      });
+    });
+
+    describe('input schema phases (canonical)', () => {
+      const expectedPhaseEnum = [
+        'discovery',
+        'roadmap-definition',
+        'product-definition',
+        'ux-definition',
+        'architecture-definition',
+        'implementation-phase',
+        'qa-validation',
+        'release-readiness',
+      ];
+      const phaseEnum = (manifest.inputSchema.properties?.targetPhase as { enum?: string[] })?.enum ?? [];
+
+      it(`inputSchema targetPhase enum has ${expectedPhaseEnum.length} values`, () => {
+        expect(phaseEnum.length).toBe(expectedPhaseEnum.length);
+      });
+
+      for (const phase of expectedPhaseEnum) {
+        it(`inputSchema targetPhase enum includes "${phase}"`, () => {
+          expect(phaseEnum).toContain(phase);
+        });
+      }
+    });
+
+    describe('required bindings', () => {
+      it('requiredBindings is empty', () => {
+        expect(Array.isArray(manifest.requiredBindings)).toBe(true);
+        expect(manifest.requiredBindings.length).toBe(0);
+      });
+    });
+
+    describe('sandbox', () => {
+      it('sandbox.maxExecutionMs >= 300000', () => {
+        expect(manifest.sandbox.maxExecutionMs).toBeGreaterThanOrEqual(300000);
+      });
+
+      it('sandbox.maxMemoryMB >= 128', () => {
+        expect(manifest.sandbox.maxMemoryMB).toBeGreaterThanOrEqual(128);
+      });
+    });
+
+    describe('required arrays', () => {
+      it('compatibilityRequirements is an array', () => {
+        expect(Array.isArray(manifest.compatibilityRequirements)).toBe(true);
+      });
+
+      it('compatibilityRequirements includes system_tools', () => {
+        expect(manifest.compatibilityRequirements).toContain('system_tools');
+      });
+
+      it('oauth is an array', () => {
+        expect(Array.isArray(manifest.oauth)).toBe(true);
+      });
+
+      it('wasm is an array', () => {
+        expect(Array.isArray(manifest.wasm)).toBe(true);
+      });
+
+      it('views is an array', () => {
+        expect(Array.isArray(manifest.views)).toBe(true);
+      });
+
+      it('tools is an array', () => {
+        expect(Array.isArray(manifest.tools)).toBe(true);
+      });
+
+      it('lifecycleHooks is an array', () => {
+        expect(Array.isArray(manifest.lifecycleHooks)).toBe(true);
+      });
+    });
+  });
+
+  describe('index.json entry validation', () => {
+    const manifest = loadJson(MANIFEST_PATH) as Manifest;
+    const index = loadJson(INDEX_PATH) as IndexEntry[];
+    const entry = index.find((e) => e.name === 'startup-product-studio');
+
+    it('index.json contains startup-product-studio entry', () => {
+      expect(entry).toBeDefined();
+    });
+
+    it('index entry folderPath is correct', () => {
+      expect(entry!.folderPath).toBe('skills/startup-product-studio');
+    });
+
+    it('index entry executionMode matches manifest', () => {
+      expect(entry!.executionMode).toBe(manifest.executionMode);
+    });
+
+    it('index entry bridgeRequirement matches manifest', () => {
+      expect(entry!.bridgeRequirement).toBe(manifest.bridgeRequirement);
+    });
+
+    it('index entry workspaceSupport matches manifest', () => {
+      expect(entry!.workspaceSupport).toBe(manifest.workspaceSupport);
+    });
+
+    it('index entry longRunningSupport matches manifest', () => {
+      expect(entry!.longRunningSupport).toBe(manifest.longRunningSupport);
+    });
+
+    it('index entry userInputSupport matches manifest', () => {
+      expect(entry!.userInputSupport).toBe(manifest.userInputSupport);
+    });
+
+    it('index entry artifactVersioningSupport matches manifest', () => {
+      expect(entry!.artifactVersioningSupport).toBe(manifest.artifactVersioningSupport);
+    });
+
+    it('index entry has sufficient tags', () => {
+      expect(Array.isArray(entry!.tags)).toBe(true);
+      expect(entry!.tags.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it('index entry tags include "agentic"', () => {
+      expect(entry!.tags).toContain('agentic');
+    });
+
+    it('index entry tags include "startup"', () => {
+      expect(entry!.tags).toContain('startup');
+    });
+  });
+
+  describe('module export validation', () => {
+    const moduleSource = readFileSync(MODULE_PATH, 'utf-8');
+
+    it('module.ts exports async execute function', () => {
+      expect(moduleSource).toContain('export async function execute');
+    });
+
+    it('module.ts uses host.workspace.getState', () => {
+      expect(moduleSource).toContain('host.workspace.getState');
+    });
+
+    it('module.ts uses host.workspace.setState', () => {
+      expect(moduleSource).toContain('host.workspace.setState');
+    });
+
+    it('module.ts uses host.workspace.createArtifact', () => {
+      expect(moduleSource).toContain('host.workspace.createArtifact');
+    });
+
+    it('module.ts uses host.run.reportStep', () => {
+      expect(moduleSource).toContain('host.run.reportStep');
+    });
+
+    it('module.ts uses host.run.requestInput', () => {
+      expect(moduleSource).toContain('host.run.requestInput');
+    });
+
+    it('module.ts uses host.run.checkpoint', () => {
+      expect(moduleSource).toContain('host.run.checkpoint');
+    });
+
+    it('module.ts uses host.workspace.setPhase', () => {
+      expect(moduleSource).toContain('host.workspace.setPhase');
+    });
+
+    it('module.ts uses host.workspace.setRole', () => {
+      expect(moduleSource).toContain('host.workspace.setRole');
+    });
+
+    it('module.ts uses host.llm.complete', () => {
+      expect(moduleSource).toContain('host.llm.complete');
+    });
+
+    it('module.ts uses host.events.emitProgress', () => {
+      expect(moduleSource).toContain('host.events.emitProgress');
+    });
+
+    describe('roles', () => {
+      const expectedRoles = ['ceo', 'product-manager', 'ux-ui', 'software-architect', 'developer', 'qa'];
+      for (const role of expectedRoles) {
+        it(`module.ts references role "${role}"`, () => {
+          expect(moduleSource).toContain(`'${role}'`);
+        });
+      }
+    });
+
+    describe('phases', () => {
+      const expectedPhases = ['discovery', 'roadmap-definition', 'product-definition', 'ux-definition', 'architecture-definition', 'implementation-phase', 'qa-validation', 'release-readiness'];
+      for (const phase of expectedPhases) {
+        it(`module.ts references phase "${phase}"`, () => {
+          expect(moduleSource).toContain(`'${phase}'`);
+        });
+      }
+    });
+
+    describe('canonical artifact types', () => {
+      const canonicalArtifactTypes = [
+        'product-vision', 'business-context', 'roadmap', 'mvp-definition',
+        'user-personas', 'ux-ui-spec', 'architecture-plan', 'implementation-phase-plan',
+        'implementation-report', 'qa-report', 'release-readiness-report',
+      ];
+      for (const artifactType of canonicalArtifactTypes) {
+        it(`module.ts references canonical artifact type "${artifactType}"`, () => {
+          expect(moduleSource).toContain(`'${artifactType}'`);
+        });
+      }
+    });
+
+    describe('enriched ProjectRecord fields', () => {
+      it('module.ts includes businessContext field', () => {
+        expect(moduleSource).toContain('businessContext');
+      });
+
+      it('module.ts includes targetUsers field', () => {
+        expect(moduleSource).toContain('targetUsers');
+      });
+
+      it('module.ts includes constraints field', () => {
+        expect(moduleSource).toContain('constraints');
+      });
+
+      it('module.ts includes implementationStatus field', () => {
+        expect(moduleSource).toContain('implementationStatus');
+      });
+
+      it('module.ts includes validationHistory field', () => {
+        expect(moduleSource).toContain('validationHistory');
+      });
+    });
+
+    describe('gate decisions', () => {
+      it('module.ts supports pause gate decision', () => {
+        expect(moduleSource).toContain("'pause'");
+      });
+
+      it('module.ts supports cancel gate decision', () => {
+        expect(moduleSource).toContain("'cancel'");
+      });
+    });
+  });
+});

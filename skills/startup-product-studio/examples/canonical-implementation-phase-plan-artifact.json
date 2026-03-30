@@ -1,0 +1,234 @@
+{
+  "projectId": "taskflow",
+  "subphaseId": "sub-impl-1",
+  "label": "Phase 1: Core API & Data Layer",
+  "roadmapEntryPhase": "implementation-phase",
+  "body": "This phase establishes the foundational backend infrastructure for TaskFlow. The primary focus is implementing user authentication via Auth0 JWT integration, building the core task CRUD endpoints with Zod validation, and setting up the PostgreSQL data layer with proper schema design and migrations. Shared TypeScript types will be published to ensure frontend-backend contract alignment.\n\nThe implementation follows a bottom-up approach: database schema first, then the data access layer, authentication middleware, and finally the REST endpoints. Integration tests will validate the complete request lifecycle against a real database.",
+  "architectureSlices": ["backend-api: Auth module", "backend-api: Task CRUD", "shared-types: API contracts"],
+  "technicalDependencies": ["architecture-definition"],
+  "generatedAt": "2026-03-15T10:00:00Z",
+  "phaseContext": {
+    "roadmapPhaseId": "phase-impl-core",
+    "roadmapPhaseName": "Core API & Data Layer",
+    "summary": "Implement the foundational backend API including authentication, task CRUD operations, and the PostgreSQL data layer.",
+    "relatedArchitectureSections": ["runtimeArchitecture.backends", "dataArchitecture", "integrationArchitecture.apiBoundaries"]
+  },
+  "scopeDefinition": {
+    "included": [
+      "User authentication with JWT via Auth0",
+      "Task CRUD endpoints with Zod validation",
+      "PostgreSQL schema design and migrations",
+      "Shared TypeScript types for API contracts",
+      "Integration tests for all endpoints"
+    ],
+    "excluded": [
+      "Frontend implementation",
+      "WebSocket real-time updates",
+      "GitHub integration webhooks",
+      "Email notifications",
+      "CI/CD pipeline setup",
+      "Board and column management endpoints"
+    ]
+  },
+  "affectedProjects": [
+    {
+      "projectId": "backend-api",
+      "projectName": "Backend API",
+      "purpose": "Primary implementation target for auth and task endpoints",
+      "expectedChanges": [
+        "New auth middleware with JWT validation",
+        "Task router with CRUD handlers",
+        "PostgreSQL migration scripts",
+        "Zod validation schemas",
+        "Repository pattern data access layer"
+      ]
+    },
+    {
+      "projectId": "shared-types",
+      "projectName": "Shared Types",
+      "purpose": "Define TypeScript contracts consumed by frontend",
+      "expectedChanges": [
+        "Task entity types",
+        "API request/response types",
+        "Error code enums"
+      ]
+    }
+  ],
+  "workBreakdown": [
+    {
+      "groupLabel": "Data Layer",
+      "tasks": [
+        {
+          "id": "t-1",
+          "title": "Design PostgreSQL schema",
+          "description": "Create database schema for users, tasks, boards, and columns with proper indexes and constraints.",
+          "projectId": "backend-api",
+          "type": "feature",
+          "dependencies": [],
+          "expectedOutcome": "Migration files that create the core tables with referential integrity"
+        },
+        {
+          "id": "t-2",
+          "title": "Implement database access layer",
+          "description": "Create repository pattern abstractions over the PostgreSQL schema using Kysely query builder.",
+          "projectId": "backend-api",
+          "type": "feature",
+          "dependencies": ["t-1"],
+          "expectedOutcome": "Type-safe repository classes for User, Task, Board, Column entities"
+        }
+      ]
+    },
+    {
+      "groupLabel": "Authentication",
+      "tasks": [
+        {
+          "id": "t-3",
+          "title": "Implement JWT auth middleware",
+          "description": "Create Express middleware that validates JWT tokens from Auth0, extracts user claims, and attaches them to the request context.",
+          "projectId": "backend-api",
+          "type": "feature",
+          "dependencies": [],
+          "expectedOutcome": "Auth middleware that returns 401 for invalid tokens and populates req.user"
+        },
+        {
+          "id": "t-4",
+          "title": "Create auth routes",
+          "description": "Implement login callback, token refresh, and logout endpoints.",
+          "projectId": "backend-api",
+          "type": "feature",
+          "dependencies": ["t-3", "t-2"],
+          "expectedOutcome": "POST /auth/callback, POST /auth/refresh, POST /auth/logout endpoints"
+        }
+      ]
+    },
+    {
+      "groupLabel": "Task CRUD",
+      "tasks": [
+        {
+          "id": "t-5",
+          "title": "Define shared API types",
+          "description": "Create TypeScript interfaces for task-related API request and response payloads in the shared-types package.",
+          "projectId": "shared-types",
+          "type": "feature",
+          "dependencies": [],
+          "expectedOutcome": "Exported types: CreateTaskRequest, UpdateTaskRequest, TaskResponse, TaskListResponse"
+        },
+        {
+          "id": "t-6",
+          "title": "Implement task CRUD endpoints",
+          "description": "Build REST endpoints for creating, reading, updating, and deleting tasks with Zod input validation.",
+          "projectId": "backend-api",
+          "type": "feature",
+          "dependencies": ["t-2", "t-3", "t-5"],
+          "expectedOutcome": "GET/POST/PUT/DELETE /api/tasks with proper auth, validation, and error handling"
+        },
+        {
+          "id": "t-7",
+          "title": "Add integration tests for task endpoints",
+          "description": "Write integration tests that hit the actual API with a test database.",
+          "projectId": "backend-api",
+          "type": "test",
+          "dependencies": ["t-6"],
+          "expectedOutcome": "Test suite covering happy paths, validation errors, auth failures, and edge cases"
+        }
+      ]
+    }
+  ],
+  "interfacesAndContracts": {
+    "apis": [
+      {
+        "name": "Task REST API",
+        "producerProjectId": "backend-api",
+        "consumerProjectIds": ["web-app"],
+        "description": "RESTful CRUD endpoints for task management at /api/tasks"
+      },
+      {
+        "name": "Auth API",
+        "producerProjectId": "backend-api",
+        "consumerProjectIds": ["web-app"],
+        "description": "Authentication endpoints at /auth/* for login callback, refresh, and logout"
+      }
+    ],
+    "boundaries": [
+      "web-app must only access backend-api through the REST API",
+      "shared-types is the single source of truth for API payload shapes"
+    ],
+    "dataContracts": [
+      {
+        "name": "TaskResponse",
+        "ownerProjectId": "shared-types",
+        "description": "Canonical shape for task data returned by all GET endpoints"
+      }
+    ]
+  },
+  "dataChanges": {
+    "newModels": [
+      {
+        "name": "User",
+        "projectId": "backend-api",
+        "description": "Application user linked to Auth0 identity",
+        "fields": ["id (UUID)", "auth0Id (string)", "email (string)", "displayName (string)", "createdAt (timestamp)"]
+      },
+      {
+        "name": "Task",
+        "projectId": "backend-api",
+        "description": "Core task entity",
+        "fields": ["id (UUID)", "title (string)", "description (text)", "status (enum)", "priority (enum)", "assigneeId (UUID, FK)", "boardId (UUID, FK)", "columnId (UUID, FK)", "createdAt (timestamp)", "updatedAt (timestamp)"]
+      }
+    ],
+    "migrations": [
+      "001_create_users_table",
+      "002_create_boards_and_columns",
+      "003_create_tasks_table"
+    ],
+    "storageChanges": [
+      "PostgreSQL 15 database provisioned per environment"
+    ]
+  },
+  "risksAndEdgeCases": [
+    {
+      "id": "r-1",
+      "description": "Auth0 token validation latency may impact API response times under load",
+      "severity": "medium",
+      "mitigation": "Cache JWKS keys locally with 1-hour TTL"
+    },
+    {
+      "id": "r-2",
+      "description": "Database migration ordering is critical — tasks table depends on users and boards",
+      "severity": "low"
+    },
+    {
+      "id": "r-3",
+      "description": "Concurrent task updates may cause lost-update anomalies",
+      "severity": "high",
+      "mitigation": "Use optimistic locking with version column on tasks table"
+    }
+  ],
+  "validationPlan": {
+    "verificationSteps": [
+      "All migration scripts run cleanly on empty database",
+      "Auth middleware correctly validates and rejects tokens",
+      "CRUD endpoints return correct HTTP status codes",
+      "Shared types compile and are importable from web-app"
+    ],
+    "testExpectations": [
+      "Integration tests for all CRUD endpoints with real database",
+      "Unit tests for auth middleware with mock tokens",
+      "Type-checking tests for shared-types package"
+    ],
+    "qaGateCriteria": [
+      "100% of endpoints documented with request/response examples",
+      "No N+1 query patterns in task listing",
+      "All error responses follow consistent error format"
+    ]
+  },
+  "definitionOfDone": [
+    "All 7 tasks completed and verified",
+    "Database migrations run successfully on clean database",
+    "Auth endpoints return proper JWT tokens",
+    "Task CRUD endpoints pass integration tests",
+    "Shared types package builds and exports correctly",
+    "API response times under 200ms for P95 with test load",
+    "No TypeScript compilation errors across affected projects"
+  ]
+}

@@ -74,6 +74,7 @@ interface SkillHostCapabilities {
       inputSchema: Record<string, unknown>;
     }): Promise<unknown>;
     checkpoint(): Promise<void>;
+    pause(reason: string): Promise<never>;
   };
   workspace: {
     getState(): Promise<StudioState | null>;
@@ -164,6 +165,34 @@ interface RoadmapMilestone {
   successCriteria: string[];
 }
 
+interface CeoStrategicBrief {
+  visionStatement: string;
+  strategicConstraints: string[];
+  targetMarketFocus: string;
+  competitivePositioning: string;
+  riskThresholds: {
+    maxHighRiskPhases: number;
+    criticalDependencies: string[];
+  };
+  scopeGuidance: {
+    mustInclude: string[];
+    mustExclude: string[];
+    deferToV2: string[];
+  };
+}
+
+interface CeoStrategicValidation {
+  coherenceScore: 'aligned' | 'minor-concerns' | 'misaligned';
+  flaggedIssues: string[];
+  suggestedAdjustments: string[];
+}
+
+interface RoadmapVersionMetadata {
+  generationRunId: string;
+  version: number;
+  roleFlow: string[];
+}
+
 interface RoadmapArtifactContent {
   productSummary: RoadmapProductSummary;
   productScope: RoadmapProductScope;
@@ -172,6 +201,236 @@ interface RoadmapArtifactContent {
   milestones: RoadmapMilestone[];
   assumptions: string[];
   openQuestions: string[];
+  strategicValidation?: CeoStrategicValidation;
+  versionMetadata?: RoadmapVersionMetadata;
+}
+
+// ── Architecture Plan Artifact Types ────────────────────────────────────────
+
+interface ArchitectureSystemOverview {
+  description: string;
+  productRelationship: string;
+  technicalConstraints: string[];
+}
+
+type ArchitectureProjectType = 'web-app' | 'backend-api' | 'mobile-app' | 'worker' | 'infra' | 'shared-package' | 'docs';
+
+interface ArchitectureProjectEntry {
+  id: string;
+  name: string;
+  purpose: string;
+  ownership: string;
+  type: ArchitectureProjectType;
+  dependencies: string[];
+}
+
+interface ArchitectureRuntimeComponent {
+  name: string;
+  projectId: string;
+  description: string;
+  responsibilities: string[];
+}
+
+interface ArchitectureRuntimeArchitecture {
+  frontends: ArchitectureRuntimeComponent[];
+  backends: ArchitectureRuntimeComponent[];
+  backgroundProcessing: ArchitectureRuntimeComponent[];
+  externalIntegrations: { name: string; purpose: string; protocol: string }[];
+}
+
+interface ArchitectureDataDomain {
+  name: string;
+  description: string;
+  ownerProjectId: string;
+  entities: string[];
+}
+
+interface ArchitectureDataArchitecture {
+  dataDomains: ArchitectureDataDomain[];
+  persistenceStrategy: { projectId: string; technology: string; rationale: string }[];
+  boundaries: string[];
+  stateOwnership: { domain: string; ownerProjectId: string; accessPattern: string }[];
+}
+
+interface ArchitectureIntegrationArchitecture {
+  apiBoundaries: { name: string; producerProjectId: string; consumerProjectIds: string[]; protocol: string }[];
+  internalIntegrationPoints: { description: string; projectIds: string[] }[];
+  externalServices: { name: string; purpose: string; integrationMethod: string }[];
+}
+
+interface ArchitectureSecurityAndTrustModel {
+  authAssumptions: string[];
+  secretHandling: string[];
+  trustBoundaries: string[];
+  riskySurfaces: string[];
+}
+
+interface ArchitectureDeploymentModel {
+  environmentModel: { name: string; purpose: string; characteristics: string[] }[];
+  deploymentUnits: { projectId: string; strategy: string; notes: string }[];
+}
+
+interface ArchitectureQualityAttributes {
+  maintainability: string;
+  scalability: string;
+  testability: string;
+  reliability: string;
+  performance: string;
+  developerExperience: string;
+}
+
+interface ArchitecturePhaseMapping {
+  phaseId: string;
+  phaseName: string;
+  architectureSlices: string[];
+  technicalDependencies: string[];
+}
+
+interface ArchitectureImplementationGuidelines {
+  rules: string[];
+  boundariesToPreserve: string[];
+  antiPatterns: string[];
+  codingExpectations: string[];
+}
+
+type ArchitectureRiskSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+interface ArchitectureRisk {
+  id: string;
+  description: string;
+  severity: ArchitectureRiskSeverity;
+  mitigation?: string;
+}
+
+interface ArchitectureQuestion {
+  id: string;
+  question: string;
+  context?: string;
+}
+
+interface ArchitecturePlanVersionMetadata {
+  version: number;
+  roleFlow: string[];
+}
+
+interface ArchitecturePlanArtifactContent {
+  systemOverview: ArchitectureSystemOverview;
+  projectTopology: ArchitectureProjectEntry[];
+  runtimeArchitecture: ArchitectureRuntimeArchitecture;
+  dataArchitecture: ArchitectureDataArchitecture;
+  integrationArchitecture: ArchitectureIntegrationArchitecture;
+  securityAndTrustModel: ArchitectureSecurityAndTrustModel;
+  deploymentAndEnvironmentModel: ArchitectureDeploymentModel;
+  qualityAttributes: ArchitectureQualityAttributes;
+  phaseMapping: ArchitecturePhaseMapping[];
+  implementationGuidelines: ArchitectureImplementationGuidelines;
+  openRisks: ArchitectureRisk[];
+  openQuestions: ArchitectureQuestion[];
+  versionMetadata?: ArchitecturePlanVersionMetadata;
+}
+
+// ── Implementation Phase Plan Artifact Types ────────────────────────────────
+
+type ImplPlanTaskType = 'feature' | 'refactor' | 'integration' | 'config' | 'test' | 'docs';
+type ImplPlanRiskSeverity = 'low' | 'medium' | 'high';
+
+interface ImplPlanPhaseContext {
+  roadmapPhaseId: string;
+  roadmapPhaseName: string;
+  summary: string;
+  relatedArchitectureSections: string[];
+}
+
+interface ImplPlanScopeDefinition {
+  included: string[];
+  excluded: string[];
+}
+
+interface ImplPlanAffectedProject {
+  projectId: string;
+  projectName: string;
+  purpose: string;
+  expectedChanges: string[];
+}
+
+interface ImplPlanTask {
+  id: string;
+  title: string;
+  description: string;
+  projectId: string;
+  type: ImplPlanTaskType;
+  dependencies: string[];
+  expectedOutcome: string;
+}
+
+interface ImplPlanTaskGroup {
+  groupLabel: string;
+  tasks: ImplPlanTask[];
+}
+
+interface ImplPlanApiContract {
+  name: string;
+  producerProjectId: string;
+  consumerProjectIds: string[];
+  description: string;
+}
+
+interface ImplPlanDataContract {
+  name: string;
+  ownerProjectId: string;
+  description: string;
+}
+
+interface ImplPlanInterfacesAndContracts {
+  apis: ImplPlanApiContract[];
+  boundaries: string[];
+  dataContracts: ImplPlanDataContract[];
+}
+
+interface ImplPlanDataModel {
+  name: string;
+  projectId: string;
+  description: string;
+  fields: string[];
+}
+
+interface ImplPlanDataChanges {
+  newModels: ImplPlanDataModel[];
+  migrations: string[];
+  storageChanges: string[];
+}
+
+interface ImplPlanRisk {
+  id: string;
+  description: string;
+  severity: ImplPlanRiskSeverity;
+  mitigation?: string;
+}
+
+interface ImplPlanValidation {
+  verificationSteps: string[];
+  testExpectations: string[];
+  qaGateCriteria: string[];
+}
+
+interface ImplementationPhasePlanArtifactContent {
+  projectId: string;
+  subphaseId: string;
+  label: string;
+  roadmapEntryPhase: PhaseId;
+  body: string;
+  architectureSlices: string[];
+  technicalDependencies: string[];
+  generatedAt: string;
+  phaseContext?: ImplPlanPhaseContext;
+  scopeDefinition?: ImplPlanScopeDefinition;
+  affectedProjects?: ImplPlanAffectedProject[];
+  workBreakdown?: ImplPlanTaskGroup[];
+  interfacesAndContracts?: ImplPlanInterfacesAndContracts;
+  dataChanges?: ImplPlanDataChanges;
+  risksAndEdgeCases?: ImplPlanRisk[];
+  validationPlan?: ImplPlanValidation;
+  definitionOfDone?: string[];
 }
 
 interface BusinessContext {
@@ -217,7 +476,7 @@ interface ImplementationStatus {
 
 interface ValidationEntry {
   phase: PhaseId;
-  decision: 'approve' | 'reject' | 'revise' | 'pause' | 'cancel';
+  decision: 'approve' | 'reject' | 'revise' | 'approve-with-changes' | 'pause' | 'cancel';
   feedback: string | null;
   timestamp: string;
 }
@@ -226,6 +485,14 @@ interface RoadmapVersion {
   id: string;
   version: number;
   entries: RoadmapEntry[];
+  createdAt: string;
+  decision: ValidationEntry['decision'] | null;
+}
+
+interface ArchitecturePlanVersion {
+  id: string;
+  version: number;
+  artifactId: string;
   createdAt: string;
   decision: ValidationEntry['decision'] | null;
 }
@@ -244,14 +511,43 @@ type RoadmapPhaseStatus =
 interface ImplementationPhaseRecord {
   id: string;
   roadmapEntryPhase: PhaseId;
+  roadmapPhaseId: string | null;
   label: string;
   status: RoadmapPhaseStatus;
+  goals: string[];
+  deliverables: string[];
+  validationCriteria: string[];
+  involvedProjectIds: string[];
+  architectureSlices: string[];
+  technicalDependencies: string[];
   planArtifactId: string | null;
   implementationReportArtifactId: string | null;
   qaReportArtifactId: string | null;
   pmAlignmentDecision: ValidationEntry['decision'] | null;
   userDecision: ValidationEntry['decision'] | null;
   bridgeJobIds: string[];
+  implementationPlanVersions: ImplementationPlanVersion[];
+  taskGroupProgress: TaskGroupProgress[];
+  currentTaskGroupIndex: number | null;
+}
+
+interface ImplementationPlanVersion {
+  id: string;
+  version: number;
+  artifactId: string;
+  phaseRecordId: string;
+  createdAt: string;
+  decision: ValidationEntry['decision'] | null;
+}
+
+interface TaskGroupProgress {
+  groupLabel: string;
+  taskIds: string[];
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  bridgeJobIds: string[];
+  startedAt: string | null;
+  completedAt: string | null;
+  failureReason: string | null;
 }
 
 type UserRedirectionAction =
@@ -281,6 +577,10 @@ interface ProjectRecord {
   implementationStatus: ImplementationStatus | null;
   validationHistory: ValidationEntry[];
   roadmapVersions: RoadmapVersion[];
+  approvedRoadmapPhases: RoadmapPhase[] | null;
+  approvedRoadmapTopology: RoadmapProjectTopologyEntry[] | null;
+  architecturePlanVersions: ArchitecturePlanVersion[];
+  approvedArchitecturePlan: ArchitecturePlanArtifactContent | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -490,6 +790,242 @@ Output structured test plans with specific test case categories, tools, and meas
 
 // ── Utility Functions ───────────────────────────────────────────────────────
 
+function buildEditContext(
+  phaseEdits?: Array<{ phaseId: string; action: string; details: string }>,
+  scopeChanges?: { addToIncluded?: string[]; removeFromIncluded?: string[]; addToExcluded?: string[]; removeFromExcluded?: string[] },
+): string {
+  const parts: string[] = [];
+  if (phaseEdits && phaseEdits.length > 0) {
+    parts.push('Phase edits requested by the user:');
+    for (const edit of phaseEdits) {
+      parts.push(`- Phase "${edit.phaseId}": ${edit.action}${edit.details ? ` — ${edit.details}` : ''}`);
+    }
+  }
+  if (scopeChanges) {
+    const entries: string[] = [];
+    if (scopeChanges.addToIncluded?.length) entries.push(`Add to included scope: ${scopeChanges.addToIncluded.join(', ')}`);
+    if (scopeChanges.removeFromIncluded?.length) entries.push(`Remove from included scope: ${scopeChanges.removeFromIncluded.join(', ')}`);
+    if (scopeChanges.addToExcluded?.length) entries.push(`Add to excluded scope: ${scopeChanges.addToExcluded.join(', ')}`);
+    if (scopeChanges.removeFromExcluded?.length) entries.push(`Remove from excluded scope: ${scopeChanges.removeFromExcluded.join(', ')}`);
+    if (entries.length > 0) {
+      parts.push('Scope changes requested by the user:');
+      parts.push(...entries.map((e) => `- ${e}`));
+    }
+  }
+  return parts.length > 0 ? parts.join('\n') : '';
+}
+
+type ArchitectureSectionEditAction =
+  | 'simplify'
+  | 'add-detail'
+  | 'replace'
+  | 'remove-component'
+  | 'add-component'
+  | 'change-technology'
+  | 'restructure';
+
+type ArchitectureGateResponse = {
+  decision: string;
+  feedback?: string;
+  sectionEdits?: Array<{ sectionId: string; action: ArchitectureSectionEditAction; details: string }>;
+  topologyChanges?: { addProjects?: string[]; removeProjects?: string[]; changeTypes?: string[] };
+};
+
+const ARCHITECTURE_SECTION_EDIT_ACTIONS: ArchitectureSectionEditAction[] = [
+  'simplify', 'add-detail', 'replace', 'remove-component', 'add-component', 'change-technology', 'restructure',
+];
+
+const ARCHITECTURE_SECTION_IDS = [
+  'systemOverview', 'projectTopology', 'runtimeArchitecture', 'dataArchitecture',
+  'integrationArchitecture', 'securityAndTrustModel', 'deploymentAndEnvironmentModel',
+  'qualityAttributes', 'phaseMapping', 'implementationGuidelines', 'openRisks', 'openQuestions',
+] as const;
+
+function buildArchitectureGateSchema(allowRevise: boolean) {
+  const decisions = allowRevise
+    ? ['approve', 'reject', 'revise', 'approve-with-changes', 'pause', 'cancel']
+    : ['approve', 'approve-with-changes', 'pause', 'cancel'];
+  return {
+    type: 'object',
+    properties: {
+      decision: {
+        type: 'string',
+        enum: decisions,
+        description: 'Decision for architecture review',
+      },
+      feedback: { type: 'string', description: 'Feedback on architecture decisions' },
+      sectionEdits: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            sectionId: { type: 'string', enum: [...ARCHITECTURE_SECTION_IDS] },
+            action: { type: 'string', enum: [...ARCHITECTURE_SECTION_EDIT_ACTIONS] },
+            details: { type: 'string' },
+          },
+        },
+        description: 'Structured section-level edits to the architecture plan',
+      },
+      topologyChanges: {
+        type: 'object',
+        properties: {
+          addProjects: { type: 'array', items: { type: 'string' } },
+          removeProjects: { type: 'array', items: { type: 'string' } },
+          changeTypes: { type: 'array', items: { type: 'string' } },
+        },
+        description: 'Changes to project topology (add/remove projects, change project types)',
+      },
+    },
+    required: ['decision'],
+  };
+}
+
+function buildArchitectureEditContext(
+  sectionEdits?: ArchitectureGateResponse['sectionEdits'],
+  topologyChanges?: ArchitectureGateResponse['topologyChanges'],
+): string {
+  const parts: string[] = [];
+  if (sectionEdits && sectionEdits.length > 0) {
+    parts.push('Section edits requested by the user:');
+    for (const edit of sectionEdits) {
+      parts.push(`- Section "${edit.sectionId}": ${edit.action}${edit.details ? ` — ${edit.details}` : ''}`);
+    }
+  }
+  if (topologyChanges) {
+    const entries: string[] = [];
+    if (topologyChanges.addProjects?.length) entries.push(`Add projects: ${topologyChanges.addProjects.join(', ')}`);
+    if (topologyChanges.removeProjects?.length) entries.push(`Remove projects: ${topologyChanges.removeProjects.join(', ')}`);
+    if (topologyChanges.changeTypes?.length) entries.push(`Change project types: ${topologyChanges.changeTypes.join(', ')}`);
+    if (entries.length > 0) {
+      parts.push('Topology changes requested by the user:');
+      parts.push(...entries.map((e) => `- ${e}`));
+    }
+  }
+  return parts.length > 0 ? parts.join('\n') : '';
+}
+
+// ---------------------------------------------------------------------------
+// Implementation Phase Plan Gate
+// ---------------------------------------------------------------------------
+
+type ImplPlanTaskEditAction = 'remove' | 'reprioritize' | 'change-scope' | 'change-type' | 'add';
+type ImplPlanRiskEditAction = 'remove' | 'change-severity' | 'add';
+
+type ImplPlanGateResponse = {
+  decision: string;
+  feedback?: string;
+  taskEdits?: Array<{ taskId: string; action: ImplPlanTaskEditAction; details: string; newType?: string }>;
+  scopeChanges?: { addToIncluded?: string[]; removeFromIncluded?: string[]; addToExcluded?: string[]; removeFromExcluded?: string[] };
+  riskEdits?: Array<{ riskId: string; action: ImplPlanRiskEditAction; details: string; newSeverity?: string }>;
+  dependencyChanges?: { reorderGroups?: string; changeDependencies?: string };
+};
+
+function buildImplPlanGateSchema(allowRevise: boolean) {
+  const decisions = allowRevise
+    ? ['approve', 'reject', 'revise', 'approve-with-changes', 'pause', 'cancel']
+    : ['approve', 'approve-with-changes', 'pause', 'cancel'];
+  return {
+    type: 'object',
+    properties: {
+      decision: {
+        type: 'string',
+        enum: decisions,
+        description: 'Decision for this implementation plan',
+      },
+      feedback: { type: 'string', description: 'Feedback or revision requests' },
+      taskEdits: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            taskId: { type: 'string' },
+            action: { type: 'string', enum: ['remove', 'reprioritize', 'change-scope', 'change-type', 'add'] },
+            details: { type: 'string' },
+            newType: { type: 'string', enum: ['feature', 'refactor', 'integration', 'config', 'test', 'docs'] },
+          },
+        },
+        description: 'Structured task-level edits',
+      },
+      scopeChanges: {
+        type: 'object',
+        properties: {
+          addToIncluded: { type: 'array', items: { type: 'string' } },
+          removeFromIncluded: { type: 'array', items: { type: 'string' } },
+          addToExcluded: { type: 'array', items: { type: 'string' } },
+          removeFromExcluded: { type: 'array', items: { type: 'string' } },
+        },
+        description: 'Structured scope changes',
+      },
+      riskEdits: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            riskId: { type: 'string' },
+            action: { type: 'string', enum: ['remove', 'change-severity', 'add'] },
+            details: { type: 'string' },
+            newSeverity: { type: 'string', enum: ['low', 'medium', 'high'] },
+          },
+        },
+        description: 'Structured risk edits',
+      },
+      dependencyChanges: {
+        type: 'object',
+        properties: {
+          reorderGroups: { type: 'string' },
+          changeDependencies: { type: 'string' },
+        },
+        description: 'Dependency and ordering changes',
+      },
+    },
+    required: ['decision'],
+  };
+}
+
+function buildImplPlanEditContext(
+  taskEdits?: ImplPlanGateResponse['taskEdits'],
+  scopeChanges?: ImplPlanGateResponse['scopeChanges'],
+  riskEdits?: ImplPlanGateResponse['riskEdits'],
+  dependencyChanges?: ImplPlanGateResponse['dependencyChanges'],
+): string {
+  const parts: string[] = [];
+  if (taskEdits && taskEdits.length > 0) {
+    parts.push('Task edits requested by the user:');
+    for (const edit of taskEdits) {
+      const typeInfo = edit.action === 'change-type' && edit.newType ? ` (new type: ${edit.newType})` : '';
+      parts.push(`- Task "${edit.taskId}": ${edit.action}${typeInfo}${edit.details ? ` — ${edit.details}` : ''}`);
+    }
+  }
+  if (scopeChanges) {
+    const entries: string[] = [];
+    if (scopeChanges.addToIncluded?.length) entries.push(`Add to included scope: ${scopeChanges.addToIncluded.join(', ')}`);
+    if (scopeChanges.removeFromIncluded?.length) entries.push(`Remove from included scope: ${scopeChanges.removeFromIncluded.join(', ')}`);
+    if (scopeChanges.addToExcluded?.length) entries.push(`Add to excluded scope: ${scopeChanges.addToExcluded.join(', ')}`);
+    if (scopeChanges.removeFromExcluded?.length) entries.push(`Remove from excluded scope: ${scopeChanges.removeFromExcluded.join(', ')}`);
+    if (entries.length > 0) {
+      parts.push('Scope changes requested by the user:');
+      parts.push(...entries.map((e) => `- ${e}`));
+    }
+  }
+  if (riskEdits && riskEdits.length > 0) {
+    parts.push('Risk edits requested by the user:');
+    for (const edit of riskEdits) {
+      const severityInfo = edit.action === 'change-severity' && edit.newSeverity ? ` (new severity: ${edit.newSeverity})` : '';
+      parts.push(`- Risk "${edit.riskId}": ${edit.action}${severityInfo}${edit.details ? ` — ${edit.details}` : ''}`);
+    }
+  }
+  if (dependencyChanges) {
+    const entries: string[] = [];
+    if (dependencyChanges.reorderGroups) entries.push(`Reorder groups: ${dependencyChanges.reorderGroups}`);
+    if (dependencyChanges.changeDependencies) entries.push(`Change dependencies: ${dependencyChanges.changeDependencies}`);
+    if (entries.length > 0) {
+      parts.push('Dependency changes requested by the user:');
+      parts.push(...entries.map((e) => `- ${e}`));
+    }
+  }
+  return parts.length > 0 ? parts.join('\n') : '';
+}
+
 function hasBudgetFor(host: SkillHostCapabilities, needed: number): boolean {
   const budget = host.run.getStepBudget();
   if (budget === null) return true;
@@ -498,6 +1034,10 @@ function hasBudgetFor(host: SkillHostCapabilities, needed: number): boolean {
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 function getActiveProject(state: StudioState): ProjectRecord {
@@ -546,7 +1086,188 @@ ${codeProjectsDesc}`;
     if (project.constraints.regulatory.length > 0) context += `\n  Regulatory: ${project.constraints.regulatory.join(', ')}`;
   }
 
+  if (project.approvedArchitecturePlan) {
+    context += `\n\nApproved Architecture: ${project.approvedArchitecturePlan.systemOverview.description}`;
+    context += `\nArchitecture Topology: ${project.approvedArchitecturePlan.projectTopology.map((p) => p.name).join(', ')}`;
+  }
+
   return context;
+}
+
+function buildArchitectureContextForPhase(
+  project: ProjectRecord,
+  record: ImplementationPhaseRecord,
+): string {
+  const plan = project.approvedArchitecturePlan;
+  if (!plan) return '';
+
+  const sections: string[] = [];
+
+  if (record.architectureSlices.length > 0) {
+    sections.push(`Architecture Slices for this phase:\n${record.architectureSlices.map((s) => `- ${s}`).join('\n')}`);
+  }
+
+  if (record.technicalDependencies.length > 0) {
+    sections.push(`Technical Dependencies:\n${record.technicalDependencies.map((d) => `- ${d}`).join('\n')}`);
+  }
+
+  const guidelines = plan.implementationGuidelines;
+  const guidelineParts: string[] = [];
+  if (guidelines.rules.length > 0) {
+    guidelineParts.push(`Rules:\n${guidelines.rules.map((r) => `- ${r}`).join('\n')}`);
+  }
+  if (guidelines.boundariesToPreserve.length > 0) {
+    guidelineParts.push(`Boundaries to Preserve:\n${guidelines.boundariesToPreserve.map((b) => `- ${b}`).join('\n')}`);
+  }
+  if (guidelines.antiPatterns.length > 0) {
+    guidelineParts.push(`Anti-Patterns to Avoid:\n${guidelines.antiPatterns.map((a) => `- ${a}`).join('\n')}`);
+  }
+  if (guidelines.codingExpectations.length > 0) {
+    guidelineParts.push(`Coding Expectations:\n${guidelines.codingExpectations.map((c) => `- ${c}`).join('\n')}`);
+  }
+  if (guidelineParts.length > 0) {
+    sections.push(`Implementation Guidelines:\n${guidelineParts.join('\n')}`);
+  }
+
+  if (record.involvedProjectIds.length > 0) {
+    const relevantTopology = plan.projectTopology.filter((p) =>
+      record.involvedProjectIds.some((id) => p.id === id || p.name === id),
+    );
+    if (relevantTopology.length > 0) {
+      sections.push(`Relevant Project Topology:\n${relevantTopology.map((p) => `- ${p.name} (${p.type}): ${p.purpose}${p.dependencies.length > 0 ? ` [depends: ${p.dependencies.join(', ')}]` : ''}`).join('\n')}`);
+    }
+  }
+
+  const qa = plan.qualityAttributes;
+  sections.push(`Quality Attributes:\n- Maintainability: ${qa.maintainability}\n- Scalability: ${qa.scalability}\n- Testability: ${qa.testability}\n- Reliability: ${qa.reliability}\n- Performance: ${qa.performance}\n- Developer Experience: ${qa.developerExperience}`);
+
+  if (plan.openRisks.length > 0) {
+    const involvedNames = record.involvedProjectIds.length > 0
+      ? record.involvedProjectIds.flatMap((id) => {
+          const topo = plan.projectTopology.find((p) => p.id === id || p.name === id);
+          return topo ? [topo.name, topo.id] : [id];
+        })
+      : [];
+    const relevantRisks = involvedNames.length > 0
+      ? plan.openRisks.filter((r) => involvedNames.some((n) => r.description.toLowerCase().includes(n.toLowerCase())))
+      : plan.openRisks;
+    if (relevantRisks.length > 0) {
+      sections.push(`Relevant Risks:\n${relevantRisks.map((r) => `- [${r.severity}] ${r.description}`).join('\n')}`);
+    }
+  }
+
+  return sections.join('\n\n');
+}
+
+function buildClaudeCodeArchitectureGuidance(
+  project: ProjectRecord,
+  record: ImplementationPhaseRecord,
+): string {
+  const plan = project.approvedArchitecturePlan;
+  if (!plan) return '';
+
+  const sections: string[] = [];
+  const gl = plan.implementationGuidelines;
+
+  if (gl.boundariesToPreserve.length > 0) {
+    sections.push(`ARCHITECTURE BOUNDARIES (do not violate):\n${gl.boundariesToPreserve.map((b) => `- ${b}`).join('\n')}`);
+  }
+  if (gl.antiPatterns.length > 0) {
+    sections.push(`ANTI-PATTERNS (avoid):\n${gl.antiPatterns.map((a) => `- ${a}`).join('\n')}`);
+  }
+  if (gl.codingExpectations.length > 0) {
+    sections.push(`CODING EXPECTATIONS:\n${gl.codingExpectations.map((c) => `- ${c}`).join('\n')}`);
+  }
+  if (record.architectureSlices.length > 0) {
+    sections.push(`ARCHITECTURE SLICES for this phase:\n${record.architectureSlices.map((s) => `- ${s}`).join('\n')}`);
+  }
+
+  if (record.involvedProjectIds.length > 0) {
+    const relevantTopology = plan.projectTopology.filter((p) =>
+      record.involvedProjectIds.some((id) => p.id === id || p.name === id),
+    );
+    if (relevantTopology.length > 0) {
+      sections.push(`PROJECT TOPOLOGY:\n${relevantTopology.map((p) => `- ${p.name}: ${p.purpose}${p.dependencies.length > 0 ? ` [depends: ${p.dependencies.join(', ')}]` : ''}`).join('\n')}`);
+    }
+  }
+
+  if (sections.length === 0) return '';
+  return `\n\n--- ARCHITECTURE GUIDANCE ---\n${sections.join('\n\n')}\n--- END ARCHITECTURE GUIDANCE ---`;
+}
+
+function buildTaskGroupExecutionPrompt(
+  project: ProjectRecord,
+  record: ImplementationPhaseRecord,
+  planContent: ImplementationPhasePlanArtifactContent,
+  taskGroup: ImplPlanTaskGroup,
+  groupIndex: number,
+  totalGroups: number,
+  targetProjectId: string,
+): string {
+  const sections: string[] = [];
+
+  // Phase header
+  sections.push(`Implementation Sub-Phase: ${record.label}`);
+  if (record.goals.length > 0) {
+    sections.push(`Goals:\n${record.goals.map((g) => `- ${g}`).join('\n')}`);
+  }
+  if (record.deliverables.length > 0) {
+    sections.push(`Deliverables:\n${record.deliverables.map((d) => `- ${d}`).join('\n')}`);
+  }
+
+  // Architecture guidance
+  const archGuidance = buildClaudeCodeArchitectureGuidance(project, record);
+  if (archGuidance) sections.push(archGuidance);
+
+  // Task group context
+  sections.push(`\n--- TASK GROUP ${groupIndex + 1} of ${totalGroups}: ${taskGroup.groupLabel} ---`);
+
+  // Tasks filtered to target project
+  const projectTasks = taskGroup.tasks.filter((t) => t.projectId === targetProjectId);
+  if (projectTasks.length > 0) {
+    const taskLines = projectTasks.map((t) =>
+      `[${t.id}] ${t.title} (${t.type})\n  Description: ${t.description}\n  Expected Outcome: ${t.expectedOutcome}${t.dependencies.length > 0 ? `\n  Depends on: ${t.dependencies.join(', ')}` : ''}`,
+    );
+    sections.push(`Tasks for this project:\n${taskLines.join('\n\n')}`);
+  } else {
+    // Include all tasks if none specifically target this project (cross-cutting group)
+    const taskLines = taskGroup.tasks.map((t) =>
+      `[${t.id}] ${t.title} (${t.type}) [project: ${t.projectId}]\n  Description: ${t.description}\n  Expected Outcome: ${t.expectedOutcome}${t.dependencies.length > 0 ? `\n  Depends on: ${t.dependencies.join(', ')}` : ''}`,
+    );
+    sections.push(`Tasks:\n${taskLines.join('\n\n')}`);
+  }
+
+  // Relevant interfaces/contracts
+  if (planContent.interfacesAndContracts) {
+    const ic = planContent.interfacesAndContracts;
+    const relevantApis = ic.apis.filter(
+      (a) => a.producerProjectId === targetProjectId || a.consumerProjectIds.includes(targetProjectId),
+    );
+    if (relevantApis.length > 0) {
+      sections.push(`Relevant API Contracts:\n${relevantApis.map((a) => `- ${a.name}: ${a.description} (producer: ${a.producerProjectId}, consumers: ${a.consumerProjectIds.join(', ')})`).join('\n')}`);
+    }
+    if (ic.boundaries.length > 0) {
+      sections.push(`Boundaries:\n${ic.boundaries.map((b) => `- ${b}`).join('\n')}`);
+    }
+  }
+
+  // Relevant data models
+  if (planContent.dataChanges?.newModels) {
+    const relevantModels = planContent.dataChanges.newModels.filter((m) => m.projectId === targetProjectId);
+    if (relevantModels.length > 0) {
+      sections.push(`New Data Models:\n${relevantModels.map((m) => `- ${m.name}: ${m.description} [fields: ${m.fields.join(', ')}]`).join('\n')}`);
+    }
+  }
+
+  // Definition of done
+  if (planContent.definitionOfDone && planContent.definitionOfDone.length > 0) {
+    sections.push(`Definition of Done:\n${planContent.definitionOfDone.map((d) => `- ${d}`).join('\n')}`);
+  }
+
+  sections.push('--- END TASK GROUP ---');
+  sections.push("Follow the project's .claude configuration for coding standards, testing expectations, and TDD guidance.");
+
+  return sections.join('\n\n');
 }
 
 const COMPLEXITY_DURATION_MAP: Record<RoadmapPhaseComplexity, string> = {
@@ -565,6 +1286,285 @@ function deriveRoadmapEntries(phases: RoadmapPhase[]): RoadmapEntry[] {
       estimatedDuration: COMPLEXITY_DURATION_MAP[p.estimatedComplexity],
       dependencies: p.dependencies,
     }));
+}
+
+const VALID_RISK_LEVELS = ['low', 'medium', 'high'];
+const VALID_COMPLEXITY_LEVELS = ['low', 'medium', 'high'];
+
+function validateRoadmapCanonical(canonical: RoadmapArtifactContent): void {
+  const errors: string[] = [];
+
+  if (!canonical.productSummary?.description) errors.push('productSummary.description is required');
+  if (!Array.isArray(canonical.productSummary?.targetUsers) || canonical.productSummary.targetUsers.length === 0) {
+    errors.push('productSummary.targetUsers must be a non-empty array');
+  }
+  if (!canonical.productSummary?.coreValueProposition) errors.push('productSummary.coreValueProposition is required');
+
+  if (!Array.isArray(canonical.productScope?.included)) errors.push('productScope.included must be an array');
+  if (!Array.isArray(canonical.productScope?.excluded)) errors.push('productScope.excluded must be an array');
+
+  if (!Array.isArray(canonical.phases) || canonical.phases.length === 0) {
+    errors.push('phases must be a non-empty array');
+  } else {
+    for (let i = 0; i < canonical.phases.length; i++) {
+      const p = canonical.phases[i];
+      if (!p.id) errors.push(`phases[${i}].id is required`);
+      if (!p.name) errors.push(`phases[${i}].name is required`);
+      if (!Array.isArray(p.goals) || p.goals.length === 0) errors.push(`phases[${i}].goals must be non-empty`);
+      if (!Array.isArray(p.deliverables) || p.deliverables.length === 0) errors.push(`phases[${i}].deliverables must be non-empty`);
+      if (!Array.isArray(p.validationCriteria) || p.validationCriteria.length === 0) {
+        errors.push(`phases[${i}].validationCriteria must be non-empty`);
+      }
+      if (!VALID_RISK_LEVELS.includes(p.riskLevel)) errors.push(`phases[${i}].riskLevel must be low|medium|high`);
+      if (!VALID_COMPLEXITY_LEVELS.includes(p.estimatedComplexity)) errors.push(`phases[${i}].estimatedComplexity must be low|medium|high`);
+    }
+  }
+
+  if (!Array.isArray(canonical.milestones)) errors.push('milestones must be an array');
+  if (!Array.isArray(canonical.assumptions)) errors.push('assumptions must be an array');
+  if (!Array.isArray(canonical.openQuestions)) errors.push('openQuestions must be an array');
+
+  if (errors.length > 0) {
+    throw new Error(`Roadmap validation failed:\n- ${errors.join('\n- ')}`);
+  }
+}
+
+function validateStrategicBrief(brief: CeoStrategicBrief): void {
+  const errors: string[] = [];
+
+  if (!brief.visionStatement) errors.push('visionStatement is required');
+  if (!brief.scopeGuidance) errors.push('scopeGuidance is required');
+  else {
+    if (!Array.isArray(brief.scopeGuidance.mustInclude)) errors.push('scopeGuidance.mustInclude must be an array');
+    if (!Array.isArray(brief.scopeGuidance.mustExclude)) errors.push('scopeGuidance.mustExclude must be an array');
+    if (!Array.isArray(brief.scopeGuidance.deferToV2)) errors.push('scopeGuidance.deferToV2 must be an array');
+  }
+  if (!brief.riskThresholds) errors.push('riskThresholds is required');
+  else if (typeof brief.riskThresholds.maxHighRiskPhases !== 'number') {
+    errors.push('riskThresholds.maxHighRiskPhases must be a number');
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Strategic brief validation failed:\n- ${errors.join('\n- ')}`);
+  }
+}
+
+const VALID_ARCHITECTURE_PROJECT_TYPES: ArchitectureProjectType[] = [
+  'web-app', 'backend-api', 'mobile-app', 'worker', 'infra', 'shared-package', 'docs',
+];
+
+const VALID_RISK_SEVERITIES: ArchitectureRiskSeverity[] = ['low', 'medium', 'high', 'critical'];
+
+function validateArchitecturePlanCanonical(canonical: ArchitecturePlanArtifactContent): void {
+  const errors: string[] = [];
+
+  // systemOverview
+  if (!canonical.systemOverview) {
+    errors.push('systemOverview is required');
+  } else {
+    if (!canonical.systemOverview.description) errors.push('systemOverview.description is required');
+    if (!canonical.systemOverview.productRelationship) errors.push('systemOverview.productRelationship is required');
+    if (!Array.isArray(canonical.systemOverview.technicalConstraints)) errors.push('systemOverview.technicalConstraints must be an array');
+  }
+
+  // projectTopology
+  if (!Array.isArray(canonical.projectTopology) || canonical.projectTopology.length === 0) {
+    errors.push('projectTopology must be a non-empty array');
+  } else {
+    for (const entry of canonical.projectTopology) {
+      if (!entry.id) errors.push('projectTopology entry missing id');
+      if (!entry.name) errors.push('projectTopology entry missing name');
+      if (!entry.purpose) errors.push('projectTopology entry missing purpose');
+      if (!VALID_ARCHITECTURE_PROJECT_TYPES.includes(entry.type)) {
+        errors.push(`projectTopology entry has invalid type: ${entry.type}`);
+      }
+      if (!Array.isArray(entry.dependencies)) errors.push('projectTopology entry missing dependencies array');
+    }
+  }
+
+  // runtimeArchitecture
+  if (!canonical.runtimeArchitecture) {
+    errors.push('runtimeArchitecture is required');
+  } else {
+    if (!Array.isArray(canonical.runtimeArchitecture.frontends)) errors.push('runtimeArchitecture.frontends must be an array');
+    if (!Array.isArray(canonical.runtimeArchitecture.backends)) errors.push('runtimeArchitecture.backends must be an array');
+    if (!Array.isArray(canonical.runtimeArchitecture.backgroundProcessing)) errors.push('runtimeArchitecture.backgroundProcessing must be an array');
+    if (!Array.isArray(canonical.runtimeArchitecture.externalIntegrations)) errors.push('runtimeArchitecture.externalIntegrations must be an array');
+  }
+
+  // dataArchitecture
+  if (!canonical.dataArchitecture) {
+    errors.push('dataArchitecture is required');
+  } else {
+    if (!Array.isArray(canonical.dataArchitecture.dataDomains)) errors.push('dataArchitecture.dataDomains must be an array');
+    if (!Array.isArray(canonical.dataArchitecture.persistenceStrategy)) errors.push('dataArchitecture.persistenceStrategy must be an array');
+    if (!Array.isArray(canonical.dataArchitecture.boundaries)) errors.push('dataArchitecture.boundaries must be an array');
+    if (!Array.isArray(canonical.dataArchitecture.stateOwnership)) errors.push('dataArchitecture.stateOwnership must be an array');
+  }
+
+  // integrationArchitecture
+  if (!canonical.integrationArchitecture) {
+    errors.push('integrationArchitecture is required');
+  } else {
+    if (!Array.isArray(canonical.integrationArchitecture.apiBoundaries)) errors.push('integrationArchitecture.apiBoundaries must be an array');
+    if (!Array.isArray(canonical.integrationArchitecture.internalIntegrationPoints)) errors.push('integrationArchitecture.internalIntegrationPoints must be an array');
+    if (!Array.isArray(canonical.integrationArchitecture.externalServices)) errors.push('integrationArchitecture.externalServices must be an array');
+  }
+
+  // securityAndTrustModel
+  if (!canonical.securityAndTrustModel) {
+    errors.push('securityAndTrustModel is required');
+  } else {
+    if (!Array.isArray(canonical.securityAndTrustModel.authAssumptions)) errors.push('securityAndTrustModel.authAssumptions must be an array');
+    if (!Array.isArray(canonical.securityAndTrustModel.secretHandling)) errors.push('securityAndTrustModel.secretHandling must be an array');
+    if (!Array.isArray(canonical.securityAndTrustModel.trustBoundaries)) errors.push('securityAndTrustModel.trustBoundaries must be an array');
+    if (!Array.isArray(canonical.securityAndTrustModel.riskySurfaces)) errors.push('securityAndTrustModel.riskySurfaces must be an array');
+  }
+
+  // deploymentAndEnvironmentModel
+  if (!canonical.deploymentAndEnvironmentModel) {
+    errors.push('deploymentAndEnvironmentModel is required');
+  } else {
+    if (!Array.isArray(canonical.deploymentAndEnvironmentModel.environmentModel)) errors.push('deploymentAndEnvironmentModel.environmentModel must be an array');
+    if (!Array.isArray(canonical.deploymentAndEnvironmentModel.deploymentUnits)) errors.push('deploymentAndEnvironmentModel.deploymentUnits must be an array');
+  }
+
+  // qualityAttributes
+  if (!canonical.qualityAttributes) {
+    errors.push('qualityAttributes is required');
+  } else {
+    if (!canonical.qualityAttributes.maintainability) errors.push('qualityAttributes.maintainability is required');
+    if (!canonical.qualityAttributes.scalability) errors.push('qualityAttributes.scalability is required');
+    if (!canonical.qualityAttributes.testability) errors.push('qualityAttributes.testability is required');
+    if (!canonical.qualityAttributes.reliability) errors.push('qualityAttributes.reliability is required');
+    if (!canonical.qualityAttributes.performance) errors.push('qualityAttributes.performance is required');
+    if (!canonical.qualityAttributes.developerExperience) errors.push('qualityAttributes.developerExperience is required');
+  }
+
+  // phaseMapping
+  if (!Array.isArray(canonical.phaseMapping) || canonical.phaseMapping.length === 0) {
+    errors.push('phaseMapping must be a non-empty array');
+  } else {
+    const phasesRequiringSlices = new Set(['architecture-definition', 'implementation-phase', 'qa-validation', 'release-readiness']);
+    for (const pm of canonical.phaseMapping) {
+      if (!pm.phaseId) { errors.push('phaseMapping entry missing phaseId'); continue; }
+      if (!pm.phaseName) errors.push(`phaseMapping ${pm.phaseId} missing phaseName`);
+      if (!Array.isArray(pm.architectureSlices)) {
+        errors.push(`phaseMapping ${pm.phaseId} missing architectureSlices array`);
+      } else if (phasesRequiringSlices.has(pm.phaseId) && pm.architectureSlices.length === 0) {
+        errors.push(`phaseMapping ${pm.phaseId} must have at least one architectureSlice`);
+      }
+      if (!Array.isArray(pm.technicalDependencies)) {
+        errors.push(`phaseMapping ${pm.phaseId} missing technicalDependencies array`);
+      }
+    }
+  }
+
+  // implementationGuidelines
+  if (!canonical.implementationGuidelines) {
+    errors.push('implementationGuidelines is required');
+  } else {
+    if (!Array.isArray(canonical.implementationGuidelines.rules) || canonical.implementationGuidelines.rules.length === 0) {
+      errors.push('implementationGuidelines.rules must be a non-empty array');
+    }
+    if (!Array.isArray(canonical.implementationGuidelines.boundariesToPreserve) || canonical.implementationGuidelines.boundariesToPreserve.length === 0) {
+      errors.push('implementationGuidelines.boundariesToPreserve must be a non-empty array');
+    }
+    if (!Array.isArray(canonical.implementationGuidelines.antiPatterns)) errors.push('implementationGuidelines.antiPatterns must be an array');
+    if (!Array.isArray(canonical.implementationGuidelines.codingExpectations)) errors.push('implementationGuidelines.codingExpectations must be an array');
+  }
+
+  // openRisks
+  if (!Array.isArray(canonical.openRisks)) {
+    errors.push('openRisks must be an array');
+  } else {
+    for (const risk of canonical.openRisks) {
+      if (!risk.id) errors.push('openRisk entry missing id');
+      if (!risk.description) errors.push('openRisk entry missing description');
+      if (!VALID_RISK_SEVERITIES.includes(risk.severity)) {
+        errors.push(`openRisk ${risk.id} has invalid severity: ${risk.severity}`);
+      }
+    }
+  }
+
+  // openQuestions
+  if (!Array.isArray(canonical.openQuestions)) {
+    errors.push('openQuestions must be an array');
+  } else {
+    for (const q of canonical.openQuestions) {
+      if (!q.id) errors.push('openQuestion entry missing id');
+      if (!q.question) errors.push('openQuestion entry missing question');
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Architecture plan validation failed:\n- ${errors.join('\n- ')}`);
+  }
+}
+
+function resolveCodeProjectId(
+  projectRef: string,
+  codeProjects: CodeProject[],
+  topology?: RoadmapProjectTopologyEntry[],
+): string | undefined {
+  // 1. Direct name match
+  const byName = codeProjects.find((cp) => cp.name === projectRef);
+  if (byName) return byName.id;
+
+  // 2. Resolve through topology: projectRef is a topology projectId → get display name → match
+  if (topology) {
+    const topoEntry = topology.find((t) => t.projectId === projectRef);
+    if (topoEntry) {
+      const byTopoName = codeProjects.find((cp) => cp.name === topoEntry.name);
+      if (byTopoName) return byTopoName.id;
+    }
+  }
+
+  // 3. Slugified comparison: slugify both the code project name and the reference
+  const refSlug = slugify(projectRef);
+  const bySlug = codeProjects.find((cp) => slugify(cp.name) === refSlug);
+  if (bySlug) return bySlug.id;
+
+  return undefined;
+}
+
+function buildRoadmapPhaseRecordsFromArtifact(
+  project: ProjectRecord,
+  topology?: RoadmapProjectTopologyEntry[],
+  architecturePlan?: ArchitecturePlanArtifactContent | null,
+): ImplementationPhaseRecord[] {
+  if (!project.approvedRoadmapPhases) return [];
+  return project.approvedRoadmapPhases
+    .filter((phase) => !project.completedPhases.includes(phase.id as PhaseId))
+    .map((phase) => {
+      const archMapping = architecturePlan?.phaseMapping?.find(
+        (m) => m.phaseId === phase.id,
+      );
+      return {
+        id: generateId(),
+        roadmapEntryPhase: phase.id as PhaseId,
+        roadmapPhaseId: phase.id,
+        label: phase.name,
+        status: 'not_started' as const,
+        goals: phase.goals,
+        deliverables: phase.deliverables,
+        validationCriteria: phase.validationCriteria,
+        involvedProjectIds: phase.involvedProjects
+          .map((ref) => resolveCodeProjectId(ref, project.codeProjects, topology))
+          .filter((id): id is string => id != null),
+        architectureSlices: archMapping?.architectureSlices ?? [],
+        technicalDependencies: archMapping?.technicalDependencies ?? [],
+        planArtifactId: null,
+        implementationReportArtifactId: null,
+        qaReportArtifactId: null,
+        pmAlignmentDecision: null,
+        userDecision: null,
+        bridgeJobIds: [],
+        implementationPlanVersions: [],
+        taskGroupProgress: [],
+        currentTaskGroupIndex: null,
+      };
+    });
 }
 
 function findArtifactByTypeForStep(
@@ -660,6 +1660,10 @@ async function handleCreateProject(
     implementationStatus: null,
     validationHistory: [],
     roadmapVersions: [],
+    approvedRoadmapPhases: null,
+    approvedRoadmapTopology: null,
+    architecturePlanVersions: [],
+    approvedArchitecturePlan: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -707,18 +1711,80 @@ async function handleGenerateRoadmap(
   state: StudioState,
 ): Promise<Record<string, unknown>> {
   const project = getActiveProject(state);
+  const generationRunId = generateId();
+  const roleFlow: string[] = [];
+  const feedback = args.feedback as string | undefined;
+  const previousCanonical = args.previousCanonical as Record<string, unknown> | undefined;
 
-  await host.workspace.setRole('ceo');
-  host.run.reportStep('generate-roadmap', 'ceo');
-  host.events.emitProgress(0.1, 'Generating product roadmap');
+  // Need at minimum 3 steps: CEO frame + PM generate + approval gate
+  if (!hasBudgetFor(host, 3)) {
+    return {
+      success: false,
+      message: 'Insufficient step budget for roadmap generation (need at least 3 steps).',
+      studioState: state,
+      artifactIds: [],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
 
   const projectContext = buildProjectContext(project);
 
-  const result = await host.llm.complete({
+  // ── Step 1: CEO Strategic Framing ──────────────────────────────────────────
+  await host.workspace.setRole('ceo');
+  host.run.reportStep('ceo-strategic-framing', 'ceo');
+  host.events.emitProgress(0.05, 'CEO: Framing strategic vision and constraints');
+
+  const framingResult = await host.llm.complete({
     purposeId: 'roadmap-generation',
     systemPrompt: `${ROLE_PROMPTS['ceo']}
 
-You are generating a canonical product roadmap. Output ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
+You are producing a strategic brief to guide the Product Manager's roadmap generation. Output ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
+
+{
+  "visionStatement": "string - concise strategic vision for this product",
+  "strategicConstraints": ["string - business/market constraints the roadmap must respect"],
+  "targetMarketFocus": "string - the specific market segment and positioning to optimize for",
+  "competitivePositioning": "string - how this product should differentiate in the market",
+  "riskThresholds": {
+    "maxHighRiskPhases": number,
+    "criticalDependencies": ["string - external dependencies that could block delivery"]
+  },
+  "scopeGuidance": {
+    "mustInclude": ["string - capabilities that are non-negotiable for the initial product"],
+    "mustExclude": ["string - things explicitly out of scope"],
+    "deferToV2": ["string - valuable but deferrable capabilities"]
+  }
+}
+
+Ground every field in the specific product context. No generic advice. Be concrete about market positioning, risks, and scope boundaries.`,
+    messages: [{
+      role: 'user',
+      content: `Produce a strategic brief for roadmap generation for this product:\n\n${projectContext}${feedback ? `\n\nUser feedback on the previous roadmap version:\n${feedback}` : ''}${previousCanonical ? `\n\nPrevious roadmap for reference:\n${JSON.stringify(previousCanonical, null, 2)}` : ''}`,
+    }],
+    temperature: 0.2,
+    maxTokens: 3000,
+  });
+
+  let strategicBrief: CeoStrategicBrief;
+  try {
+    strategicBrief = JSON.parse(framingResult.text.trim());
+  } catch {
+    throw new Error('CEO strategic framing failed: LLM returned invalid JSON. Checkpoint and retry the run.');
+  }
+  validateStrategicBrief(strategicBrief);
+  roleFlow.push('ceo');
+
+  // ── Step 2: Product Manager Roadmap Generation ────────────────────────────
+  await host.workspace.setRole('product-manager');
+  host.run.reportStep('pm-roadmap-generation', 'product-manager');
+  host.events.emitProgress(0.3, 'Product Manager: Generating phased roadmap');
+
+  const roadmapResult = await host.llm.complete({
+    purposeId: 'roadmap-generation',
+    systemPrompt: `${ROLE_PROMPTS['product-manager']}
+
+You are generating a canonical product roadmap informed by a CEO strategic brief. Output ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
 
 {
   "productSummary": {
@@ -774,10 +1840,15 @@ Quality requirements:
 - Include real validation criteria that would let someone verify phase success.
 - milestones should represent meaningful checkpoints, not just phase boundaries.
 - assumptions should capture decisions you made without user confirmation.
-- openQuestions should flag genuine unknowns that could affect the roadmap.`,
+- openQuestions should flag genuine unknowns that could affect the roadmap.
+- Respect the CEO's strategic constraints and scope guidance.
+- Phase risk levels should not exceed the CEO's stated thresholds without explicit justification in assumptions.
+- Competitive positioning should be reflected in the product scope and phase priorities.
+- Avoid splitting everything into trivial micro-phases or collapsing into 1-2 giant phases.
+- Define project structure (projectTopology) early and reference it consistently across phases.`,
     messages: [{
       role: 'user',
-      content: `Generate a canonical product roadmap for this product:\n\n${projectContext}`,
+      content: `Generate a canonical product roadmap for this product:\n\n${projectContext}\n\nCEO Strategic Brief:\n${JSON.stringify(strategicBrief, null, 2)}${feedback ? `\n\nUser feedback on the previous roadmap version:\n${feedback}` : ''}${previousCanonical ? `\n\nPrevious roadmap for reference:\n${JSON.stringify(previousCanonical, null, 2)}` : ''}`,
     }],
     temperature: 0.2,
     maxTokens: 8000,
@@ -785,17 +1856,71 @@ Quality requirements:
 
   let canonical: RoadmapArtifactContent;
   try {
-    canonical = JSON.parse(result.text.trim());
+    canonical = JSON.parse(roadmapResult.text.trim());
   } catch {
     throw new Error('Roadmap generation failed: LLM returned invalid JSON. Checkpoint and retry the run.');
   }
+  validateRoadmapCanonical(canonical);
+  roleFlow.push('product-manager');
+
+  // ── Step 3: CEO Strategic Validation (optional) ───────────────────────────
+  let strategicValidation: CeoStrategicValidation | undefined;
+
+  if (hasBudgetFor(host, 2)) { // 1 for validation + 1 for approval gate
+    await host.workspace.setRole('ceo');
+    host.run.reportStep('ceo-strategic-validation', 'ceo');
+    host.events.emitProgress(0.6, 'CEO: Validating strategic coherence');
+
+    const validationResult = await host.llm.complete({
+      purposeId: 'roadmap-generation',
+      systemPrompt: `${ROLE_PROMPTS['ceo']}
+
+You are validating a Product Manager's roadmap against your strategic brief. Assess strategic coherence. Output ONLY valid JSON (no markdown fences, no explanation):
+
+{
+  "coherenceScore": "aligned | minor-concerns | misaligned",
+  "flaggedIssues": ["string - specific strategic misalignments or concerns"],
+  "suggestedAdjustments": ["string - concrete suggestions to improve strategic alignment"]
+}
+
+Be specific. If the roadmap is well-aligned, return "aligned" with empty arrays for flaggedIssues and suggestedAdjustments. Do not flag stylistic preferences — only flag genuine strategic misalignments.`,
+      messages: [{
+        role: 'user',
+        content: `Validate this roadmap against the strategic brief.\n\nStrategic Brief:\n${JSON.stringify(strategicBrief, null, 2)}\n\nGenerated Roadmap:\n${JSON.stringify(canonical, null, 2)}`,
+      }],
+      temperature: 0.1,
+      maxTokens: 2000,
+    });
+
+    try {
+      const validation = JSON.parse(validationResult.text.trim()) as CeoStrategicValidation;
+      if (validation.flaggedIssues.length > 0 || validation.coherenceScore !== 'aligned') {
+        strategicValidation = validation;
+      }
+    } catch {
+      host.log.warn('CEO validation returned invalid JSON, skipping validation step');
+    }
+    roleFlow.push('ceo');
+  }
+
+  // ── Artifact creation ─────────────────────────────────────────────────────
+  const versionNumber = (project.roadmapVersions?.length ?? 0) + 1;
+
+  if (strategicValidation) {
+    canonical.strategicValidation = strategicValidation;
+  }
+  canonical.versionMetadata = {
+    generationRunId,
+    version: versionNumber,
+    roleFlow,
+  };
 
   const roadmap = deriveRoadmapEntries(canonical.phases);
 
   project.roadmap = roadmap;
   const roadmapVersion: RoadmapVersion = {
     id: generateId(),
-    version: (project.roadmapVersions?.length ?? 0) + 1,
+    version: versionNumber,
     entries: roadmap,
     createdAt: new Date().toISOString(),
     decision: null,
@@ -814,7 +1939,7 @@ Quality requirements:
       ...canonical,
       generatedAt: new Date().toISOString(),
     },
-    createdByRole: 'ceo',
+    createdByRole: 'product-manager',
   });
 
   project.artifactIds.push(artifact.id);
@@ -822,93 +1947,420 @@ Quality requirements:
 
   host.events.emitProgress(0.8, 'Roadmap generated, requesting approval');
 
-  host.run.reportStep('roadmap-approval', 'ceo');
-  const gateResponse = (await host.run.requestInput({
-    title: 'Review Product Roadmap',
-    message: `A phased roadmap has been generated for "${project.name}" with ${roadmap.length} phases. Please review the roadmap artifact and decide how to proceed.`,
-    inputSchema: {
+  // ── Roadmap Approval Loop ─────────────────────────────────────────────────
+  const MAX_REVISIONS = 3;
+  let revisionCount = 0;
+  let currentCanonical = canonical;
+  let currentArtifact = artifact;
+  let currentRoadmapVersion = roadmapVersion;
+
+  type RoadmapGateResponse = {
+    decision: string;
+    feedback?: string;
+    phaseEdits?: Array<{ phaseId: string; action: string; details: string }>;
+    scopeChanges?: { addToIncluded?: string[]; removeFromIncluded?: string[]; addToExcluded?: string[]; removeFromExcluded?: string[] };
+  };
+
+  function buildRoadmapGateSchema(allowRevise: boolean) {
+    const decisions = allowRevise
+      ? ['approve', 'reject', 'revise', 'approve-with-changes', 'pause', 'cancel']
+      : ['approve', 'approve-with-changes', 'pause', 'cancel'];
+    return {
       type: 'object',
       properties: {
         decision: {
           type: 'string',
-          enum: ['approve', 'reject', 'revise', 'pause', 'cancel'],
+          enum: decisions,
           description: 'Decision for this gate',
         },
         feedback: { type: 'string', description: 'Feedback or revision requests' },
+        phaseEdits: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              phaseId: { type: 'string' },
+              action: { type: 'string', enum: ['remove', 'reprioritize', 'edit-scope', 'merge', 'split'] },
+              details: { type: 'string' },
+            },
+          },
+          description: 'Structured phase-level edits',
+        },
+        scopeChanges: {
+          type: 'object',
+          properties: {
+            addToIncluded: { type: 'array', items: { type: 'string' } },
+            removeFromIncluded: { type: 'array', items: { type: 'string' } },
+            addToExcluded: { type: 'array', items: { type: 'string' } },
+            removeFromExcluded: { type: 'array', items: { type: 'string' } },
+          },
+          description: 'Structured scope changes',
+        },
       },
       required: ['decision'],
-    },
-  })) as { decision: string; feedback?: string };
-
-  const decision = gateResponse.decision ?? 'approve';
-
-  // Record in validation history
-  project.validationHistory.push({
-    phase: project.currentPhase,
-    decision: decision as ValidationEntry['decision'],
-    feedback: gateResponse.feedback ?? null,
-    timestamp: new Date().toISOString(),
-  });
-
-  if (decision === 'pause') {
-    await host.workspace.setState(state);
-    await host.run.checkpoint();
-    return {
-      success: true,
-      message: `Roadmap review paused for "${project.name}". Resume when ready.`,
-      studioState: state,
-      artifactIds: [artifact.id],
-      stepsUsed: host.run.getStepCount(),
-      phasesCompleted: [],
     };
   }
 
-  if (decision === 'cancel') {
-    await host.workspace.setState(state);
-    await host.run.checkpoint();
-    return {
-      success: true,
-      message: `Roadmap generation cancelled for "${project.name}".`,
-      studioState: state,
-      artifactIds: [artifact.id],
-      stepsUsed: host.run.getStepCount(),
-      phasesCompleted: [],
-    };
-  }
-
-  if (decision === 'approve') {
-    await host.workspace.updateArtifact(artifact.id, { status: 'approved' });
-    host.log.info('Roadmap approved', { artifactId: artifact.id });
-  } else {
-    await host.workspace.updateArtifact(artifact.id, {
-      status: 'rejected',
-      content: {
-        projectId: project.id,
-        projectName: project.name,
-        ...canonical,
-        generatedAt: new Date().toISOString(),
-        userFeedback: gateResponse.feedback ?? '',
-      },
-    });
-    host.log.info('Roadmap rejected with feedback', { feedback: gateResponse.feedback });
-  }
-
-  roadmapVersion.decision = decision as RoadmapVersion['decision'];
-
-  await host.workspace.setState(state);
   await host.run.checkpoint();
-  host.events.emitProgress(1.0, 'Roadmap review complete');
+  host.run.reportStep('roadmap-approval', 'product-manager');
+  let gateResponse = (await host.run.requestInput({
+    title: 'Review Product Roadmap',
+    message: `A phased roadmap has been generated for "${project.name}" with ${roadmap.length} phases. Please review the roadmap artifact and decide how to proceed.`,
+    inputSchema: buildRoadmapGateSchema(true),
+  })) as RoadmapGateResponse;
 
-  return {
-    success: true,
-    message: decision === 'approve'
-      ? `Roadmap for "${project.name}" approved with ${roadmap.length} phases`
-      : `Roadmap for "${project.name}" ${decision}ed. Feedback: ${gateResponse.feedback ?? 'none'}`,
-    studioState: state,
-    artifactIds: [artifact.id],
-    stepsUsed: host.run.getStepCount(),
-    phasesCompleted: [],
-  };
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const currentDecision = gateResponse.decision ?? 'approve';
+    const currentFeedback = gateResponse.feedback;
+    const currentPhaseEdits = gateResponse.phaseEdits;
+    const currentScopeChanges = gateResponse.scopeChanges;
+
+    // Record in validation history
+    project.validationHistory.push({
+      phase: project.currentPhase,
+      decision: currentDecision as ValidationEntry['decision'],
+      feedback: currentFeedback ?? null,
+      timestamp: new Date().toISOString(),
+    });
+
+    // ── pause / cancel ──────────────────────────────────────────────────
+    if (currentDecision === 'pause') {
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return {
+        success: true,
+        message: `Roadmap review paused for "${project.name}". Resume when ready.`,
+        studioState: state,
+        artifactIds: [currentArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    if (currentDecision === 'cancel') {
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return {
+        success: true,
+        message: `Roadmap generation cancelled for "${project.name}".`,
+        studioState: state,
+        artifactIds: [currentArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    // ── approve ─────────────────────────────────────────────────────────
+    if (currentDecision === 'approve') {
+      await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+      currentRoadmapVersion.decision = 'approve' as RoadmapVersion['decision'];
+      project.approvedRoadmapPhases = currentCanonical.phases;
+      project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+      host.log.info('Roadmap approved', { artifactId: currentArtifact.id });
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      host.events.emitProgress(1.0, 'Roadmap approved');
+      return {
+        success: true,
+        message: `Roadmap for "${project.name}" approved with ${project.roadmap!.length} phases`,
+        studioState: state,
+        artifactIds: [currentArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    // ── approve-with-changes ────────────────────────────────────────────
+    if (currentDecision === 'approve-with-changes') {
+      if (!hasBudgetFor(host, 1)) {
+        await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+        currentRoadmapVersion.decision = 'approve' as RoadmapVersion['decision'];
+        project.approvedRoadmapPhases = currentCanonical.phases;
+      project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+        host.log.warn('No budget for approve-with-changes, approving as-is');
+        await host.workspace.setState(state);
+        await host.run.checkpoint();
+        return {
+          success: true,
+          message: `Roadmap for "${project.name}" approved (no budget for requested changes)`,
+          studioState: state,
+          artifactIds: [currentArtifact.id],
+          stepsUsed: host.run.getStepCount(),
+          phasesCompleted: [],
+        };
+      }
+
+      const editContext = buildEditContext(currentPhaseEdits, currentScopeChanges);
+      const changeInstructions = [
+        currentFeedback ? `User feedback: ${currentFeedback}` : '',
+        editContext,
+      ].filter(Boolean).join('\n\n');
+
+      await host.workspace.setRole('product-manager');
+      host.run.reportStep('pm-apply-changes', 'product-manager');
+      host.events.emitProgress(0.9, 'Product Manager: Applying requested changes');
+
+      const changeResult = await host.llm.complete({
+        purposeId: 'roadmap-generation',
+        systemPrompt: `${ROLE_PROMPTS['product-manager']}
+
+You are applying targeted changes to an approved roadmap. Do NOT redesign the roadmap. Only incorporate the specific adjustments requested. Output the COMPLETE updated roadmap as valid JSON matching the same schema as the input (no markdown fences, no explanation).`,
+        messages: [{
+          role: 'user',
+          content: `Apply these changes to the roadmap:\n\n${changeInstructions}\n\nCurrent roadmap:\n${JSON.stringify(currentCanonical, null, 2)}`,
+        }],
+        temperature: 0.1,
+        maxTokens: 8000,
+      });
+
+      let updatedCanonical: RoadmapArtifactContent;
+      try {
+        updatedCanonical = JSON.parse(changeResult.text.trim());
+      } catch {
+        host.log.warn('Failed to parse approve-with-changes result, approving original');
+        await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+        currentRoadmapVersion.decision = 'approve' as RoadmapVersion['decision'];
+        project.approvedRoadmapPhases = currentCanonical.phases;
+      project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+        await host.workspace.setState(state);
+        await host.run.checkpoint();
+        return {
+          success: true,
+          message: `Roadmap for "${project.name}" approved (change application failed, original preserved)`,
+          studioState: state,
+          artifactIds: [currentArtifact.id],
+          stepsUsed: host.run.getStepCount(),
+          phasesCompleted: [],
+        };
+      }
+
+      await host.workspace.updateArtifact(currentArtifact.id, { status: 'superseded' });
+      const newVersionNumber = (project.roadmapVersions?.length ?? 0) + 1;
+      updatedCanonical.versionMetadata = {
+        generationRunId,
+        version: newVersionNumber,
+        roleFlow: [...roleFlow, 'product-manager'],
+      };
+
+      const updatedRoadmap = deriveRoadmapEntries(updatedCanonical.phases);
+      project.roadmap = updatedRoadmap;
+      project.approvedRoadmapPhases = updatedCanonical.phases;
+      project.approvedRoadmapTopology = updatedCanonical.projectTopology ?? null;
+
+      const newVersion: RoadmapVersion = {
+        id: generateId(),
+        version: newVersionNumber,
+        entries: updatedRoadmap,
+        createdAt: new Date().toISOString(),
+        decision: 'approve' as RoadmapVersion['decision'],
+      };
+      project.roadmapVersions.push(newVersion);
+
+      const newArtifact = await host.workspace.createArtifact({
+        type: 'roadmap',
+        title: `Roadmap: ${project.name}`,
+        content: {
+          projectId: project.id,
+          projectName: project.name,
+          ...updatedCanonical,
+          generatedAt: new Date().toISOString(),
+        },
+        createdByRole: 'product-manager',
+        parentArtifactId: currentArtifact.id,
+      });
+      await host.workspace.updateArtifact(newArtifact.id, { status: 'approved' });
+      project.artifactIds.push(newArtifact.id);
+      project.updatedAt = new Date().toISOString();
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      host.events.emitProgress(1.0, 'Roadmap approved with changes applied');
+      host.log.info('Roadmap approved with changes', { originalId: currentArtifact.id, newId: newArtifact.id });
+
+      return {
+        success: true,
+        message: `Roadmap for "${project.name}" approved with changes applied`,
+        studioState: state,
+        artifactIds: [newArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    // ── revise / reject — regenerate with feedback ──────────────────────
+    if (currentDecision === 'revise' || currentDecision === 'reject') {
+      revisionCount++;
+      await host.workspace.updateArtifact(currentArtifact.id, {
+        status: 'superseded',
+        content: {
+          projectId: project.id,
+          projectName: project.name,
+          ...currentCanonical,
+          generatedAt: new Date().toISOString(),
+          userFeedback: currentFeedback ?? '',
+        },
+      });
+      currentRoadmapVersion.decision = currentDecision as RoadmapVersion['decision'];
+      host.log.info(`Roadmap ${currentDecision}ed, regenerating`, { feedback: currentFeedback, revision: revisionCount });
+
+      if (!hasBudgetFor(host, 3) || revisionCount > MAX_REVISIONS) {
+        await host.workspace.setState(state);
+        await host.run.checkpoint();
+        const reason = revisionCount > MAX_REVISIONS
+          ? `Maximum revision limit (${MAX_REVISIONS}) reached`
+          : 'Insufficient step budget for regeneration';
+        return {
+          success: false,
+          message: `${reason} for "${project.name}". Last roadmap version preserved for manual redirect.`,
+          studioState: state,
+          artifactIds: [currentArtifact.id],
+          stepsUsed: host.run.getStepCount(),
+          phasesCompleted: [],
+        };
+      }
+
+      const editContext = buildEditContext(currentPhaseEdits, currentScopeChanges);
+      const combinedFeedback = [
+        currentFeedback ?? '',
+        editContext,
+      ].filter(Boolean).join('\n\n');
+
+      // Re-generate: CEO re-frame + PM re-generate
+      await host.workspace.setRole('ceo');
+      host.run.reportStep(`ceo-strategic-reframing-v${revisionCount + 1}`, 'ceo');
+      host.events.emitProgress(0.05, `CEO: Re-framing strategic vision (revision ${revisionCount})`);
+
+      const reframingResult = await host.llm.complete({
+        purposeId: 'roadmap-generation',
+        systemPrompt: `${ROLE_PROMPTS['ceo']}
+
+You are producing a strategic brief to guide the Product Manager's roadmap REVISION. The user was not satisfied with the previous version. Address their feedback directly. Output ONLY valid JSON matching the strategic brief schema (no markdown fences, no explanation):
+
+{
+  "visionStatement": "string",
+  "strategicConstraints": ["string"],
+  "targetMarketFocus": "string",
+  "competitivePositioning": "string",
+  "riskThresholds": { "maxHighRiskPhases": "number", "criticalDependencies": ["string"] },
+  "scopeGuidance": { "mustInclude": ["string"], "mustExclude": ["string"], "deferToV2": ["string"] }
+}`,
+        messages: [{
+          role: 'user',
+          content: `Produce a revised strategic brief for roadmap generation:\n\n${projectContext}\n\nUser feedback on previous version:\n${combinedFeedback}\n\nPrevious roadmap:\n${JSON.stringify(currentCanonical, null, 2)}`,
+        }],
+        temperature: 0.2,
+        maxTokens: 3000,
+      });
+
+      let revisedBrief: CeoStrategicBrief;
+      try {
+        revisedBrief = JSON.parse(reframingResult.text.trim());
+      } catch {
+        throw new Error('CEO strategic re-framing failed: LLM returned invalid JSON. Checkpoint and retry.');
+      }
+
+      await host.workspace.setRole('product-manager');
+      host.run.reportStep(`pm-roadmap-revision-v${revisionCount + 1}`, 'product-manager');
+      host.events.emitProgress(0.3, `Product Manager: Regenerating roadmap (revision ${revisionCount})`);
+
+      const revisionResult = await host.llm.complete({
+        purposeId: 'roadmap-generation',
+        systemPrompt: `${ROLE_PROMPTS['product-manager']}
+
+You are REVISING a product roadmap based on user feedback. The user explicitly ${currentDecision}ed the previous version. Address their feedback directly. Output ONLY valid JSON matching the canonical roadmap schema (no markdown fences, no explanation).
+
+Quality requirements:
+- Address every point in the user's feedback
+- Maintain structural integrity (valid phase IDs, proper references)
+- Do not introduce new issues while fixing requested changes
+- If the user asked to remove phases, remove them
+- If the user asked to reprioritize, change the ordering
+- If the user asked for scope changes, reflect them in productScope AND phase deliverables`,
+        messages: [{
+          role: 'user',
+          content: `Revise this roadmap based on user feedback:\n\n${projectContext}\n\nCEO Strategic Brief:\n${JSON.stringify(revisedBrief, null, 2)}\n\nUser feedback:\n${combinedFeedback}\n\nPrevious roadmap to revise:\n${JSON.stringify(currentCanonical, null, 2)}`,
+        }],
+        temperature: 0.2,
+        maxTokens: 8000,
+      });
+
+      let revisedCanonical: RoadmapArtifactContent;
+      try {
+        revisedCanonical = JSON.parse(revisionResult.text.trim());
+      } catch {
+        throw new Error('Roadmap revision failed: LLM returned invalid JSON. Checkpoint and retry.');
+      }
+      validateRoadmapCanonical(revisedCanonical);
+
+      const newVersionNumber = (project.roadmapVersions?.length ?? 0) + 1;
+      revisedCanonical.versionMetadata = {
+        generationRunId,
+        version: newVersionNumber,
+        roleFlow: [...roleFlow, 'ceo', 'product-manager'],
+      };
+
+      const revisedRoadmap = deriveRoadmapEntries(revisedCanonical.phases);
+      project.roadmap = revisedRoadmap;
+
+      const newRoadmapVersion: RoadmapVersion = {
+        id: generateId(),
+        version: newVersionNumber,
+        entries: revisedRoadmap,
+        createdAt: new Date().toISOString(),
+        decision: null,
+      };
+      project.roadmapVersions.push(newRoadmapVersion);
+      project.updatedAt = new Date().toISOString();
+      await host.workspace.setState(state);
+
+      const newArtifact = await host.workspace.createArtifact({
+        type: 'roadmap',
+        title: `Roadmap: ${project.name}`,
+        content: {
+          projectId: project.id,
+          projectName: project.name,
+          ...revisedCanonical,
+          generatedAt: new Date().toISOString(),
+        },
+        createdByRole: 'product-manager',
+        parentArtifactId: currentArtifact.id,
+      });
+      project.artifactIds.push(newArtifact.id);
+      await host.workspace.setState(state);
+
+      host.events.emitProgress(0.8, `Roadmap revised (v${newVersionNumber}), requesting approval`);
+
+      currentCanonical = revisedCanonical;
+      currentArtifact = newArtifact;
+      currentRoadmapVersion = newRoadmapVersion;
+
+      await host.run.checkpoint();
+      host.run.reportStep(`roadmap-approval-v${newVersionNumber}`, 'product-manager');
+      gateResponse = (await host.run.requestInput({
+        title: 'Review Revised Roadmap',
+        message: `Roadmap v${newVersionNumber} has been generated for "${project.name}" with ${revisedRoadmap.length} phases (revision ${revisionCount} of ${MAX_REVISIONS}). Please review and decide.`,
+        inputSchema: buildRoadmapGateSchema(revisionCount < MAX_REVISIONS),
+      })) as RoadmapGateResponse;
+
+      continue;
+    }
+
+    // Unknown decision — treat as approve
+    host.log.warn('Unknown roadmap gate decision, treating as approve', { decision: currentDecision });
+    await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+    currentRoadmapVersion.decision = 'approve' as RoadmapVersion['decision'];
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    host.events.emitProgress(1.0, 'Roadmap review complete');
+    return {
+      success: true,
+      message: `Roadmap for "${project.name}" approved`,
+      studioState: state,
+      artifactIds: [currentArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
 }
 
 // ── Bridge-Backed Implementation Helpers ──────────────────────────────────
@@ -1232,6 +2684,173 @@ Output ONLY valid JSON, no markdown fences.`,
   return { artifactId: artifact.id, success: true };
 }
 
+async function executePlanTaskGroups(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  project: ProjectRecord,
+  record: ImplementationPhaseRecord,
+  planContent: ImplementationPhasePlanArtifactContent,
+): Promise<{ success: boolean }> {
+  const bridge = host.bridge!;
+
+  const targetProjects = record.involvedProjectIds.length > 0
+    ? project.codeProjects.filter((cp) => record.involvedProjectIds.includes(cp.id))
+    : project.codeProjects;
+
+  // Fallback: no structured work breakdown — single call per project
+  if (!planContent.workBreakdown || planContent.workBreakdown.length === 0) {
+    host.log.info('No structured workBreakdown, executing single call per project');
+    const archGuidance = buildClaudeCodeArchitectureGuidance(project, record);
+    const goalPrompt = `Implementation Sub-Phase: ${record.label}${record.goals.length > 0 ? `\n\nGoals:\n${record.goals.map((g) => `- ${g}`).join('\n')}` : ''}${record.deliverables.length > 0 ? `\n\nDeliverables:\n${record.deliverables.map((d) => `- ${d}`).join('\n')}` : ''}${archGuidance}\n\nFollow the project's .claude configuration for coding standards, testing expectations, and TDD guidance.\n\nPlan:\n${planContent.body}`;
+    for (const cp of targetProjects) {
+      if (!cp.repoPath) continue;
+      const cmdResult = await executeAndWaitBridgeCommand(host, {
+        command: 'claude',
+        args: ['--print', goalPrompt],
+        workingDirectory: cp.repoPath,
+        reason: `Implementation sub-phase: ${record.label} — ${cp.name}`,
+        timeoutMs: 600_000,
+      });
+      if (cmdResult.bridgeRunId) record.bridgeJobIds.push(cmdResult.bridgeRunId);
+    }
+    await host.workspace.setState(state);
+    return { success: true };
+  }
+
+  // Initialize task group progress
+  const groups = planContent.workBreakdown;
+  record.taskGroupProgress = groups.map((g) => ({
+    groupLabel: g.groupLabel,
+    taskIds: g.tasks.map((t) => t.id),
+    status: 'pending' as const,
+    bridgeJobIds: [],
+    startedAt: null,
+    completedAt: null,
+    failureReason: null,
+  }));
+  record.currentTaskGroupIndex = 0;
+  await host.workspace.setState(state);
+
+  for (let gi = 0; gi < groups.length; gi++) {
+    const taskGroup = groups[gi];
+    const groupProgress = record.taskGroupProgress[gi];
+    record.currentTaskGroupIndex = gi;
+    groupProgress.status = 'running';
+    groupProgress.startedAt = new Date().toISOString();
+    await host.workspace.setState(state);
+    host.events.emitProgress(0.3 + (gi / groups.length) * 0.5, `Task group ${gi + 1}/${groups.length}: ${taskGroup.groupLabel}`);
+
+    // Determine target projects for this group
+    const groupProjectIds = [...new Set(taskGroup.tasks.map((t) => t.projectId))];
+    const groupTargetProjects = groupProjectIds
+      .map((pid) => project.codeProjects.find((cp) => cp.id === pid || cp.name === pid))
+      .filter((cp): cp is CodeProject => cp != null && cp.repoPath != null);
+
+    // If no specific projects found, use the record's target projects
+    const effectiveTargets = groupTargetProjects.length > 0 ? groupTargetProjects : targetProjects;
+
+    let groupFailed = false;
+    let failureReason = '';
+
+    for (const cp of effectiveTargets) {
+      if (!cp.repoPath) continue;
+      const prompt = buildTaskGroupExecutionPrompt(project, record, planContent, taskGroup, gi, groups.length, cp.id);
+      const cmdResult = await executeAndWaitBridgeCommand(host, {
+        command: 'claude',
+        args: ['--print', prompt],
+        workingDirectory: cp.repoPath,
+        reason: `Task group: ${taskGroup.groupLabel} — ${cp.name}`,
+        timeoutMs: 600_000,
+      });
+
+      if (cmdResult.bridgeRunId) {
+        groupProgress.bridgeJobIds.push(cmdResult.bridgeRunId);
+        record.bridgeJobIds.push(cmdResult.bridgeRunId);
+      }
+
+      if (cmdResult.status === 'failed') {
+        groupFailed = true;
+        failureReason = 'reason' in cmdResult ? cmdResult.reason : 'Bridge command failed';
+        break;
+      }
+      if (cmdResult.status === 'terminated') {
+        groupFailed = true;
+        failureReason = 'Command terminated (timeout or killed)';
+        break;
+      }
+    }
+
+    if (groupFailed) {
+      groupProgress.status = 'failed';
+      groupProgress.failureReason = failureReason;
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+
+      host.log.warn('Task group failed', { groupLabel: taskGroup.groupLabel, reason: failureReason });
+      host.run.reportStep(`task-group-failure-${record.id}-${gi}`, 'developer');
+
+      const failureAction = (await host.run.requestInput({
+        title: `Task Group Failed: ${taskGroup.groupLabel}`,
+        message: `Task group "${taskGroup.groupLabel}" (${gi + 1} of ${groups.length}) failed.\n\nReason: ${failureReason}\n\nHow would you like to proceed?`,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            action: {
+              type: 'string',
+              enum: ['retry', 'skip', 'redefine', 'cancel'],
+              description: 'retry: re-run this group, skip: mark as skipped and continue, redefine: go back to planning, cancel: stop execution',
+            },
+            feedback: { type: 'string', description: 'Additional guidance' },
+          },
+          required: ['action'],
+        },
+      })) as { action: string; feedback?: string };
+
+      if (failureAction.action === 'retry') {
+        groupProgress.status = 'pending';
+        groupProgress.bridgeJobIds = [];
+        groupProgress.failureReason = null;
+        groupProgress.startedAt = null;
+        await host.workspace.setState(state);
+        gi--; // Re-execute same group
+        continue;
+      }
+
+      if (failureAction.action === 'skip') {
+        groupProgress.status = 'completed';
+        groupProgress.completedAt = new Date().toISOString();
+        groupProgress.failureReason = 'Skipped by user';
+        await host.workspace.setState(state);
+        continue;
+      }
+
+      if (failureAction.action === 'redefine') {
+        record.status = 'not_started';
+        record.taskGroupProgress = [];
+        record.currentTaskGroupIndex = null;
+        await host.workspace.setState(state);
+        return { success: false };
+      }
+
+      // cancel
+      record.status = 'failed';
+      record.currentTaskGroupIndex = null;
+      await host.workspace.setState(state);
+      return { success: false };
+    }
+
+    // Group succeeded
+    groupProgress.status = 'completed';
+    groupProgress.completedAt = new Date().toISOString();
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+  }
+
+  record.currentTaskGroupIndex = null;
+  await host.workspace.setState(state);
+  return { success: true };
+}
+
 async function executeImplementationPhases(
   host: SkillHostCapabilities,
   state: StudioState,
@@ -1465,6 +3084,233 @@ Output ONLY valid JSON, no markdown fences. Create 2-5 phases max.`,
   }
 }
 
+interface QaArchitectureAssessment {
+  alignmentStatus: 'aligned' | 'minor-drift' | 'significant-drift';
+  driftFindings: string[];
+  qualityAttributeNotes: string[];
+  boundaryViolations: string[];
+}
+
+interface QaFunctionalityCheck {
+  criterion: string;
+  status: 'pass' | 'fail' | 'needs-work';
+  notes: string;
+}
+
+interface QaDefinitionOfDoneCheck {
+  item: string;
+  status: 'pass' | 'fail';
+  notes: string;
+}
+
+interface QaReportStructured {
+  overallVerdict: 'pass' | 'fail' | 'needs-work';
+  body: string;
+  functionalityChecks: QaFunctionalityCheck[];
+  definitionOfDoneChecks: QaDefinitionOfDoneCheck[];
+  architectureAssessment?: QaArchitectureAssessment;
+}
+
+function extractFunctionalityCriteria(plan: ImplementationPhasePlanArtifactContent): string[] {
+  const criteria: string[] = [];
+
+  // From qaGateCriteria
+  if (plan.validationPlan?.qaGateCriteria) {
+    criteria.push(...plan.validationPlan.qaGateCriteria);
+  }
+
+  // From verificationSteps
+  if (plan.validationPlan?.verificationSteps) {
+    criteria.push(...plan.validationPlan.verificationSteps);
+  }
+
+  // From task expectedOutcome fields
+  if (plan.workBreakdown) {
+    for (const group of plan.workBreakdown) {
+      for (const task of group.tasks) {
+        if (task.expectedOutcome && task.expectedOutcome.trim() !== '') {
+          criteria.push(`[${task.title}] ${task.expectedOutcome}`);
+        }
+      }
+    }
+  }
+
+  return criteria;
+}
+
+function buildQaReportSchema(plan: ImplementationPhasePlanArtifactContent, hasArchContext: boolean): string {
+  const functionalityCriteria = extractFunctionalityCriteria(plan);
+  const dodItems = plan.definitionOfDone ?? [];
+
+  const schema: Record<string, unknown> = {
+    overallVerdict: '"pass" | "fail" | "needs-work" — overall assessment',
+    body: 'string — narrative QA assessment (2-3 paragraphs)',
+    functionalityChecks: functionalityCriteria.map((c) => ({
+      criterion: c,
+      status: '"pass" | "fail" | "needs-work"',
+      notes: 'string — brief explanation of why this status was assigned',
+    })),
+    definitionOfDoneChecks: dodItems.map((item) => ({
+      item,
+      status: '"pass" | "fail"',
+      notes: 'string — brief explanation',
+    })),
+  };
+
+  if (hasArchContext) {
+    schema.architectureAssessment = {
+      alignmentStatus: '"aligned" | "minor-drift" | "significant-drift"',
+      driftFindings: ['string — specific drift observations (empty array if aligned)'],
+      qualityAttributeNotes: ['string — observations about quality attributes'],
+      boundaryViolations: ['string — boundary violations found (empty array if none)'],
+    };
+  }
+
+  return JSON.stringify(schema, null, 2);
+}
+
+function buildQaGateSchema(): Record<string, unknown> {
+  return {
+    type: 'object',
+    properties: {
+      decision: {
+        type: 'string',
+        enum: ['approve', 'reject', 'revise', 'approve-with-changes', 'pause', 'cancel'],
+        description: 'Decision for this QA validation',
+      },
+      feedback: { type: 'string', description: 'Feedback or revision requests' },
+      checkOverrides: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            criterion: { type: 'string' },
+            action: { type: 'string', enum: ['accept-as-is', 'must-fix'] },
+            notes: { type: 'string' },
+          },
+        },
+        description: 'Override decisions for specific QA checks',
+      },
+    },
+    required: ['decision'],
+  };
+}
+
+function parseQaReport(rawText: string): QaReportStructured {
+  const parsed = JSON.parse(rawText.trim());
+  const validVerdicts = ['pass', 'fail', 'needs-work'];
+  const validDodStatuses = ['pass', 'fail'];
+
+  return {
+    overallVerdict: validVerdicts.includes(parsed.overallVerdict) ? parsed.overallVerdict : 'needs-work',
+    body: typeof parsed.body === 'string' ? parsed.body : rawText.trim(),
+    functionalityChecks: Array.isArray(parsed.functionalityChecks)
+      ? parsed.functionalityChecks.map((c: Record<string, unknown>) => ({
+          criterion: typeof c.criterion === 'string' ? c.criterion : '',
+          status: validVerdicts.includes(c.status as string) ? c.status : 'needs-work',
+          notes: typeof c.notes === 'string' ? c.notes : '',
+        }))
+      : [],
+    definitionOfDoneChecks: Array.isArray(parsed.definitionOfDoneChecks)
+      ? parsed.definitionOfDoneChecks.map((c: Record<string, unknown>) => ({
+          item: typeof c.item === 'string' ? c.item : '',
+          status: validDodStatuses.includes(c.status as string) ? c.status : 'fail',
+          notes: typeof c.notes === 'string' ? c.notes : '',
+        }))
+      : [],
+    architectureAssessment: parsed.architectureAssessment && typeof parsed.architectureAssessment === 'object'
+      ? {
+          alignmentStatus: ['aligned', 'minor-drift', 'significant-drift'].includes(parsed.architectureAssessment.alignmentStatus)
+            ? parsed.architectureAssessment.alignmentStatus
+            : 'minor-drift',
+          driftFindings: Array.isArray(parsed.architectureAssessment.driftFindings)
+            ? parsed.architectureAssessment.driftFindings.filter((s: unknown) => typeof s === 'string')
+            : [],
+          qualityAttributeNotes: Array.isArray(parsed.architectureAssessment.qualityAttributeNotes)
+            ? parsed.architectureAssessment.qualityAttributeNotes.filter((s: unknown) => typeof s === 'string')
+            : [],
+          boundaryViolations: Array.isArray(parsed.architectureAssessment.boundaryViolations)
+            ? parsed.architectureAssessment.boundaryViolations.filter((s: unknown) => typeof s === 'string')
+            : [],
+        }
+      : undefined,
+  };
+}
+
+function extractArchitectureAssessment(qaText: string): QaArchitectureAssessment | undefined {
+  const lowerText = qaText.toLowerCase();
+
+  // Detect explicit alignment status from QA text
+  let alignmentStatus: QaArchitectureAssessment['alignmentStatus'] | null = null;
+  if (lowerText.includes('significant-drift') || lowerText.includes('significant drift')) {
+    alignmentStatus = 'significant-drift';
+  } else if (lowerText.includes('minor-drift') || lowerText.includes('minor drift')) {
+    alignmentStatus = 'minor-drift';
+  } else if (lowerText.includes('alignmentstatus') || lowerText.includes('alignment status')) {
+    // Check for explicit "aligned" keyword near alignment status context
+    if (lowerText.includes('"aligned"') || lowerText.match(/alignment\s*status[:\s]*aligned/i)) {
+      alignmentStatus = 'aligned';
+    }
+  }
+
+  const driftFindings = extractListAfterHeading(qaText, 'driftFindings');
+  const qualityAttributeNotes = extractListAfterHeading(qaText, 'qualityAttributeNotes');
+  const boundaryViolations = extractListAfterHeading(qaText, 'boundaryViolations');
+
+  // If no alignment status was explicitly detected and no structured data was found,
+  // the assessment is inconclusive — return undefined rather than assuming "aligned"
+  const hasStructuredData = driftFindings.length > 0 || qualityAttributeNotes.length > 0 || boundaryViolations.length > 0;
+  if (alignmentStatus === null && !hasStructuredData) {
+    return undefined;
+  }
+
+  // If we have structured data but no explicit status, infer from findings
+  if (alignmentStatus === null) {
+    if (boundaryViolations.length > 0) {
+      alignmentStatus = 'significant-drift';
+    } else if (driftFindings.length > 0) {
+      alignmentStatus = 'minor-drift';
+    } else {
+      alignmentStatus = 'aligned';
+    }
+  }
+
+  return { alignmentStatus, driftFindings, qualityAttributeNotes, boundaryViolations };
+}
+
+function extractListAfterHeading(text: string, heading: string): string[] {
+  const patterns = [
+    // Match heading followed by newline and content block (stop at next heading or end)
+    new RegExp(`${heading}:\\s*\\n([\\s\\S]*?)(?=\\n[a-zA-Z]+[a-zA-Z ]*:|$)`, 'i'),
+    // Match heading followed by JSON-style array
+    new RegExp(`${heading}:\\s*\\[([^\\]]*)\\]`, 'i'),
+    // Match heading followed by inline content on the same line
+    new RegExp(`${heading}:\\s*(.+)$`, 'im'),
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const block = match[1].trim();
+      // Skip explicit empty markers
+      if (/^(none|empty|n\/a|\[\]|\(\))$/i.test(block)) return [];
+      // Try bullet list format (- or *)
+      const bullets = block.match(/^[\s]*[-*]\s+(.+)$/gm);
+      if (bullets && bullets.length > 0) {
+        return bullets.map((b) => b.replace(/^[\s]*[-*]\s+/, '').trim()).filter(Boolean);
+      }
+      // Try numbered list format (1. 2. etc)
+      const numbered = block.match(/^[\s]*\d+\.\s+(.+)$/gm);
+      if (numbered && numbered.length > 0) {
+        return numbered.map((b) => b.replace(/^[\s]*\d+\.\s+/, '').trim()).filter(Boolean);
+      }
+      // Try comma-separated in brackets
+      const items = block.split(',').map((s) => s.replace(/["']/g, '').trim()).filter(Boolean);
+      if (items.length > 0 && items[0] !== '') return items;
+    }
+  }
+  return [];
+}
+
 async function handleRunImplementationSubphase(
   host: SkillHostCapabilities,
   state: StudioState,
@@ -1485,70 +3331,367 @@ async function handleRunImplementationSubphase(
 
   project.implementationStatus.activeRoadmapPhaseIndex = phaseIndex;
 
-  // 1. Planning
+  // 1. Planning — Two-step: software-architect skeleton → developer refinement
   record.status = 'planning';
   await host.workspace.setState(state);
-  host.run.reportStep(`subphase-plan-${record.id}`, 'developer');
-  host.events.emitProgress(0, `Planning: ${record.label}`);
+  const generationRunId = generateId();
+  const roleFlow: string[] = [];
 
   const projectContext = buildProjectContext(project);
-  const planResult = await host.llm.complete({
+  const architectureContext = buildArchitectureContextForPhase(project, record);
+
+  const involvedProjects = project.codeProjects.filter((cp) => record.involvedProjectIds.includes(cp.id));
+  const involvedProjectsContext = involvedProjects.length > 0
+    ? `\n\nTarget Projects:\n${involvedProjects.map((cp) => `- ${cp.name} (${cp.id}, type: ${cp.type}, stack: ${cp.techStack})`).join('\n')}`
+    : '';
+
+  const implPlanSchema = JSON.stringify({
+    projectId: project.id,
+    subphaseId: record.id,
+    label: record.label,
+    roadmapEntryPhase: record.roadmapEntryPhase,
+    body: 'string — plain-text summary of the full plan (2-4 paragraphs)',
+    architectureSlices: record.architectureSlices,
+    technicalDependencies: record.technicalDependencies,
+    generatedAt: 'ISO 8601 timestamp',
+    phaseContext: { roadmapPhaseId: 'string — roadmap phase id', roadmapPhaseName: 'string — human name', summary: 'string — 1-2 sentence goal summary', relatedArchitectureSections: ['string — architecture sections relevant to this phase'] },
+    scopeDefinition: { included: ['string — what is explicitly in scope'], excluded: ['string — what is explicitly out of scope'] },
+    affectedProjects: [{ projectId: 'string', projectName: 'string', purpose: 'string — why affected', expectedChanges: ['string — concrete changes'] }],
+    workBreakdown: [{ groupLabel: 'string — logical group name', tasks: [{ id: 'string — unique task id (e.g. t-1)', title: 'string', description: 'string — what to do', projectId: 'string — target code project', type: 'feature|refactor|integration|config|test|docs', dependencies: ['string — task ids this depends on'], expectedOutcome: 'string — verifiable result' }] }],
+    interfacesAndContracts: { apis: [{ name: 'string', producerProjectId: 'string', consumerProjectIds: ['string'], description: 'string' }], boundaries: ['string — boundary rules'], dataContracts: [{ name: 'string', ownerProjectId: 'string', description: 'string' }] },
+    dataChanges: { newModels: [{ name: 'string', projectId: 'string', description: 'string', fields: ['string — field name and type'] }], migrations: ['string — migration descriptions'], storageChanges: ['string — storage infrastructure changes'] },
+    risksAndEdgeCases: [{ id: 'string', description: 'string', severity: 'low|medium|high', mitigation: 'string (optional)' }],
+    validationPlan: { verificationSteps: ['string — how to verify success'], testExpectations: ['string — tests to implement'], qaGateCriteria: ['string — QA acceptance criteria'] },
+    definitionOfDone: ['string — concrete criteria for completion'],
+  }, null, 2);
+
+  const phaseContextBlock = `Phase: ${record.label}\nRoadmap Phase: ${record.roadmapEntryPhase}${record.goals.length > 0 ? `\n\nGoals:\n${record.goals.map((g) => `- ${g}`).join('\n')}` : ''}${record.deliverables.length > 0 ? `\n\nDeliverables:\n${record.deliverables.map((d) => `- ${d}`).join('\n')}` : ''}${record.validationCriteria.length > 0 ? `\n\nValidation Criteria:\n${record.validationCriteria.map((v) => `- ${v}`).join('\n')}` : ''}${involvedProjectsContext}`;
+
+  const architectureBlock = architectureContext ? `\n\n--- ARCHITECTURE CONTEXT ---\n${architectureContext}\n--- END ARCHITECTURE CONTEXT ---\n\nYour plan MUST:\n- Reference the relevant architecture slices and explain how each will be addressed\n- Respect all implementation guidelines and boundaries\n- Note any technical dependencies that must be satisfied first\n- Flag any potential conflicts between the plan and architecture constraints` : '';
+
+  // 1a. Software Architect — structural skeleton
+  host.run.reportStep(`subphase-plan-arch-${record.id}`, 'software-architect');
+  host.events.emitProgress(0, `Architect planning: ${record.label}`);
+
+  const architectSkeletonResult = await host.llm.complete({
     purposeId: 'development-plan',
-    systemPrompt: ROLE_PROMPTS.developer,
+    systemPrompt: `${ROLE_PROMPTS['software-architect']}\n\nYou MUST respond with ONLY a valid JSON object matching this exact schema. No markdown, no explanation, no code fences — just the JSON object.\n\nYour focus: define the structural skeleton — scope boundaries, work breakdown groups with high-level tasks, interfaces and contracts, data changes, architecture slice alignment, and risks. Task descriptions should focus on WHAT needs to happen architecturally, not HOW to code it.\n\nSchema:\n${implPlanSchema}`,
     messages: [{
       role: 'user',
-      content: `${projectContext}\n\nCreate a detailed implementation plan for this sub-phase:\nPhase: ${record.label}\nRoadmap Phase: ${record.roadmapEntryPhase}\n\nInclude specific tasks, ordering, dependencies, and acceptance criteria. Reference the relevant code projects.`,
+      content: `${projectContext}\n\nCreate a structural implementation plan skeleton for this sub-phase:\n${phaseContextBlock}${architectureBlock}\n\nRespond with ONLY a valid JSON object matching the schema provided in the system prompt. Tasks must be meaningful (not trivial micro-steps), grouped logically, and reference real code projects. Dependencies must reference task ids within this plan.`,
     }],
     temperature: 0.2,
-    maxTokens: 2000,
+    maxTokens: 5000,
   });
+
+  const architectSkeleton = JSON.parse(architectSkeletonResult.text.trim());
+  roleFlow.push('software-architect');
+
+  // 1b. Developer — refinement of architect skeleton
+  host.run.reportStep(`subphase-plan-dev-${record.id}`, 'developer');
+  host.events.emitProgress(0.05, `Developer refining: ${record.label}`);
+
+  const planResult = await host.llm.complete({
+    purposeId: 'development-plan',
+    systemPrompt: `${ROLE_PROMPTS.developer}\n\nYou MUST respond with ONLY a valid JSON object matching this exact schema. No markdown, no explanation, no code fences — just the JSON object.\n\nYou are refining an architect's structural skeleton into a practical, executable plan. Your focus: enrich task descriptions with actionable implementation details, adjust expected outcomes for feasibility, add missing tasks or dependencies, refine the body with developer-perspective narrative, and sharpen the definition of done and validation plan.\n\nSchema:\n${implPlanSchema}`,
+    messages: [{
+      role: 'user',
+      content: `${projectContext}\n\nRefine this architect's structural skeleton into an executable implementation plan:\n\n--- ARCHITECT SKELETON ---\n${JSON.stringify(architectSkeleton, null, 2)}\n--- END ARCHITECT SKELETON ---\n\n${phaseContextBlock}${architectureBlock}\n\nRequirements:\n- Keep the architect's structural decisions (scope, groups, interfaces, data changes) unless they are clearly infeasible\n- Enrich every task with concrete implementation details, file/module references where appropriate, and realistic expected outcomes\n- Add any missing tasks the architect overlooked (testing tasks, config tasks, integration tasks)\n- Refine the body to be a developer-oriented summary of the execution strategy\n- Ensure dependencies between tasks form a valid DAG\n- Sharpen definition of done with verifiable, non-vague criteria\n\nRespond with ONLY a valid JSON object matching the schema provided in the system prompt.`,
+    }],
+    temperature: 0.2,
+    maxTokens: 6000,
+  });
+
+  const planContent = JSON.parse(planResult.text.trim()) as ImplementationPhasePlanArtifactContent;
+  roleFlow.push('developer');
+  (planContent as unknown as Record<string, unknown>).versionMetadata = { generationRunId, roleFlow };
 
   const planArtifact = await host.workspace.createArtifact({
     type: 'implementation-phase-plan',
     title: `Implementation Plan: ${record.label}`,
-    content: {
-      projectId: project.id,
-      subphaseId: record.id,
-      label: record.label,
-      roadmapEntryPhase: record.roadmapEntryPhase,
-      body: planResult.text.trim(),
-      generatedAt: new Date().toISOString(),
-    },
+    content: planContent as unknown as Record<string, unknown>,
     createdByRole: 'developer',
   });
   record.planArtifactId = planArtifact.id;
   artifactIds.push(planArtifact.id);
   project.artifactIds.push(planArtifact.id);
+
+  // Record initial version
+  const initialPlanVersion: ImplementationPlanVersion = {
+    id: generateId(),
+    version: 1,
+    artifactId: planArtifact.id,
+    phaseRecordId: record.id,
+    createdAt: new Date().toISOString(),
+    decision: null,
+  };
+  record.implementationPlanVersions = [initialPlanVersion];
   await host.workspace.setState(state);
   await host.run.checkpoint();
 
-  // 2. User approval of plan
-  host.run.reportStep(`subphase-plan-approval-${record.id}`, 'developer');
-  const planApproval = (await host.run.requestInput({
-    title: `Approve Implementation Plan: ${record.label}`,
-    message: `An implementation plan has been generated for "${record.label}". Review and decide how to proceed.`,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        decision: { type: 'string', enum: ['approve', 'reject', 'revise', 'pause', 'cancel'], description: 'Decision for this plan' },
-        feedback: { type: 'string', description: 'Feedback or revision requests' },
-      },
-      required: ['decision'],
-    },
-  })) as { decision: string; feedback?: string };
+  // 2. User approval of plan — full approval loop
+  const IMPL_PLAN_MAX_REVISIONS = 3;
+  let implRevisionCount = 0;
+  let currentPlanContent = planContent;
+  let currentPlanArtifactId = planArtifact.id;
+  let currentPlanVersion = initialPlanVersion;
 
-  if (planApproval.decision !== 'approve') {
-    record.status = planApproval.decision === 'pause' ? 'not_started' : 'failed';
-    record.userDecision = planApproval.decision as ImplementationPhaseRecord['userDecision'];
+  host.run.reportStep(`subphase-plan-approval-${record.id}`, 'developer');
+  let planGateResponse = (await host.run.requestInput({
+    title: `Approve Implementation Plan: ${record.label}`,
+    message: `An implementation plan has been generated for "${record.label}". Review the plan artifact and decide how to proceed.`,
+    inputSchema: buildImplPlanGateSchema(true),
+  })) as ImplPlanGateResponse;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const planDecision = planGateResponse.decision ?? 'approve';
+    const planFeedback = planGateResponse.feedback;
+    const planTaskEdits = planGateResponse.taskEdits;
+    const planScopeChanges = planGateResponse.scopeChanges;
+    const planRiskEdits = planGateResponse.riskEdits;
+    const planDependencyChanges = planGateResponse.dependencyChanges;
+
     project.validationHistory.push({
       phase: 'implementation-phase',
-      decision: planApproval.decision as ValidationEntry['decision'],
-      feedback: planApproval.feedback ?? null,
+      decision: planDecision as ValidationEntry['decision'],
+      feedback: planFeedback ?? null,
       timestamp: new Date().toISOString(),
     });
+
+    // ── pause ──────────────────────────────────────────────────────────
+    if (planDecision === 'pause') {
+      record.status = 'not_started';
+      record.userDecision = 'pause';
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return { artifactIds, success: false };
+    }
+
+    // ── cancel ─────────────────────────────────────────────────────────
+    if (planDecision === 'cancel') {
+      record.status = 'failed';
+      record.userDecision = 'cancel';
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return { artifactIds, success: false };
+    }
+
+    // ── approve ────────────────────────────────────────────────────────
+    if (planDecision === 'approve') {
+      await host.workspace.updateArtifact(currentPlanArtifactId, { status: 'approved' });
+      currentPlanVersion.decision = 'approve';
+      record.userDecision = 'approve';
+      host.log.info('Implementation plan approved', { artifactId: currentPlanArtifactId });
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      break;
+    }
+
+    // ── approve-with-changes ───────────────────────────────────────────
+    if (planDecision === 'approve-with-changes') {
+      if (!hasBudgetFor(host, 1)) {
+        await host.workspace.updateArtifact(currentPlanArtifactId, { status: 'approved' });
+        currentPlanVersion.decision = 'approve';
+        record.userDecision = 'approve';
+        host.log.warn('No budget for impl plan approve-with-changes, approving as-is');
+        await host.workspace.setState(state);
+        await host.run.checkpoint();
+        break;
+      }
+
+      const editCtx = buildImplPlanEditContext(planTaskEdits, planScopeChanges, planRiskEdits, planDependencyChanges);
+      const changeInstructions = [
+        planFeedback ? `User feedback: ${planFeedback}` : '',
+        editCtx,
+      ].filter(Boolean).join('\n\n');
+
+      host.run.reportStep(`subphase-plan-apply-changes-${record.id}`, 'developer');
+
+      const changeResult = await host.llm.complete({
+        purposeId: 'development-plan',
+        systemPrompt: `${ROLE_PROMPTS.developer}
+
+You are applying targeted changes to an implementation plan. Do NOT redesign the entire plan. Only incorporate the specific adjustments requested. Output the COMPLETE updated implementation plan as valid JSON matching the same schema as the input (no markdown fences, no explanation).
+
+Schema:\n${implPlanSchema}`,
+        messages: [{
+          role: 'user',
+          content: `Apply these changes to the implementation plan:\n\n${changeInstructions}\n\nCurrent implementation plan:\n${JSON.stringify(currentPlanContent, null, 2)}`,
+        }],
+        temperature: 0.1,
+        maxTokens: 6000,
+      });
+
+      let updatedPlanContent: ImplementationPhasePlanArtifactContent;
+      try {
+        updatedPlanContent = JSON.parse(changeResult.text.trim());
+      } catch {
+        host.log.warn('Failed to parse impl plan approve-with-changes result, approving original');
+        await host.workspace.updateArtifact(currentPlanArtifactId, { status: 'approved' });
+        currentPlanVersion.decision = 'approve';
+        record.userDecision = 'approve';
+        await host.workspace.setState(state);
+        await host.run.checkpoint();
+        break;
+      }
+
+      await host.workspace.updateArtifact(currentPlanArtifactId, { status: 'superseded' });
+
+      const newPlanVersionNumber = record.implementationPlanVersions.length + 1;
+      (updatedPlanContent as unknown as Record<string, unknown>).versionMetadata = {
+        generationRunId,
+        roleFlow: [...roleFlow, 'developer'],
+      };
+
+      const newPlanArtifact = await host.workspace.createArtifact({
+        type: 'implementation-phase-plan',
+        title: `Implementation Plan: ${record.label}`,
+        content: updatedPlanContent as unknown as Record<string, unknown>,
+        createdByRole: 'developer',
+        parentArtifactId: currentPlanArtifactId,
+      });
+      await host.workspace.updateArtifact(newPlanArtifact.id, { status: 'approved' });
+
+      const newPlanVersion: ImplementationPlanVersion = {
+        id: generateId(),
+        version: newPlanVersionNumber,
+        artifactId: newPlanArtifact.id,
+        phaseRecordId: record.id,
+        createdAt: new Date().toISOString(),
+        decision: 'approve',
+      };
+      record.implementationPlanVersions.push(newPlanVersion);
+      record.planArtifactId = newPlanArtifact.id;
+      artifactIds.push(newPlanArtifact.id);
+      project.artifactIds.push(newPlanArtifact.id);
+      record.userDecision = 'approve';
+      currentPlanContent = updatedPlanContent;
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      host.log.info('Implementation plan approved with changes', { originalId: currentPlanArtifactId, newId: newPlanArtifact.id });
+      break;
+    }
+
+    // ── revise / reject — regenerate with feedback ─────────────────────
+    if (planDecision === 'revise' || planDecision === 'reject') {
+      implRevisionCount++;
+      await host.workspace.updateArtifact(currentPlanArtifactId, { status: 'superseded' });
+      currentPlanVersion.decision = planDecision as ValidationEntry['decision'];
+      host.log.info(`Implementation plan ${planDecision}ed, regenerating`, { feedback: planFeedback, revision: implRevisionCount });
+
+      if (!hasBudgetFor(host, 3) || implRevisionCount > IMPL_PLAN_MAX_REVISIONS) {
+        record.status = 'failed';
+        record.userDecision = planDecision as ImplementationPhaseRecord['userDecision'];
+        await host.workspace.setState(state);
+        await host.run.checkpoint();
+        const reason = implRevisionCount > IMPL_PLAN_MAX_REVISIONS
+          ? `Maximum implementation plan revision limit (${IMPL_PLAN_MAX_REVISIONS}) reached`
+          : 'Insufficient step budget for implementation plan regeneration';
+        host.log.warn(reason);
+        return { artifactIds, success: false };
+      }
+
+      const editCtx = buildImplPlanEditContext(planTaskEdits, planScopeChanges, planRiskEdits, planDependencyChanges);
+      const combinedFeedback = [
+        planFeedback ?? '',
+        editCtx,
+      ].filter(Boolean).join('\n\n');
+
+      // Re-run architect skeleton with feedback
+      host.run.reportStep(`subphase-plan-arch-revision-${record.id}-v${implRevisionCount + 1}`, 'software-architect');
+      host.events.emitProgress(0.05, `Architect revising plan: ${record.label} (revision ${implRevisionCount})`);
+
+      const revisionArchResult = await host.llm.complete({
+        purposeId: 'development-plan',
+        systemPrompt: `${ROLE_PROMPTS['software-architect']}
+
+You are REVISING an implementation plan based on user feedback. The user explicitly ${planDecision}ed the previous version. Address their feedback directly. Output ONLY valid JSON matching the schema (no markdown fences, no explanation).
+
+Schema:\n${implPlanSchema}`,
+        messages: [{
+          role: 'user',
+          content: `Revise this implementation plan based on user feedback:\n\n${projectContext}\n\n${phaseContextBlock}${architectureBlock}\n\nUser feedback:\n${combinedFeedback}\n\nPrevious implementation plan to revise:\n${JSON.stringify(currentPlanContent, null, 2)}`,
+        }],
+        temperature: 0.2,
+        maxTokens: 5000,
+      });
+
+      const revisedSkeleton = JSON.parse(revisionArchResult.text.trim());
+
+      // Developer refinement of revised skeleton
+      host.run.reportStep(`subphase-plan-dev-revision-${record.id}-v${implRevisionCount + 1}`, 'developer');
+      host.events.emitProgress(0.1, `Developer refining revision: ${record.label}`);
+
+      const revisedPlanResult = await host.llm.complete({
+        purposeId: 'development-plan',
+        systemPrompt: `${ROLE_PROMPTS.developer}\n\nYou MUST respond with ONLY a valid JSON object matching this exact schema. No markdown, no explanation, no code fences — just the JSON object.\n\nYou are refining a revised architect skeleton. The user requested changes to the previous plan. Ensure all feedback is addressed.\n\nSchema:\n${implPlanSchema}`,
+        messages: [{
+          role: 'user',
+          content: `${projectContext}\n\nRefine this revised architect skeleton:\n\n--- REVISED ARCHITECT SKELETON ---\n${JSON.stringify(revisedSkeleton, null, 2)}\n--- END REVISED ARCHITECT SKELETON ---\n\n${phaseContextBlock}${architectureBlock}\n\nUser feedback that prompted this revision:\n${combinedFeedback}\n\nRespond with ONLY a valid JSON object.`,
+        }],
+        temperature: 0.2,
+        maxTokens: 6000,
+      });
+
+      let revisedPlanContent: ImplementationPhasePlanArtifactContent;
+      try {
+        revisedPlanContent = JSON.parse(revisedPlanResult.text.trim());
+      } catch {
+        throw new Error('Implementation plan revision failed: LLM returned invalid JSON. Checkpoint and retry.');
+      }
+
+      const newPlanVersionNumber = record.implementationPlanVersions.length + 1;
+      (revisedPlanContent as unknown as Record<string, unknown>).versionMetadata = {
+        generationRunId,
+        roleFlow: [...roleFlow, 'software-architect', 'developer'],
+      };
+
+      const newPlanArtifact = await host.workspace.createArtifact({
+        type: 'implementation-phase-plan',
+        title: `Implementation Plan: ${record.label}`,
+        content: revisedPlanContent as unknown as Record<string, unknown>,
+        createdByRole: 'developer',
+        parentArtifactId: currentPlanArtifactId,
+      });
+
+      const newPlanVersion: ImplementationPlanVersion = {
+        id: generateId(),
+        version: newPlanVersionNumber,
+        artifactId: newPlanArtifact.id,
+        phaseRecordId: record.id,
+        createdAt: new Date().toISOString(),
+        decision: null,
+      };
+      record.implementationPlanVersions.push(newPlanVersion);
+      record.planArtifactId = newPlanArtifact.id;
+      artifactIds.push(newPlanArtifact.id);
+      project.artifactIds.push(newPlanArtifact.id);
+      await host.workspace.setState(state);
+
+      currentPlanContent = revisedPlanContent;
+      currentPlanArtifactId = newPlanArtifact.id;
+      currentPlanVersion = newPlanVersion;
+
+      await host.run.checkpoint();
+      host.run.reportStep(`subphase-plan-approval-${record.id}-v${newPlanVersionNumber}`, 'developer');
+      planGateResponse = (await host.run.requestInput({
+        title: `Review Revised Implementation Plan: ${record.label}`,
+        message: `Implementation plan v${newPlanVersionNumber} has been generated for "${record.label}" (revision ${implRevisionCount} of ${IMPL_PLAN_MAX_REVISIONS}). Please review and decide.`,
+        inputSchema: buildImplPlanGateSchema(implRevisionCount < IMPL_PLAN_MAX_REVISIONS),
+      })) as ImplPlanGateResponse;
+
+      continue;
+    }
+
+    // Unknown decision — treat as approve
+    host.log.warn('Unknown impl plan gate decision, treating as approve', { decision: planDecision });
+    await host.workspace.updateArtifact(currentPlanArtifactId, { status: 'approved' });
+    currentPlanVersion.decision = 'approve';
+    record.userDecision = 'approve';
     await host.workspace.setState(state);
     await host.run.checkpoint();
-    return { artifactIds, success: false };
+    break;
   }
 
   // 3. Implementing
@@ -1560,23 +3703,12 @@ async function handleRunImplementationSubphase(
   host.run.reportStep(`subphase-implement-${record.id}`, 'developer');
   host.events.emitProgress(0.3, `Implementing: ${record.label}`);
 
-  if (isBridgeAvailable(host) && project.codeProjects.length > 0) {
-    const bridge = host.bridge!;
-    for (const cp of project.codeProjects) {
-      if (!cp.repoPath) continue;
-      const goalPrompt = `Implementation Sub-Phase: ${record.label}\n\nFollow the project's .claude configuration for coding standards, testing expectations, and TDD guidance.\n\nPlan:\n${planResult.text.trim()}`;
-
-      const cmdResult = await executeAndWaitBridgeCommand(host, {
-        command: 'claude',
-        args: ['--print', goalPrompt],
-        workingDirectory: cp.repoPath,
-        reason: `Implementation sub-phase: ${record.label} — ${cp.name}`,
-        timeoutMs: 600_000,
-      });
-
-      if (cmdResult.bridgeRunId) {
-        record.bridgeJobIds.push(cmdResult.bridgeRunId);
-      }
+  if (isBridgeAvailable(host)) {
+    const executionResult = await executePlanTaskGroups(host, state, project, record, currentPlanContent);
+    if (!executionResult.success) {
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return { artifactIds, success: false };
     }
   }
 
@@ -1610,22 +3742,42 @@ async function handleRunImplementationSubphase(
   project.artifactIds.push(reportArtifact.id);
   await host.workspace.setState(state);
 
-  // 4. QA Validation
+  // 4. QA Validation — structured JSON report
   record.status = 'qa_validating';
   await host.workspace.setState(state);
   host.run.reportStep(`subphase-qa-${record.id}`, 'qa');
   host.events.emitProgress(0.6, `QA Validating: ${record.label}`);
 
+  const qaArchitectureContext = buildArchitectureContextForPhase(project, record);
+  const qaReportSchema = buildQaReportSchema(currentPlanContent, !!qaArchitectureContext);
+
   const qaResult = await host.llm.complete({
     purposeId: 'qa-strategy',
-    systemPrompt: ROLE_PROMPTS.qa,
+    systemPrompt: `${ROLE_PROMPTS.qa}\n\nYou MUST respond with ONLY a valid JSON object matching this exact schema. No markdown, no explanation, no code fences — just the JSON object.\n\nSchema:\n${qaReportSchema}`,
     messages: [{
       role: 'user',
-      content: `${projectContext}\n\nPerform QA validation for the implementation sub-phase: ${record.label}\n\nReview the implementation report and assess:\n- Does the implementation meet the plan's acceptance criteria?\n- Are there quality concerns?\n- Are tests adequate?\n- What issues need attention before proceeding?\n\nImplementation report:\n${reportResult.text.trim()}`,
+      content: `${projectContext}\n\nPerform QA validation for the implementation sub-phase: ${record.label}\n\n--- IMPLEMENTATION PLAN ---\n${JSON.stringify(currentPlanContent, null, 2)}\n--- END PLAN ---\n\n--- IMPLEMENTATION REPORT ---\n${reportResult.text.trim()}\n--- END REPORT ---${record.validationCriteria.length > 0 ? `\n\nValidation Criteria from Roadmap (evaluate each specifically):\n${record.validationCriteria.map((v) => `- ${v}`).join('\n')}` : ''}${qaArchitectureContext ? `\n\n--- ARCHITECTURE CONTEXT ---\n${qaArchitectureContext}\n--- END ARCHITECTURE CONTEXT ---` : ''}\n\nEvaluate EACH functionality criterion and definition-of-done item individually. Assign pass/fail/needs-work based on the implementation report evidence. Be rigorous — do not assume passing without evidence.\n\nRespond with ONLY valid JSON matching the schema.`,
     }],
     temperature: 0.2,
-    maxTokens: 1500,
+    maxTokens: 4000,
   });
+
+  let qaReport: QaReportStructured;
+  try {
+    qaReport = parseQaReport(qaResult.text);
+  } catch {
+    // Fallback: if JSON parsing fails, create a basic report from the raw text
+    const fallbackAssessment = qaArchitectureContext
+      ? extractArchitectureAssessment(qaResult.text)
+      : undefined;
+    qaReport = {
+      overallVerdict: 'needs-work',
+      body: qaResult.text.trim(),
+      functionalityChecks: [],
+      definitionOfDoneChecks: [],
+      architectureAssessment: fallbackAssessment,
+    };
+  }
 
   const qaArtifact = await host.workspace.createArtifact({
     type: 'qa-report',
@@ -1634,7 +3786,11 @@ async function handleRunImplementationSubphase(
       projectId: project.id,
       subphaseId: record.id,
       label: record.label,
-      body: qaResult.text.trim(),
+      body: qaReport.body,
+      overallVerdict: qaReport.overallVerdict,
+      functionalityChecks: qaReport.functionalityChecks,
+      definitionOfDoneChecks: qaReport.definitionOfDoneChecks,
+      ...(qaReport.architectureAssessment ? { architectureAssessment: qaReport.architectureAssessment } : {}),
       generatedAt: new Date().toISOString(),
     },
     createdByRole: 'qa',
@@ -1655,7 +3811,7 @@ async function handleRunImplementationSubphase(
     systemPrompt: ROLE_PROMPTS['product-manager'],
     messages: [{
       role: 'user',
-      content: `${projectContext}\n\nCheck alignment of implementation sub-phase "${record.label}" with product intent.\n\nDoes this implementation deliver the intended value? Is it aligned with the roadmap and product vision?\n\nQA Report:\n${qaResult.text.trim()}\n\nImplementation Report:\n${reportResult.text.trim()}`,
+      content: `${projectContext}\n\nCheck alignment of implementation sub-phase "${record.label}" with product intent.${record.goals.length > 0 ? `\n\nPhase Goals:\n${record.goals.map((g) => `- ${g}`).join('\n')}` : ''}${record.deliverables.length > 0 ? `\n\nExpected Deliverables:\n${record.deliverables.map((d) => `- ${d}`).join('\n')}` : ''}\n\nDoes this implementation deliver the intended value? Is it aligned with the roadmap and product vision?\n\nQA Report (verdict: ${qaReport.overallVerdict}):\n${qaReport.body}\n\nImplementation Report:\n${reportResult.text.trim()}`,
     }],
     temperature: 0.2,
     maxTokens: 1000,
@@ -1687,19 +3843,13 @@ async function handleRunImplementationSubphase(
 
   const finalApproval = (await host.run.requestInput({
     title: `Review Implementation: ${record.label}`,
-    message: `Implementation, QA validation, and PM alignment check are complete for "${record.label}". Review all reports and decide how to proceed.`,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        decision: { type: 'string', enum: ['approve', 'reject', 'revise', 'pause', 'cancel'], description: 'Decision for this implementation sub-phase' },
-        feedback: { type: 'string', description: 'Feedback or revision requests' },
-      },
-      required: ['decision'],
-    },
-  })) as { decision: string; feedback?: string };
+    message: `Implementation, QA validation (verdict: ${qaReport.overallVerdict}), and PM alignment check are complete for "${record.label}". Review all reports and decide how to proceed.`,
+    inputSchema: buildQaGateSchema(),
+  })) as { decision: string; feedback?: string; checkOverrides?: Array<{ criterion: string; action: string; notes: string }> };
 
   record.userDecision = finalApproval.decision as ImplementationPhaseRecord['userDecision'];
-  record.status = finalApproval.decision === 'approve' ? 'completed' : 'failed';
+  const isApproved = finalApproval.decision === 'approve' || finalApproval.decision === 'approve-with-changes';
+  record.status = isApproved ? 'completed' : 'failed';
   project.validationHistory.push({
     phase: 'implementation-phase',
     decision: finalApproval.decision as ValidationEntry['decision'],
@@ -1709,7 +3859,204 @@ async function handleRunImplementationSubphase(
   await host.workspace.setState(state);
   await host.run.checkpoint();
 
-  return { artifactIds, success: finalApproval.decision === 'approve' };
+  if (record.status === 'failed') {
+    host.run.reportStep(`subphase-failure-action-${record.id}`, 'developer');
+    const mustFixItems = finalApproval.checkOverrides
+      ?.filter((o) => o.action === 'must-fix')
+      .map((o) => o.criterion) ?? [];
+    const mustFixContext = mustFixItems.length > 0
+      ? `\n\nItems flagged as must-fix:\n${mustFixItems.map((c) => `- ${c}`).join('\n')}`
+      : '';
+    const failureAction = (await host.run.requestInput({
+      title: `Phase Failed: ${record.label}`,
+      message: `This phase did not pass review. How would you like to proceed?${mustFixContext}`,
+      inputSchema: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['retry', 'redefine', 'skip'],
+            description: 'retry: re-run same phase from scratch, redefine: update plan then re-run, skip: move to next phase',
+          },
+          feedback: { type: 'string', description: 'Additional guidance for retry or redefine' },
+        },
+        required: ['action'],
+      },
+    })) as { action: string; feedback?: string };
+
+    if (failureAction.action === 'retry') {
+      record.status = 'not_started';
+      record.planArtifactId = null;
+      record.implementationReportArtifactId = null;
+      record.qaReportArtifactId = null;
+      record.pmAlignmentDecision = null;
+      record.userDecision = null;
+      await host.workspace.setState(state);
+      return { artifactIds, success: false };
+    }
+
+    if (failureAction.action === 'redefine') {
+      record.status = 'not_started';
+      record.planArtifactId = null;
+      record.implementationReportArtifactId = null;
+      record.qaReportArtifactId = null;
+      record.pmAlignmentDecision = null;
+      record.userDecision = null;
+      await host.workspace.setState(state);
+      return { artifactIds, success: false };
+    }
+
+    // 'skip' — leave as failed and move on
+    return { artifactIds, success: false };
+  }
+
+  return { artifactIds, success: true };
+}
+
+async function generateArchitecturePlan(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  project: ProjectRecord,
+  projectContext: string,
+): Promise<{ id: string; canonical: ArchitecturePlanArtifactContent }> {
+  const roadmapContext = project.approvedRoadmapPhases
+    ? `\n\nApproved Roadmap Phases:\n${JSON.stringify(project.approvedRoadmapPhases, null, 2)}`
+    : '';
+  const topologyContext = project.approvedRoadmapTopology
+    ? `\n\nApproved Project Topology:\n${JSON.stringify(project.approvedRoadmapTopology, null, 2)}`
+    : '';
+
+  const archResult = await host.llm.complete({
+    purposeId: 'architecture-design',
+    systemPrompt: `${ROLE_PROMPTS['software-architect']}
+
+You are generating a canonical architecture plan for a product. Output ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
+
+{
+  "systemOverview": {
+    "description": "string - concise description of the whole technical system",
+    "productRelationship": "string - how the architecture relates to the product vision and roadmap",
+    "technicalConstraints": ["string - key technical constraints"]
+  },
+  "projectTopology": [
+    {
+      "id": "string - kebab-case identifier",
+      "name": "string - display name",
+      "purpose": "string - what this project does",
+      "ownership": "string - team or person responsible",
+      "type": "web-app | backend-api | mobile-app | worker | infra | shared-package | docs",
+      "dependencies": ["string - ids of other projects this depends on"]
+    }
+  ],
+  "runtimeArchitecture": {
+    "frontends": [{ "name": "string", "projectId": "string", "description": "string", "responsibilities": ["string"] }],
+    "backends": [{ "name": "string", "projectId": "string", "description": "string", "responsibilities": ["string"] }],
+    "backgroundProcessing": [{ "name": "string", "projectId": "string", "description": "string", "responsibilities": ["string"] }],
+    "externalIntegrations": [{ "name": "string", "purpose": "string", "protocol": "string" }]
+  },
+  "dataArchitecture": {
+    "dataDomains": [{ "name": "string", "description": "string", "ownerProjectId": "string", "entities": ["string"] }],
+    "persistenceStrategy": [{ "projectId": "string", "technology": "string", "rationale": "string" }],
+    "boundaries": ["string - data boundary rules"],
+    "stateOwnership": [{ "domain": "string", "ownerProjectId": "string", "accessPattern": "string" }]
+  },
+  "integrationArchitecture": {
+    "apiBoundaries": [{ "name": "string", "producerProjectId": "string", "consumerProjectIds": ["string"], "protocol": "string" }],
+    "internalIntegrationPoints": [{ "description": "string", "projectIds": ["string"] }],
+    "externalServices": [{ "name": "string", "purpose": "string", "integrationMethod": "string" }]
+  },
+  "securityAndTrustModel": {
+    "authAssumptions": ["string"],
+    "secretHandling": ["string"],
+    "trustBoundaries": ["string"],
+    "riskySurfaces": ["string"]
+  },
+  "deploymentAndEnvironmentModel": {
+    "environmentModel": [{ "name": "string", "purpose": "string", "characteristics": ["string"] }],
+    "deploymentUnits": [{ "projectId": "string", "strategy": "string", "notes": "string" }]
+  },
+  "qualityAttributes": {
+    "maintainability": "string",
+    "scalability": "string",
+    "testability": "string",
+    "reliability": "string",
+    "performance": "string",
+    "developerExperience": "string"
+  },
+  "phaseMapping": [
+    {
+      "phaseId": "string - must be a valid phase id from the roadmap",
+      "phaseName": "string",
+      "architectureSlices": ["string - architecture components built in this phase"],
+      "technicalDependencies": ["string - phase ids this depends on technically"]
+    }
+  ],
+  "implementationGuidelines": {
+    "rules": ["string - architectural rules developers must follow"],
+    "boundariesToPreserve": ["string - boundaries that must not be violated"],
+    "antiPatterns": ["string - practices to avoid"],
+    "codingExpectations": ["string - quality expectations for code"]
+  },
+  "openRisks": [
+    {
+      "id": "string - kebab-case identifier",
+      "description": "string - what the risk is",
+      "severity": "low | medium | high | critical",
+      "mitigation": "string (optional) - how to mitigate"
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "string - kebab-case identifier",
+      "question": "string - the question",
+      "context": "string (optional) - why this matters"
+    }
+  ]
+}
+
+Quality requirements:
+- Be concrete and specific to this product. No generic architecture advice.
+- Define clear boundaries between projects.
+- projectTopology ids must be consistent with roadmap topology when available.
+- phaseMapping must reference phases from the approved roadmap.
+- openRisks must have genuine severity assessments with real mitigations.
+- openQuestions should flag genuine unknowns, not obvious decisions.
+- securityAndTrustModel must address auth, secrets, and trust boundaries specifically.
+- qualityAttributes must be specific to this system, not generic platitudes.
+- Every project in projectTopology must appear in at least one runtimeArchitecture section.`,
+    messages: [{
+      role: 'user',
+      content: `Generate a canonical architecture plan for this product:\n\n${projectContext}${roadmapContext}${topologyContext}`,
+    }],
+    temperature: 0.2,
+    maxTokens: 8000,
+  });
+
+  let canonical: ArchitecturePlanArtifactContent;
+  try {
+    canonical = JSON.parse(archResult.text.trim());
+  } catch {
+    throw new Error('Architecture plan generation failed: LLM returned invalid JSON. Checkpoint and retry the run.');
+  }
+  validateArchitecturePlanCanonical(canonical);
+  canonical.versionMetadata = { version: 1, roleFlow: ['software-architect'] };
+
+  const artifact = await host.workspace.createArtifact({
+    type: 'architecture-plan',
+    title: `Architecture Plan: ${project.name}`,
+    content: canonical as unknown as Record<string, unknown>,
+    createdByRole: 'software-architect',
+  });
+
+  project.architecturePlanVersions.push({
+    id: generateId(),
+    version: 1,
+    artifactId: artifact.id,
+    createdAt: new Date().toISOString(),
+    decision: null,
+  });
+
+  return { id: artifact.id, canonical };
 }
 
 async function handleRunPhase(
@@ -1762,6 +4109,15 @@ async function handleRunPhase(
       (i + 1) / (totalSteps + 2),
       `${targetPhase}: ${step.description}`,
     );
+
+    // Dedicated structured generation for architecture-plan artifacts
+    if (step.artifactType === 'architecture-plan') {
+      const archArtifact = await generateArchitecturePlan(host, state, project, projectContext);
+      createdArtifactIds.push(archArtifact.id);
+      project.artifactIds.push(archArtifact.id);
+      await host.workspace.setState(state);
+      continue;
+    }
 
     const systemPrompt = ROLE_PROMPTS[stepRole];
     const llmResult = await host.llm.complete({
@@ -1880,7 +4236,7 @@ async function handleRunPhase(
   await host.workspace.setState(state);
 
   // Bridge-backed code execution for implementation phase
-  if (targetPhase === 'implementation-phase' && isBridgeAvailable(host)) {
+  if (targetPhase === 'implementation-phase') {
     host.log.info('Bridge available, starting bridge-backed implementation');
 
     // Verify entry conditions
@@ -1942,28 +4298,45 @@ async function handleRunPhase(
       }
 
       // Build roadmap phase records for per-phase gated execution
-      if (project.implementationStatus.roadmapPhaseRecords.length === 0 && project.roadmap) {
-        project.implementationStatus.roadmapPhaseRecords = project.roadmap
-          .filter((entry) => !project.completedPhases.includes(entry.phase))
-          .map((entry) => ({
-            id: generateId(),
-            roadmapEntryPhase: entry.phase,
-            label: `${entry.phase}: ${entry.milestones[0] ?? entry.deliverables[0] ?? entry.phase}`,
-            status: 'not_started' as const,
-            planArtifactId: null,
-            implementationReportArtifactId: null,
-            qaReportArtifactId: null,
-            pmAlignmentDecision: null,
-            userDecision: null,
-            bridgeJobIds: [],
-          }));
+      if (project.implementationStatus.roadmapPhaseRecords.length === 0) {
+        project.implementationStatus.roadmapPhaseRecords =
+          buildRoadmapPhaseRecordsFromArtifact(project, project.approvedRoadmapTopology ?? undefined, project.approvedArchitecturePlan);
+
+        // Fallback for projects created before approvedRoadmapPhases existed
+        if (project.implementationStatus.roadmapPhaseRecords.length === 0 && project.roadmap) {
+          project.implementationStatus.roadmapPhaseRecords = project.roadmap
+            .filter((entry) => !project.completedPhases.includes(entry.phase))
+            .map((entry) => ({
+              id: generateId(),
+              roadmapEntryPhase: entry.phase,
+              roadmapPhaseId: null,
+              label: `${entry.phase}: ${entry.milestones[0] ?? entry.deliverables[0] ?? entry.phase}`,
+              status: 'not_started' as const,
+              goals: [],
+              deliverables: entry.deliverables,
+              validationCriteria: [],
+              involvedProjectIds: [],
+              architectureSlices: [],
+              technicalDependencies: [],
+              planArtifactId: null,
+              implementationReportArtifactId: null,
+              qaReportArtifactId: null,
+              pmAlignmentDecision: null,
+              userDecision: null,
+              bridgeJobIds: [],
+              implementationPlanVersions: [],
+              taskGroupProgress: [],
+              currentTaskGroupIndex: null,
+            }));
+        }
         await host.workspace.setState(state);
       }
 
-      // Execute per-roadmap-phase implementation loop
-      for (let ri = 0; ri < project.implementationStatus.roadmapPhaseRecords.length; ri++) {
+      // Execute per-roadmap-phase implementation loop with retry support
+      let ri = 0;
+      while (ri < project.implementationStatus.roadmapPhaseRecords.length) {
         const record = project.implementationStatus.roadmapPhaseRecords[ri];
-        if (record.status === 'completed' || record.status === 'failed') continue;
+        if (record.status === 'completed' || record.status === 'failed') { ri++; continue; }
 
         if (!hasBudgetFor(host, 8)) {
           host.log.warn('Budget insufficient for next implementation sub-phase', { ri });
@@ -1972,7 +4345,13 @@ async function handleRunPhase(
 
         const subResult = await handleRunImplementationSubphase(host, state, project, ri);
         createdArtifactIds.push(...subResult.artifactIds);
-        if (!subResult.success) break;
+
+        if (!subResult.success) {
+          // If record was reset to not_started (retry/redefine), re-process same index
+          if (record.status === 'not_started') continue;
+          break;
+        }
+        ri++;
       }
 
       project.implementationStatus.activeRoadmapPhaseIndex = null;
@@ -1981,67 +4360,294 @@ async function handleRunPhase(
       const execArtifactIds = await executeImplementationPhases(host, state, project);
       createdArtifactIds.push(...execArtifactIds);
     }
-  } else if (targetPhase === 'implementation-phase' && !isBridgeAvailable(host)) {
-    host.log.info('Bridge not available, implementation phase produced planning-only artifacts');
   }
 
-  // Architecture gate: request additional approval for controversial tech stack decisions
+  // Architecture approval loop: structured review with versioning and revision support
   if (targetPhase === 'architecture-definition') {
     const techStackArtifact = findArtifactByTypeForStep(
       await host.workspace.listArtifacts(),
       'tech-stack-decision',
     );
-    if (techStackArtifact) {
-      host.run.reportStep('architecture-decision-gate', 'software-architect');
-      const archGate = (await host.run.requestInput({
+    const archPlanArtifactInitial = findArtifactByTypeForStep(
+      await host.workspace.listArtifacts(),
+      'architecture-plan',
+    );
+    if (techStackArtifact && archPlanArtifactInitial) {
+      const ARCH_MAX_REVISIONS = 3;
+      let archRevisionCount = 0;
+      let currentArchCanonical: ArchitecturePlanArtifactContent =
+        archPlanArtifactInitial.content as unknown as ArchitecturePlanArtifactContent;
+      let currentArchArtifactId = archPlanArtifactInitial.id;
+      let currentArchVersion = project.architecturePlanVersions[project.architecturePlanVersions.length - 1] ?? null;
+
+      await host.run.checkpoint();
+      host.run.reportStep('architecture-approval', 'software-architect');
+      let archGateResponse = (await host.run.requestInput({
         title: 'Review Architecture Decisions',
-        message: `Architecture and technology stack decisions have been made for "${project.name}". Review the tech-stack-decision and architecture-plan artifacts. Approve to proceed, or request revisions if any decisions are controversial.`,
-        inputSchema: {
-          type: 'object',
-          properties: {
-            decision: {
-              type: 'string',
-              enum: ['approve', 'reject', 'revise', 'pause', 'cancel'],
-              description: 'Decision for architecture review',
-            },
-            feedback: { type: 'string', description: 'Feedback on architecture decisions' },
-          },
-          required: ['decision'],
-        },
-      })) as { decision: string; feedback?: string };
+        message: `Architecture and technology stack decisions have been made for "${project.name}". Review the architecture-plan and tech-stack-decision artifacts. You can approve, request targeted changes to specific sections, or request a full revision.`,
+        inputSchema: buildArchitectureGateSchema(true),
+      })) as ArchitectureGateResponse;
 
-      project.validationHistory.push({
-        phase: targetPhase,
-        decision: archGate.decision as ValidationEntry['decision'],
-        feedback: archGate.feedback ?? null,
-        timestamp: new Date().toISOString(),
-      });
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const archDecision = archGateResponse.decision ?? 'approve';
+        const archFeedback = archGateResponse.feedback;
+        const archSectionEdits = archGateResponse.sectionEdits;
+        const archTopologyChanges = archGateResponse.topologyChanges;
 
-      if (archGate.decision === 'pause' || archGate.decision === 'cancel') {
+        project.validationHistory.push({
+          phase: targetPhase,
+          decision: archDecision as ValidationEntry['decision'],
+          feedback: archFeedback ?? null,
+          timestamp: new Date().toISOString(),
+        });
+
+        // ── pause / cancel ──────────────────────────────────────────────
+        if (archDecision === 'pause') {
+          await host.workspace.setState(state);
+          await host.run.checkpoint();
+          return {
+            success: true,
+            message: `Architecture review paused for "${project.name}". Resume when ready.`,
+            studioState: state,
+            artifactIds: createdArtifactIds,
+            stepsUsed: host.run.getStepCount(),
+            phasesCompleted: [],
+          };
+        }
+
+        if (archDecision === 'cancel') {
+          await host.workspace.setState(state);
+          await host.run.checkpoint();
+          return {
+            success: true,
+            message: `Architecture review cancelled for "${project.name}".`,
+            studioState: state,
+            artifactIds: createdArtifactIds,
+            stepsUsed: host.run.getStepCount(),
+            phasesCompleted: [],
+          };
+        }
+
+        // ── approve ─────────────────────────────────────────────────────
+        if (archDecision === 'approve') {
+          await host.workspace.updateArtifact(currentArchArtifactId, { status: 'approved' });
+          await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+          if (currentArchVersion) currentArchVersion.decision = 'approve';
+          project.approvedArchitecturePlan = currentArchCanonical;
+          host.log.info('Architecture plan approved', { artifactId: currentArchArtifactId });
+          await host.workspace.setState(state);
+          await host.run.checkpoint();
+          break;
+        }
+
+        // ── approve-with-changes ────────────────────────────────────────
+        if (archDecision === 'approve-with-changes') {
+          if (!hasBudgetFor(host, 1)) {
+            await host.workspace.updateArtifact(currentArchArtifactId, { status: 'approved' });
+            await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+            if (currentArchVersion) currentArchVersion.decision = 'approve';
+            project.approvedArchitecturePlan = currentArchCanonical;
+            host.log.warn('No budget for architecture approve-with-changes, approving as-is');
+            await host.workspace.setState(state);
+            await host.run.checkpoint();
+            break;
+          }
+
+          const archEditCtx = buildArchitectureEditContext(archSectionEdits, archTopologyChanges);
+          const archChangeInstructions = [
+            archFeedback ? `User feedback: ${archFeedback}` : '',
+            archEditCtx,
+          ].filter(Boolean).join('\n\n');
+
+          await host.workspace.setRole('software-architect');
+          host.run.reportStep('architect-apply-changes', 'software-architect');
+
+          const archChangeResult = await host.llm.complete({
+            purposeId: 'architecture-design',
+            systemPrompt: `${ROLE_PROMPTS['software-architect']}
+
+You are applying targeted changes to an approved architecture plan. Do NOT redesign the architecture. Only incorporate the specific adjustments requested. Output the COMPLETE updated architecture plan as valid JSON matching the same schema as the input (no markdown fences, no explanation).`,
+            messages: [{
+              role: 'user',
+              content: `Apply these changes to the architecture plan:\n\n${archChangeInstructions}\n\nCurrent architecture plan:\n${JSON.stringify(currentArchCanonical, null, 2)}`,
+            }],
+            temperature: 0.1,
+            maxTokens: 8000,
+          });
+
+          let updatedArchCanonical: ArchitecturePlanArtifactContent;
+          try {
+            updatedArchCanonical = JSON.parse(archChangeResult.text.trim());
+          } catch {
+            host.log.warn('Failed to parse architecture approve-with-changes result, approving original');
+            await host.workspace.updateArtifact(currentArchArtifactId, { status: 'approved' });
+            await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+            if (currentArchVersion) currentArchVersion.decision = 'approve';
+            project.approvedArchitecturePlan = currentArchCanonical;
+            await host.workspace.setState(state);
+            await host.run.checkpoint();
+            break;
+          }
+
+          validateArchitecturePlanCanonical(updatedArchCanonical);
+          await host.workspace.updateArtifact(currentArchArtifactId, { status: 'superseded' });
+
+          const newArchVersionNumber = (project.architecturePlanVersions?.length ?? 0) + 1;
+          updatedArchCanonical.versionMetadata = {
+            version: newArchVersionNumber,
+            roleFlow: [...(currentArchCanonical.versionMetadata?.roleFlow ?? []), 'software-architect'],
+          };
+
+          const newArchArtifact = await host.workspace.createArtifact({
+            type: 'architecture-plan',
+            title: `Architecture Plan: ${project.name}`,
+            content: updatedArchCanonical as unknown as Record<string, unknown>,
+            createdByRole: 'software-architect',
+            parentArtifactId: currentArchArtifactId,
+          });
+          await host.workspace.updateArtifact(newArchArtifact.id, { status: 'approved' });
+          await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+
+          const newArchVersion: ArchitecturePlanVersion = {
+            id: generateId(),
+            version: newArchVersionNumber,
+            artifactId: newArchArtifact.id,
+            createdAt: new Date().toISOString(),
+            decision: 'approve',
+          };
+          project.architecturePlanVersions.push(newArchVersion);
+          project.artifactIds.push(newArchArtifact.id);
+          createdArtifactIds.push(newArchArtifact.id);
+          project.approvedArchitecturePlan = updatedArchCanonical;
+          project.updatedAt = new Date().toISOString();
+          await host.workspace.setState(state);
+          await host.run.checkpoint();
+          host.log.info('Architecture plan approved with changes', { originalId: currentArchArtifactId, newId: newArchArtifact.id });
+          break;
+        }
+
+        // ── revise / reject — regenerate with feedback ──────────────────
+        if (archDecision === 'revise' || archDecision === 'reject') {
+          archRevisionCount++;
+          await host.workspace.updateArtifact(currentArchArtifactId, { status: 'superseded' });
+          await host.workspace.updateArtifact(techStackArtifact.id, { status: 'superseded' });
+          if (currentArchVersion) currentArchVersion.decision = archDecision as ValidationEntry['decision'];
+          host.log.info(`Architecture plan ${archDecision}ed, regenerating`, { feedback: archFeedback, revision: archRevisionCount });
+
+          if (!hasBudgetFor(host, 2) || archRevisionCount > ARCH_MAX_REVISIONS) {
+            await host.workspace.setState(state);
+            await host.run.checkpoint();
+            const reason = archRevisionCount > ARCH_MAX_REVISIONS
+              ? `Maximum architecture revision limit (${ARCH_MAX_REVISIONS}) reached`
+              : 'Insufficient step budget for architecture regeneration';
+            return {
+              success: false,
+              message: `${reason} for "${project.name}". Last architecture version preserved.`,
+              studioState: state,
+              artifactIds: createdArtifactIds,
+              stepsUsed: host.run.getStepCount(),
+              phasesCompleted: [],
+            };
+          }
+
+          const archEditCtx = buildArchitectureEditContext(archSectionEdits, archTopologyChanges);
+          const archCombinedFeedback = [
+            archFeedback ?? '',
+            archEditCtx,
+          ].filter(Boolean).join('\n\n');
+
+          await host.workspace.setRole('software-architect');
+          host.run.reportStep(`architect-revision-v${archRevisionCount + 1}`, 'software-architect');
+          host.events.emitProgress(0.3, `Software Architect: Regenerating architecture plan (revision ${archRevisionCount})`);
+
+          const roadmapContext = project.approvedRoadmapPhases
+            ? `\n\nApproved Roadmap Phases:\n${JSON.stringify(project.approvedRoadmapPhases, null, 2)}`
+            : '';
+          const topologyContext = project.approvedRoadmapTopology
+            ? `\n\nApproved Project Topology:\n${JSON.stringify(project.approvedRoadmapTopology, null, 2)}`
+            : '';
+
+          const archRevisionResult = await host.llm.complete({
+            purposeId: 'architecture-design',
+            systemPrompt: `${ROLE_PROMPTS['software-architect']}
+
+You are REVISING an architecture plan based on user feedback. The user explicitly ${archDecision}ed the previous version. Address their feedback directly. Output ONLY valid JSON matching the canonical architecture plan schema (no markdown fences, no explanation).
+
+Quality requirements:
+- Address every point in the user's feedback
+- Maintain structural integrity (valid project IDs, proper references)
+- Do not introduce new issues while fixing requested changes
+- If the user asked to simplify, reduce complexity
+- If the user asked to change technology, update all affected sections
+- If the user asked to add/remove projects, update topology and all dependent sections`,
+            messages: [{
+              role: 'user',
+              content: `Revise this architecture plan based on user feedback:\n\n${projectContext}${roadmapContext}${topologyContext}\n\nUser feedback:\n${archCombinedFeedback}\n\nPrevious architecture plan to revise:\n${JSON.stringify(currentArchCanonical, null, 2)}`,
+            }],
+            temperature: 0.2,
+            maxTokens: 8000,
+          });
+
+          let revisedArchCanonical: ArchitecturePlanArtifactContent;
+          try {
+            revisedArchCanonical = JSON.parse(archRevisionResult.text.trim());
+          } catch {
+            throw new Error('Architecture plan revision failed: LLM returned invalid JSON. Checkpoint and retry.');
+          }
+          validateArchitecturePlanCanonical(revisedArchCanonical);
+
+          const newArchVersionNumber = (project.architecturePlanVersions?.length ?? 0) + 1;
+          revisedArchCanonical.versionMetadata = {
+            version: newArchVersionNumber,
+            roleFlow: [...(currentArchCanonical.versionMetadata?.roleFlow ?? []), 'software-architect'],
+          };
+
+          const newArchArtifact = await host.workspace.createArtifact({
+            type: 'architecture-plan',
+            title: `Architecture Plan: ${project.name}`,
+            content: revisedArchCanonical as unknown as Record<string, unknown>,
+            createdByRole: 'software-architect',
+            parentArtifactId: currentArchArtifactId,
+          });
+
+          const newArchVersion: ArchitecturePlanVersion = {
+            id: generateId(),
+            version: newArchVersionNumber,
+            artifactId: newArchArtifact.id,
+            createdAt: new Date().toISOString(),
+            decision: null,
+          };
+          project.architecturePlanVersions.push(newArchVersion);
+          project.artifactIds.push(newArchArtifact.id);
+          createdArtifactIds.push(newArchArtifact.id);
+          project.updatedAt = new Date().toISOString();
+          await host.workspace.setState(state);
+
+          currentArchCanonical = revisedArchCanonical;
+          currentArchArtifactId = newArchArtifact.id;
+          currentArchVersion = newArchVersion;
+
+          await host.run.checkpoint();
+          host.run.reportStep(`architecture-approval-v${newArchVersionNumber}`, 'software-architect');
+          archGateResponse = (await host.run.requestInput({
+            title: 'Review Revised Architecture Plan',
+            message: `Architecture plan v${newArchVersionNumber} has been generated for "${project.name}" (revision ${archRevisionCount} of ${ARCH_MAX_REVISIONS}). Please review and decide.`,
+            inputSchema: buildArchitectureGateSchema(archRevisionCount < ARCH_MAX_REVISIONS),
+          })) as ArchitectureGateResponse;
+
+          continue;
+        }
+
+        // Unknown decision — treat as approve
+        host.log.warn('Unknown architecture gate decision, treating as approve', { decision: archDecision });
+        await host.workspace.updateArtifact(currentArchArtifactId, { status: 'approved' });
+        await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+        if (currentArchVersion) currentArchVersion.decision = 'approve';
+        project.approvedArchitecturePlan = currentArchCanonical;
         await host.workspace.setState(state);
         await host.run.checkpoint();
-        return {
-          success: true,
-          message: `Architecture review ${archGate.decision}led for "${project.name}".`,
-          studioState: state,
-          artifactIds: createdArtifactIds,
-          stepsUsed: host.run.getStepCount(),
-          phasesCompleted: [],
-        };
-      }
-
-      if (archGate.decision === 'reject' || archGate.decision === 'revise') {
-        await host.workspace.updateArtifact(techStackArtifact.id, { status: 'rejected' });
-        await host.workspace.setState(state);
-        await host.run.checkpoint();
-        return {
-          success: true,
-          message: `Architecture decisions ${archGate.decision}ed. Feedback: ${archGate.feedback ?? 'none'}`,
-          studioState: state,
-          artifactIds: createdArtifactIds,
-          stepsUsed: host.run.getStepCount(),
-          phasesCompleted: [],
-        };
+        break;
       }
     }
   }
@@ -2635,6 +5241,11 @@ export async function execute(
 
   if (!action) {
     return { success: false, message: 'action is required' };
+  }
+
+  // Bridge is required for this skill
+  if (!isBridgeAvailable(host)) {
+    return { success: false, message: 'This skill requires the OS Loop Bridge. Connect the bridge and try again.' };
   }
 
   // Load existing state (resume support)

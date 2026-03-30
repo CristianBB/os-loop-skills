@@ -111,6 +111,55 @@ The LLM prompt enforces these quality constraints:
 
 See `examples/canonical-roadmap-artifact.json` for a complete example of a valid `RoadmapArtifactContent` object.
 
+## Architecture Plan Artifact Schema
+
+The architecture plan artifact uses a canonical `ArchitecturePlanArtifactContent` structure with 12 top-level sections. It is produced by the `software-architect` role during the `architecture-definition` phase via a dedicated structured LLM generation path (not the generic step loop).
+
+### Sections
+
+| Section | Type | Description |
+|---------|------|-------------|
+| `systemOverview` | `ArchitectureSystemOverview` | Concise system description, product relationship, and technical constraints |
+| `projectTopology` | `ArchitectureProjectEntry[]` | List of technical projects with id, name, purpose, ownership, type, and dependencies |
+| `runtimeArchitecture` | `ArchitectureRuntimeArchitecture` | How runtime pieces interact: frontends, backends, background processing, external integrations |
+| `dataArchitecture` | `ArchitectureDataArchitecture` | Data domains, persistence strategy, boundaries, and state ownership |
+| `integrationArchitecture` | `ArchitectureIntegrationArchitecture` | API boundaries, internal integration points, and external services |
+| `securityAndTrustModel` | `ArchitectureSecurityAndTrustModel` | Auth assumptions, secret handling, trust boundaries, and risky surfaces |
+| `deploymentAndEnvironmentModel` | `ArchitectureDeploymentModel` | Environment model (local/staging/prod) and deployment units |
+| `qualityAttributes` | `ArchitectureQualityAttributes` | Maintainability, scalability, testability, reliability, performance, and developer experience |
+| `phaseMapping` | `ArchitecturePhaseMapping[]` | Maps roadmap phases to architecture slices and technical dependencies |
+| `implementationGuidelines` | `ArchitectureImplementationGuidelines` | Rules, boundaries to preserve, anti-patterns, and coding expectations |
+| `openRisks` | `ArchitectureRisk[]` | Technical risks with id, description, severity (low/medium/high/critical), and optional mitigation |
+| `openQuestions` | `ArchitectureQuestion[]` | Structured questions with id, question text, and optional context |
+
+### Project Topology Entry Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Kebab-case identifier |
+| `name` | `string` | Display name |
+| `purpose` | `string` | What this project does |
+| `ownership` | `string` | Team or person responsible |
+| `type` | `'web-app' \| 'backend-api' \| 'mobile-app' \| 'worker' \| 'infra' \| 'shared-package' \| 'docs'` | Project type |
+| `dependencies` | `string[]` | Ids of other projects this depends on |
+
+### Quality Requirements
+
+The LLM prompt enforces these quality constraints:
+
+- Be concrete and specific to the product (no generic architecture advice)
+- Define clear boundaries between projects
+- `projectTopology` ids must be consistent with roadmap topology when available
+- `phaseMapping` must reference phases from the approved roadmap
+- `openRisks` must have genuine severity assessments with real mitigations
+- `securityAndTrustModel` must address auth, secrets, and trust boundaries specifically
+- `qualityAttributes` must be specific to the system, not generic platitudes
+- Every project in `projectTopology` must appear in at least one `runtimeArchitecture` section
+
+### Example
+
+See `examples/canonical-architecture-plan-artifact.json` for a complete example of a valid `ArchitecturePlanArtifactContent` object.
+
 ## Per-Implementation-Phase Validation Cycle
 
 During the implementation phase, work is broken into sub-phases aligned with roadmap entries. Each sub-phase follows a gated lifecycle:
@@ -222,7 +271,7 @@ Each product can contain multiple code projects:
 | `infrastructure-plan` | software-architect | architecture-definition | Infrastructure topology and deployment |
 | `tech-stack-decision` | software-architect | architecture-definition | Technology choices with rationale |
 | `task-breakdown` | developer | implementation-phase | Implementation tasks per code project |
-| `implementation-phase-plan` | developer | implementation-phase | Task ordering and dependency graph |
+| `implementation-phase-plan` | developer | implementation-phase | Structured implementation plan with phaseContext, scopeDefinition, affectedProjects, workBreakdown (grouped tasks with types/dependencies), interfacesAndContracts, dataChanges, risksAndEdgeCases, validationPlan, and definitionOfDone. Backward-compatible: envelope fields (projectId, subphaseId, label, body, architectureSlices, technicalDependencies, generatedAt) are always present; structured sections are optional. See `examples/canonical-implementation-phase-plan-artifact.json`. |
 | `codebase-structure` | developer | implementation-phase | Directory layout and module boundaries |
 | `integration-points` | developer | implementation-phase | Cross-project integration map |
 | `repository-bootstrap-report` | developer | implementation-phase | Git initialization and bootstrap status per code project |

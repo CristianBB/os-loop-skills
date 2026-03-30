@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -15,86 +16,27 @@ interface Manifest {
   };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-console.log('=== Startup Product Studio — Docs & Examples Consistency ===\n');
-
-let passed = 0;
-let failed = 0;
-
-function assert(condition: boolean, label: string): void {
-  if (condition) {
-    console.log(`  PASS  ${label}`);
-    passed++;
-  } else {
-    console.error(`  FAIL  ${label}`);
-    failed++;
-  }
-}
-
 function loadJson(path: string): unknown {
   return JSON.parse(readFileSync(path, 'utf-8'));
 }
-
-// ── File existence ──────────────────────────────────────────────────────
-
-assert(existsSync(DOCS_PATH), 'docs.md exists');
-assert(existsSync(MANIFEST_PATH), 'manifest.json exists');
-
-const docs = readFileSync(DOCS_PATH, 'utf-8');
-const manifest = loadJson(MANIFEST_PATH) as Manifest;
-
-// ── docs.md references all canonical phases ─────────────────────────────
 
 const canonicalPhases = [
   'discovery', 'roadmap-definition', 'product-definition', 'ux-definition',
   'architecture-definition', 'implementation-phase', 'qa-validation', 'release-readiness',
 ];
 
-for (const phase of canonicalPhases) {
-  assert(docs.includes(phase), `docs.md references phase "${phase}"`);
-}
-
-// ── docs.md references all roles ────────────────────────────────────────
-
 const canonicalRoles = ['ceo', 'product-manager', 'ux-ui', 'software-architect', 'developer', 'qa'];
 
-for (const role of canonicalRoles) {
-  assert(docs.includes(role), `docs.md references role "${role}"`);
-}
-
-// ── docs.md references all input actions ────────────────────────────────
-
-const actions = manifest.inputSchema.properties?.action?.enum ?? [];
-assert(actions.length > 0, 'manifest has input actions defined');
-
-for (const action of actions) {
-  assert(docs.includes(action), `docs.md references action "${action}"`);
-}
-
-// ── docs.md references all gate decisions ───────────────────────────────
-
 const gateDecisions = ['approve', 'reject', 'revise', 'pause', 'cancel'];
-for (const decision of gateDecisions) {
-  assert(docs.includes(`\`${decision}\``), `docs.md references gate decision "${decision}"`);
-}
 
-// ── docs.md references all redirection actions ──────────────────────────
-
-const redirectionActions = manifest.inputSchema.properties?.redirectionAction?.enum ?? [];
-assert(redirectionActions.length > 0, 'manifest has redirection actions defined');
-
-for (const action of redirectionActions) {
-  assert(docs.includes(action), `docs.md references redirection action "${action}"`);
-}
-
-// ── Example JSON files have valid StudioState structure ─────────────────
-
-const singleProductPath = resolve(EXAMPLES_DIR, 'single-product-workspace.json');
-const multiProjectPath = resolve(EXAMPLES_DIR, 'multi-project-workspace.json');
-
-assert(existsSync(singleProductPath), 'single-product-workspace.json exists');
-assert(existsSync(multiProjectPath), 'multi-project-workspace.json exists');
+const weakPatterns = [
+  /TODO/i,
+  /FIXME/i,
+  /HACK/i,
+  /placeholder/i,
+  /implement later/i,
+  /not yet implemented/i,
+];
 
 interface ExampleFile {
   description: string;
@@ -112,184 +54,302 @@ interface ExampleFile {
   };
 }
 
-function validateExampleFile(path: string, label: string): void {
-  const example = loadJson(path) as ExampleFile;
+describe('Startup Product Studio — Docs & Examples Consistency', () => {
+  describe('file existence', () => {
+    it('docs.md exists', () => {
+      expect(existsSync(DOCS_PATH)).toBe(true);
+    });
 
-  assert(typeof example.description === 'string' && example.description.length > 0, `${label}: has description`);
-  assert(typeof example.studioState === 'object' && example.studioState !== null, `${label}: has studioState`);
-  assert(typeof example.studioState.studioName === 'string', `${label}: studioState has studioName`);
-  assert(Array.isArray(example.studioState.projects) && example.studioState.projects.length > 0, `${label}: has at least one project`);
-  assert(typeof example.studioState.createdAt === 'string', `${label}: studioState has createdAt`);
+    it('manifest.json exists', () => {
+      expect(existsSync(MANIFEST_PATH)).toBe(true);
+    });
+  });
 
-  // Validate all project phases are canonical
-  for (const project of example.studioState.projects) {
-    assert(
-      canonicalPhases.includes(project.currentPhase),
-      `${label}: project "${project.name}" currentPhase "${project.currentPhase}" is canonical`,
-    );
-    for (const completedPhase of project.completedPhases) {
-      assert(
-        canonicalPhases.includes(completedPhase),
-        `${label}: project "${project.name}" completedPhase "${completedPhase}" is canonical`,
-      );
+  const docs = readFileSync(DOCS_PATH, 'utf-8');
+  const manifest = loadJson(MANIFEST_PATH) as Manifest;
+
+  describe('docs.md references all canonical phases', () => {
+    for (const phase of canonicalPhases) {
+      it(`docs.md references phase "${phase}"`, () => {
+        expect(docs).toContain(phase);
+      });
     }
-  }
+  });
 
-  // Validate code project types
-  const validCodeProjectTypes = ['web', 'mobile', 'backend', 'worker', 'infra', 'shared', 'docs'];
-  for (const project of example.studioState.projects) {
-    for (const cp of project.codeProjects) {
-      assert(
-        validCodeProjectTypes.includes(cp.type),
-        `${label}: code project "${cp.name}" type "${cp.type}" is valid`,
-      );
+  describe('docs.md references all roles', () => {
+    for (const role of canonicalRoles) {
+      it(`docs.md references role "${role}"`, () => {
+        expect(docs).toContain(role);
+      });
     }
-  }
+  });
 
-  // activeProjectId should reference an existing project or be null
-  if (example.studioState.activeProjectId !== null) {
-    const projectIds = example.studioState.projects.map((p) => p.id);
-    assert(
-      projectIds.includes(example.studioState.activeProjectId),
-      `${label}: activeProjectId references an existing project`,
-    );
-  }
-}
+  describe('docs.md references all input actions', () => {
+    const actions = manifest.inputSchema.properties?.action?.enum ?? [];
 
-validateExampleFile(singleProductPath, 'single-product');
-validateExampleFile(multiProjectPath, 'multi-project');
+    it('manifest has input actions defined', () => {
+      expect(actions.length).toBeGreaterThan(0);
+    });
 
-// Multi-project specific: should have more than one project
-const multiExample = loadJson(multiProjectPath) as ExampleFile;
-assert(multiExample.studioState.projects.length > 1, 'multi-project: has multiple projects');
+    for (const action of actions) {
+      it(`docs.md references action "${action}"`, () => {
+        expect(docs).toContain(action);
+      });
+    }
+  });
 
-// ── Walkthrough files exist ─────────────────────────────────────────────
+  describe('docs.md references all gate decisions', () => {
+    for (const decision of gateDecisions) {
+      it(`docs.md references gate decision "${decision}"`, () => {
+        expect(docs).toContain(`\`${decision}\``);
+      });
+    }
+  });
 
-const walkthroughSinglePath = resolve(EXAMPLES_DIR, 'walkthrough-single-product.md');
-const walkthroughMultiPath = resolve(EXAMPLES_DIR, 'walkthrough-multi-project.md');
+  describe('docs.md references all redirection actions', () => {
+    const redirectionActions = manifest.inputSchema.properties?.redirectionAction?.enum ?? [];
 
-assert(existsSync(walkthroughSinglePath), 'walkthrough-single-product.md exists');
-assert(existsSync(walkthroughMultiPath), 'walkthrough-multi-project.md exists');
+    it('manifest has redirection actions defined', () => {
+      expect(redirectionActions.length).toBeGreaterThan(0);
+    });
 
-// Verify walkthroughs reference canonical phases
-const walkthroughSingle = readFileSync(walkthroughSinglePath, 'utf-8');
-const walkthroughMulti = readFileSync(walkthroughMultiPath, 'utf-8');
+    for (const action of redirectionActions) {
+      it(`docs.md references redirection action "${action}"`, () => {
+        expect(docs).toContain(action);
+      });
+    }
+  });
 
-for (const phase of canonicalPhases) {
-  assert(walkthroughSingle.includes(phase), `walkthrough-single references phase "${phase}"`);
-}
+  describe('example JSON files have valid StudioState structure', () => {
+    const singleProductPath = resolve(EXAMPLES_DIR, 'single-product-workspace.json');
+    const multiProjectPath = resolve(EXAMPLES_DIR, 'multi-project-workspace.json');
 
-assert(walkthroughMulti.includes('switch-project'), 'walkthrough-multi demonstrates project switching');
+    it('single-product-workspace.json exists', () => {
+      expect(existsSync(singleProductPath)).toBe(true);
+    });
 
-// ── No placeholder or weak language in docs ─────────────────────────────
+    it('multi-project-workspace.json exists', () => {
+      expect(existsSync(multiProjectPath)).toBe(true);
+    });
 
-const weakPatterns = [
-  /TODO/i,
-  /FIXME/i,
-  /HACK/i,
-  /placeholder/i,
-  /implement later/i,
-  /not yet implemented/i,
-];
+    const validCodeProjectTypes = ['web', 'mobile', 'backend', 'worker', 'infra', 'shared', 'docs'];
 
-for (const pattern of weakPatterns) {
-  assert(!pattern.test(docs), `docs.md does not contain weak pattern: ${pattern.source}`);
-}
+    function describeExampleFile(path: string, label: string): void {
+      const example = loadJson(path) as ExampleFile;
 
-// ── README.md consistency ───────────────────────────────────────────────
+      it(`${label}: has description`, () => {
+        expect(typeof example.description).toBe('string');
+        expect(example.description.length).toBeGreaterThan(0);
+      });
 
-assert(existsSync(README_PATH), 'README.md exists');
+      it(`${label}: has studioState`, () => {
+        expect(typeof example.studioState).toBe('object');
+        expect(example.studioState).not.toBeNull();
+      });
 
-const readme = readFileSync(README_PATH, 'utf-8');
-assert(readme.length > 0, 'README.md is non-empty');
+      it(`${label}: studioState has studioName`, () => {
+        expect(typeof example.studioState.studioName).toBe('string');
+      });
 
-// README references all canonical phases
-for (const phase of canonicalPhases) {
-  assert(readme.includes(phase), `README.md references phase "${phase}"`);
-}
+      it(`${label}: has at least one project`, () => {
+        expect(Array.isArray(example.studioState.projects)).toBe(true);
+        expect(example.studioState.projects.length).toBeGreaterThan(0);
+      });
 
-// README references all roles
-for (const role of canonicalRoles) {
-  assert(readme.includes(role), `README.md references role "${role}"`);
-}
+      it(`${label}: studioState has createdAt`, () => {
+        expect(typeof example.studioState.createdAt).toBe('string');
+      });
 
-// README references all gate decisions
-for (const decision of gateDecisions) {
-  assert(readme.includes(`\`${decision}\``), `README.md references gate decision "${decision}"`);
-}
+      it(`${label}: all project phases are canonical`, () => {
+        for (const project of example.studioState.projects) {
+          expect(canonicalPhases).toContain(project.currentPhase);
+          for (const completedPhase of project.completedPhases) {
+            expect(canonicalPhases).toContain(completedPhase);
+          }
+        }
+      });
 
-// README contains required sections
-const requiredReadmeSections = [
-  'Internal Role Model',
-  'Example User Journeys',
-  'Artifacts Produced',
-  'Bridge and Claude Code Integration',
-  'Git and Repository Bootstrap',
-  'Agent-Discoverable Queries',
-  'Developer Notes',
-];
+      it(`${label}: all code project types are valid`, () => {
+        for (const project of example.studioState.projects) {
+          for (const cp of project.codeProjects) {
+            expect(validCodeProjectTypes).toContain(cp.type);
+          }
+        }
+      });
 
-for (const section of requiredReadmeSections) {
-  assert(readme.includes(section), `README.md contains section "${section}"`);
-}
+      it(`${label}: activeProjectId references an existing project or is null`, () => {
+        if (example.studioState.activeProjectId !== null) {
+          const projectIds = example.studioState.projects.map((p) => p.id);
+          expect(projectIds).toContain(example.studioState.activeProjectId);
+        }
+      });
+    }
 
-// README has no weak language
-for (const pattern of weakPatterns) {
-  assert(!pattern.test(readme), `README.md does not contain weak pattern: ${pattern.source}`);
-}
+    describeExampleFile(singleProductPath, 'single-product');
+    describeExampleFile(multiProjectPath, 'multi-project');
 
-// ── Claude Code command pattern and bridge semantics ─────────────────────
+    it('multi-project: has multiple projects', () => {
+      const multiExample = loadJson(multiProjectPath) as ExampleFile;
+      expect(multiExample.studioState.projects.length).toBeGreaterThan(1);
+    });
+  });
 
-assert(docs.includes('claude --print'), 'docs.md references concrete command pattern "claude --print"');
-assert(readme.includes('claude --print'), 'README.md references concrete command pattern "claude --print"');
+  describe('walkthrough files', () => {
+    const walkthroughSinglePath = resolve(EXAMPLES_DIR, 'walkthrough-single-product.md');
+    const walkthroughMultiPath = resolve(EXAMPLES_DIR, 'walkthrough-multi-project.md');
 
-// Bootstrap status values must be documented in both docs
-const bootstrapStatuses = ['pending', 'git_initialized', 'claude_configured', 'ready'];
-for (const status of bootstrapStatuses) {
-  assert(docs.includes(status), `docs.md references bootstrap status "${status}"`);
-  assert(readme.includes(status), `README.md references bootstrap status "${status}"`);
-}
+    it('walkthrough-single-product.md exists', () => {
+      expect(existsSync(walkthroughSinglePath)).toBe(true);
+    });
 
-// 600s timeout for Claude Code execution
-assert(docs.includes('600'), 'docs.md references 600-second timeout for Claude Code execution');
-assert(readme.includes('600'), 'README.md references 600s timeout for Claude Code execution');
+    it('walkthrough-multi-project.md exists', () => {
+      expect(existsSync(walkthroughMultiPath)).toBe(true);
+    });
 
-// ── .claude structure consistency between module.ts and docs ─────────────
+    it('walkthrough-single references all canonical phases', () => {
+      const walkthroughSingle = readFileSync(walkthroughSinglePath, 'utf-8');
+      for (const phase of canonicalPhases) {
+        expect(walkthroughSingle).toContain(phase);
+      }
+    });
 
-const modulePath = resolve(SKILL_DIR, 'module.ts');
-const moduleSource = readFileSync(modulePath, 'utf-8');
+    it('walkthrough-multi demonstrates project switching', () => {
+      const walkthroughMulti = readFileSync(walkthroughMultiPath, 'utf-8');
+      expect(walkthroughMulti).toContain('switch-project');
+    });
+  });
 
-// Extract .claude file paths from the fileMap in module.ts
-const claudeFileRegex = /'\.(claude\/[^']+)'/g;
-const claudeFiles: string[] = [];
-let claudeMatch;
-while ((claudeMatch = claudeFileRegex.exec(moduleSource)) !== null) {
-  const filePath = claudeMatch[1];
-  // Deduplicate (paths appear in fileMap keys)
-  if (!claudeFiles.includes(filePath)) {
-    claudeFiles.push(filePath);
-  }
-}
+  describe('no placeholder or weak language in docs', () => {
+    for (const pattern of weakPatterns) {
+      it(`docs.md does not contain weak pattern: ${pattern.source}`, () => {
+        expect(pattern.test(docs)).toBe(false);
+      });
+    }
+  });
 
-assert(claudeFiles.length === 18, `.claude structure has exactly 18 files in module.ts (found ${claudeFiles.length})`);
+  describe('README.md consistency', () => {
+    it('README.md exists', () => {
+      expect(existsSync(README_PATH)).toBe(true);
+    });
 
-// Verify docs.md and README.md reference each .claude file basename
-for (const filePath of claudeFiles) {
-  const basename = filePath.split('/').pop()!.replace('.md', '');
-  assert(docs.includes(basename), `docs.md references .claude file "${basename}"`);
-  assert(readme.includes(basename), `README.md references .claude file "${basename}"`);
-}
+    const readme = readFileSync(README_PATH, 'utf-8');
 
-// Verify all 4 subdirectories are represented
-const claudeSubdirs = new Set(claudeFiles.map((f) => f.split('/')[1]));
-assert(claudeSubdirs.size === 4, `.claude has exactly 4 subdirectories (found ${claudeSubdirs.size})`);
-for (const dir of ['docs', 'context', 'agents', 'commands']) {
-  assert(claudeSubdirs.has(dir), `.claude contains subdirectory "${dir}"`);
-}
+    it('README.md is non-empty', () => {
+      expect(readme.length).toBeGreaterThan(0);
+    });
 
-// ── Summary ─────────────────────────────────────────────────────────────
+    for (const phase of canonicalPhases) {
+      it(`README.md references phase "${phase}"`, () => {
+        expect(readme).toContain(phase);
+      });
+    }
 
-console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
-if (failed > 0) {
-  process.exit(1);
-}
+    for (const role of canonicalRoles) {
+      it(`README.md references role "${role}"`, () => {
+        expect(readme).toContain(role);
+      });
+    }
+
+    for (const decision of gateDecisions) {
+      it(`README.md references gate decision "${decision}"`, () => {
+        expect(readme).toContain(`\`${decision}\``);
+      });
+    }
+
+    const requiredReadmeSections = [
+      'Internal Role Model',
+      'Example User Journeys',
+      'Artifacts Produced',
+      'Bridge and Claude Code Integration',
+      'Git and Repository Bootstrap',
+      'Agent-Discoverable Queries',
+      'Developer Notes',
+    ];
+
+    for (const section of requiredReadmeSections) {
+      it(`README.md contains section "${section}"`, () => {
+        expect(readme).toContain(section);
+      });
+    }
+
+    for (const pattern of weakPatterns) {
+      it(`README.md does not contain weak pattern: ${pattern.source}`, () => {
+        expect(pattern.test(readme)).toBe(false);
+      });
+    }
+  });
+
+  describe('Claude Code command pattern and bridge semantics', () => {
+    const readme = readFileSync(README_PATH, 'utf-8');
+
+    it('docs.md references concrete command pattern "claude --print"', () => {
+      expect(docs).toContain('claude --print');
+    });
+
+    it('README.md references concrete command pattern "claude --print"', () => {
+      expect(readme).toContain('claude --print');
+    });
+
+    const bootstrapStatuses = ['pending', 'git_initialized', 'claude_configured', 'ready'];
+    for (const status of bootstrapStatuses) {
+      it(`docs.md references bootstrap status "${status}"`, () => {
+        expect(docs).toContain(status);
+      });
+
+      it(`README.md references bootstrap status "${status}"`, () => {
+        expect(readme).toContain(status);
+      });
+    }
+
+    it('docs.md references 600-second timeout for Claude Code execution', () => {
+      expect(docs).toContain('600');
+    });
+
+    it('README.md references 600s timeout for Claude Code execution', () => {
+      expect(readme).toContain('600');
+    });
+  });
+
+  describe('.claude structure consistency between module.ts and docs', () => {
+    const modulePath = resolve(SKILL_DIR, 'module.ts');
+    const moduleSource = readFileSync(modulePath, 'utf-8');
+    const readme = readFileSync(README_PATH, 'utf-8');
+
+    const claudeFileRegex = /'\.(claude\/[^']+)'/g;
+    const claudeFiles: string[] = [];
+    let claudeMatch;
+    while ((claudeMatch = claudeFileRegex.exec(moduleSource)) !== null) {
+      const filePath = claudeMatch[1];
+      if (!claudeFiles.includes(filePath)) {
+        claudeFiles.push(filePath);
+      }
+    }
+
+    it(`.claude structure has exactly 18 files in module.ts`, () => {
+      expect(claudeFiles.length).toBe(18);
+    });
+
+    for (const filePath of claudeFiles) {
+      const basename = filePath.split('/').pop()!.replace('.md', '');
+      it(`docs.md references .claude file "${basename}"`, () => {
+        expect(docs).toContain(basename);
+      });
+
+      it(`README.md references .claude file "${basename}"`, () => {
+        expect(readme).toContain(basename);
+      });
+    }
+
+    it('.claude has exactly 4 subdirectories', () => {
+      const claudeSubdirs = new Set(claudeFiles.map((f) => f.split('/')[1]));
+      expect(claudeSubdirs.size).toBe(4);
+    });
+
+    for (const dir of ['docs', 'context', 'agents', 'commands']) {
+      it(`.claude contains subdirectory "${dir}"`, () => {
+        const claudeSubdirs = new Set(claudeFiles.map((f) => f.split('/')[1]));
+        expect(claudeSubdirs.has(dir)).toBe(true);
+      });
+    }
+  });
+});

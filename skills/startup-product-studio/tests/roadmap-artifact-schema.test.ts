@@ -45,6 +45,20 @@ interface RoadmapMilestone {
   successCriteria: string[];
 }
 
+type CeoStrategicValidationCoherence = 'aligned' | 'minor-concerns' | 'misaligned';
+
+interface CeoStrategicValidation {
+  coherenceScore: CeoStrategicValidationCoherence;
+  flaggedIssues: string[];
+  suggestedAdjustments: string[];
+}
+
+interface RoadmapVersionMetadata {
+  generationRunId: string;
+  version: number;
+  roleFlow: string[];
+}
+
 interface RoadmapArtifactContent {
   productSummary: RoadmapProductSummary;
   productScope: RoadmapProductScope;
@@ -53,6 +67,8 @@ interface RoadmapArtifactContent {
   milestones: RoadmapMilestone[];
   assumptions: string[];
   openQuestions: string[];
+  strategicValidation?: CeoStrategicValidation;
+  versionMetadata?: RoadmapVersionMetadata;
 }
 
 interface RoadmapEntry {
@@ -174,6 +190,39 @@ function validateRoadmapArtifact(content: unknown): { valid: boolean; errors: st
   // assumptions and openQuestions
   if (!Array.isArray(c.assumptions)) errors.push('assumptions must be an array');
   if (!Array.isArray(c.openQuestions)) errors.push('openQuestions must be an array');
+
+  // strategicValidation (optional)
+  const VALID_COHERENCE_SCORES: CeoStrategicValidationCoherence[] = ['aligned', 'minor-concerns', 'misaligned'];
+  if (c.strategicValidation !== undefined) {
+    if (!c.strategicValidation || typeof c.strategicValidation !== 'object') {
+      errors.push('strategicValidation must be an object when present');
+    } else {
+      const sv = c.strategicValidation as Record<string, unknown>;
+      if (!VALID_COHERENCE_SCORES.includes(sv.coherenceScore as CeoStrategicValidationCoherence)) {
+        errors.push(`strategicValidation.coherenceScore must be one of: ${VALID_COHERENCE_SCORES.join(', ')}`);
+      }
+      if (!Array.isArray(sv.flaggedIssues)) errors.push('strategicValidation.flaggedIssues must be an array');
+      if (!Array.isArray(sv.suggestedAdjustments)) errors.push('strategicValidation.suggestedAdjustments must be an array');
+    }
+  }
+
+  // versionMetadata (optional)
+  if (c.versionMetadata !== undefined) {
+    if (!c.versionMetadata || typeof c.versionMetadata !== 'object') {
+      errors.push('versionMetadata must be an object when present');
+    } else {
+      const vm = c.versionMetadata as Record<string, unknown>;
+      if (typeof vm.generationRunId !== 'string' || vm.generationRunId.length === 0) {
+        errors.push('versionMetadata.generationRunId must be a non-empty string');
+      }
+      if (typeof vm.version !== 'number' || vm.version < 1) {
+        errors.push('versionMetadata.version must be a positive number');
+      }
+      if (!Array.isArray(vm.roleFlow) || vm.roleFlow.length === 0) {
+        errors.push('versionMetadata.roleFlow must be a non-empty array');
+      }
+    }
+  }
 
   return { valid: errors.length === 0, errors };
 }
@@ -679,6 +728,132 @@ describe('roadmap artifact schema', () => {
           expect(criterion.length).toBeGreaterThan(20);
         }
       }
+    });
+  });
+
+  describe('strategic validation and version metadata', () => {
+    it('validates artifact with strategicValidation present (minor-concerns)', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).strategicValidation = {
+        coherenceScore: 'minor-concerns',
+        flaggedIssues: ['Phase ordering may not reflect market urgency'],
+        suggestedAdjustments: ['Consider prioritizing competitive analysis earlier'],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('validates artifact with strategicValidation aligned and empty arrays', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).strategicValidation = {
+        coherenceScore: 'aligned',
+        flaggedIssues: [],
+        suggestedAdjustments: [],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(true);
+    });
+
+    it('validates artifact without strategicValidation (backward compatible)', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(true);
+    });
+
+    it('rejects invalid coherenceScore value', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).strategicValidation = {
+        coherenceScore: 'terrible',
+        flaggedIssues: [],
+        suggestedAdjustments: [],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('coherenceScore'))).toBe(true);
+    });
+
+    it('rejects strategicValidation with missing flaggedIssues', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).strategicValidation = {
+        coherenceScore: 'aligned',
+        suggestedAdjustments: [],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('flaggedIssues'))).toBe(true);
+    });
+
+    it('validates artifact with versionMetadata present', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).versionMetadata = {
+        generationRunId: 'run-abc-123',
+        version: 1,
+        roleFlow: ['ceo', 'product-manager', 'ceo'],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('validates artifact without versionMetadata (backward compatible)', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      expect(fixture.versionMetadata).toBeUndefined();
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(true);
+    });
+
+    it('rejects versionMetadata with empty generationRunId', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).versionMetadata = {
+        generationRunId: '',
+        version: 1,
+        roleFlow: ['ceo', 'product-manager'],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('generationRunId'))).toBe(true);
+    });
+
+    it('rejects versionMetadata with zero version', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).versionMetadata = {
+        generationRunId: 'run-123',
+        version: 0,
+        roleFlow: ['ceo', 'product-manager'],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('version must be a positive'))).toBe(true);
+    });
+
+    it('rejects versionMetadata with empty roleFlow', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).versionMetadata = {
+        generationRunId: 'run-123',
+        version: 1,
+        roleFlow: [],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('roleFlow must be a non-empty'))).toBe(true);
+    });
+
+    it('validates artifact with both strategicValidation and versionMetadata', () => {
+      const fixture = buildCanonicalRoadmapFixture();
+      (fixture as Record<string, unknown>).strategicValidation = {
+        coherenceScore: 'misaligned',
+        flaggedIssues: ['Scope too broad for stated timeline'],
+        suggestedAdjustments: ['Reduce MVP scope to 3 core features'],
+      };
+      (fixture as Record<string, unknown>).versionMetadata = {
+        generationRunId: 'run-xyz-456',
+        version: 2,
+        roleFlow: ['ceo', 'product-manager', 'ceo'],
+      };
+      const result = validateRoadmapArtifact(fixture);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
     });
   });
 });

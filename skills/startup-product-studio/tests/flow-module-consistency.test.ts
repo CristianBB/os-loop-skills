@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -47,7 +48,6 @@ const PHASE_FLOW_IDS = [
 
 const moduleSource = readFileSync(MODULE_PATH, 'utf-8');
 
-// Extract PHASE_CONFIGS step IDs and artifact types from module.ts source
 function extractModuleSteps(phaseId: string): { ids: string[]; artifactTypes: string[]; primaryRole: string; nextPhase: string | null } {
   const escaped = phaseId.replace(/-/g, '\\-');
   const phaseRegex = new RegExp(
@@ -73,125 +73,124 @@ function extractModuleSteps(phaseId: string): { ids: string[]; artifactTypes: st
   return { ids, artifactTypes, primaryRole, nextPhase };
 }
 
-// ── Test runner ──────────────────────────────────────────────────────────
+describe('Startup Product Studio — Flow-Module Consistency', () => {
+  describe('flow file existence', () => {
+    const flowFiles = readdirSync(FLOWS_DIR).filter((f) => f.endsWith('.json'));
 
-console.log('=== Startup Product Studio — Flow-Module Consistency ===\n');
+    for (const phaseId of PHASE_FLOW_IDS) {
+      it(`flow file exists for ${phaseId}`, () => {
+        expect(flowFiles).toContain(`${phaseId}.json`);
+      });
+    }
 
-let passed = 0;
-let failed = 0;
+    it('user-redirection.json exists', () => {
+      expect(flowFiles).toContain('user-redirection.json');
+    });
+  });
 
-function assert(condition: boolean, label: string): void {
-  if (condition) {
-    console.log(`  PASS  ${label}`);
-    passed++;
-  } else {
-    console.error(`  FAIL  ${label}`);
-    failed++;
-  }
-}
+  describe('per-phase consistency', () => {
+    for (const phaseId of PHASE_FLOW_IDS) {
+      describe(phaseId, () => {
+        const flowPath = resolve(FLOWS_DIR, `${phaseId}.json`);
+        const flow = loadJson(flowPath) as FlowDefinition;
+        const moduleSteps = extractModuleSteps(phaseId);
 
-// ── Flow file existence ──────────────────────────────────────────────────
+        it('flow phaseId matches filename', () => {
+          expect(flow.phaseId).toBe(phaseId);
+        });
 
-const flowFiles = readdirSync(FLOWS_DIR).filter((f) => f.endsWith('.json'));
+        it(`primary role matches (flow="${flow.primaryRole}", module="${moduleSteps.primaryRole}")`, () => {
+          expect(flow.primaryRole).toBe(moduleSteps.primaryRole);
+        });
 
-for (const phaseId of PHASE_FLOW_IDS) {
-  assert(flowFiles.includes(`${phaseId}.json`), `flow file exists for ${phaseId}`);
-}
+        it(`nextPhase matches (flow="${flow.nextPhase}", module="${moduleSteps.nextPhase}")`, () => {
+          expect(flow.nextPhase).toBe(moduleSteps.nextPhase);
+        });
 
-assert(flowFiles.includes('user-redirection.json'), 'user-redirection.json exists');
+        const flowStepIds = flow.steps.map((s) => s.id);
+        for (const id of moduleSteps.ids) {
+          it(`flow contains module step "${id}"`, () => {
+            expect(flowStepIds).toContain(id);
+          });
+        }
 
-// ── Per-phase consistency ────────────────────────────────────────────────
+        const flowArtifactTypes = flow.steps.map((s) => s.artifactType);
+        for (const at of moduleSteps.artifactTypes) {
+          it(`flow contains artifact type "${at}"`, () => {
+            expect(flowArtifactTypes).toContain(at);
+          });
+        }
+      });
+    }
+  });
 
-for (const phaseId of PHASE_FLOW_IDS) {
-  const flowPath = resolve(FLOWS_DIR, `${phaseId}.json`);
-  const flow = loadJson(flowPath) as FlowDefinition;
-  const moduleSteps = extractModuleSteps(phaseId);
+  describe('user redirection flow', () => {
+    const redirectionPath = resolve(FLOWS_DIR, 'user-redirection.json');
+    const redirection = loadJson(redirectionPath) as RedirectionFlow;
 
-  assert(flow.phaseId === phaseId, `${phaseId}: flow phaseId matches filename`);
-  assert(flow.primaryRole === moduleSteps.primaryRole, `${phaseId}: primary role matches (flow="${flow.primaryRole}", module="${moduleSteps.primaryRole}")`);
-  assert(flow.nextPhase === moduleSteps.nextPhase, `${phaseId}: nextPhase matches (flow="${flow.nextPhase}", module="${moduleSteps.nextPhase}")`);
+    it('user-redirection flow has correct flowId', () => {
+      expect(redirection.flowId).toBe('user-redirection');
+    });
 
-  // Flow step IDs must be a superset of module step IDs
-  const flowStepIds = flow.steps.map((s) => s.id);
-  for (const id of moduleSteps.ids) {
-    assert(flowStepIds.includes(id), `${phaseId}: flow contains module step "${id}"`);
-  }
+    const expectedRedirections = [
+      'redefine-roadmap', 'redefine-phase', 'reorder-phases',
+      'reduce-scope', 'expand-scope', 'pivot',
+      'change-priorities', 'pause', 'continue', 'stop',
+    ];
+    const redirectActions = redirection.actions.map((a) => a.id);
 
-  // Module step artifact types must appear in flow
-  const flowArtifactTypes = flow.steps.map((s) => s.artifactType);
-  for (const at of moduleSteps.artifactTypes) {
-    assert(flowArtifactTypes.includes(at), `${phaseId}: flow contains artifact type "${at}"`);
-  }
-}
+    for (const action of expectedRedirections) {
+      it(`user-redirection contains action "${action}"`, () => {
+        expect(redirectActions).toContain(action);
+      });
+    }
+  });
 
-// ── User redirection flow ────────────────────────────────────────────────
+  describe('bridgeRequired flag alignment', () => {
+    const implFlowPath = resolve(FLOWS_DIR, 'implementation-phase.json');
+    const implFlow = loadJson(implFlowPath) as FlowDefinition;
 
-const redirectionPath = resolve(FLOWS_DIR, 'user-redirection.json');
-const redirection = loadJson(redirectionPath) as RedirectionFlow;
+    const bridgeRequiredStepIds = implFlow.steps
+      .filter((s) => s.bridgeRequired === true)
+      .map((s) => s.id);
 
-assert(redirection.flowId === 'user-redirection', 'user-redirection flow has correct flowId');
+    const expectedBridgeStepIds = ['repository-bootstrap', 'claude-configuration', 'code-execution'];
 
-const expectedRedirections = [
-  'redefine-roadmap', 'redefine-phase', 'reorder-phases',
-  'reduce-scope', 'expand-scope', 'pivot',
-  'change-priorities', 'pause', 'continue', 'stop',
-];
-const redirectActions = redirection.actions.map((a) => a.id);
-for (const action of expectedRedirections) {
-  assert(redirectActions.includes(action), `user-redirection contains action "${action}"`);
-}
+    it(`implementation-phase has exactly ${expectedBridgeStepIds.length} bridgeRequired steps`, () => {
+      expect(bridgeRequiredStepIds.length).toBe(expectedBridgeStepIds.length);
+    });
 
-// ── bridgeRequired flag alignment ────────────────────────────────────────
+    for (const id of expectedBridgeStepIds) {
+      it(`implementation-phase step "${id}" is marked bridgeRequired`, () => {
+        expect(bridgeRequiredStepIds).toContain(id);
+      });
+    }
 
-const implFlowPath = resolve(FLOWS_DIR, 'implementation-phase.json');
-const implFlow = loadJson(implFlowPath) as FlowDefinition;
+    it('perRoadmapPhaseSubSteps "subphase-implement" is marked bridgeRequired', () => {
+      const subStepBridgeIds = (implFlow.perRoadmapPhaseSubSteps ?? [])
+        .filter((s) => s.bridgeRequired === true)
+        .map((s) => s.id);
+      expect(subStepBridgeIds).toContain('subphase-implement');
+    });
+  });
 
-const bridgeRequiredStepIds = implFlow.steps
-  .filter((s) => s.bridgeRequired === true)
-  .map((s) => s.id);
+  describe('cross-phase artifact uniqueness', () => {
+    const crossPhaseTypes = new Set(['phase-summary', 'status-report']);
+    const artifactPhaseMap = new Map<string, string[]>();
 
-const expectedBridgeStepIds = ['repository-bootstrap', 'claude-configuration', 'code-execution'];
+    for (const phaseId of PHASE_FLOW_IDS) {
+      const { artifactTypes } = extractModuleSteps(phaseId);
+      for (const at of artifactTypes) {
+        if (crossPhaseTypes.has(at)) continue;
+        if (!artifactPhaseMap.has(at)) artifactPhaseMap.set(at, []);
+        artifactPhaseMap.get(at)!.push(phaseId);
+      }
+    }
 
-assert(
-  bridgeRequiredStepIds.length === expectedBridgeStepIds.length,
-  `implementation-phase has exactly ${expectedBridgeStepIds.length} bridgeRequired steps (found ${bridgeRequiredStepIds.length})`,
-);
-
-for (const id of expectedBridgeStepIds) {
-  assert(
-    bridgeRequiredStepIds.includes(id),
-    `implementation-phase step "${id}" is marked bridgeRequired`,
-  );
-}
-
-// perRoadmapPhaseSubSteps bridgeRequired alignment
-const subStepBridgeIds = (implFlow.perRoadmapPhaseSubSteps ?? [])
-  .filter((s) => s.bridgeRequired === true)
-  .map((s) => s.id);
-
-assert(subStepBridgeIds.includes('subphase-implement'), 'perRoadmapPhaseSubSteps "subphase-implement" is marked bridgeRequired');
-
-// ── Cross-phase artifact uniqueness ──────────────────────────────────────
-
-const crossPhaseTypes = new Set(['phase-summary', 'status-report']);
-const artifactPhaseMap = new Map<string, string[]>();
-
-for (const phaseId of PHASE_FLOW_IDS) {
-  const { artifactTypes } = extractModuleSteps(phaseId);
-  for (const at of artifactTypes) {
-    if (crossPhaseTypes.has(at)) continue;
-    if (!artifactPhaseMap.has(at)) artifactPhaseMap.set(at, []);
-    artifactPhaseMap.get(at)!.push(phaseId);
-  }
-}
-
-for (const [artifactType, phases] of artifactPhaseMap) {
-  assert(phases.length === 1, `artifact type "${artifactType}" appears in exactly one phase (found: ${phases.join(', ')})`);
-}
-
-// ── Summary ──────────────────────────────────────────────────────────────
-
-console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
-if (failed > 0) {
-  process.exit(1);
-}
+    for (const [artifactType, phases] of artifactPhaseMap) {
+      it(`artifact type "${artifactType}" appears in exactly one phase`, () => {
+        expect(phases.length).toBe(1);
+      });
+    }
+  });
+});

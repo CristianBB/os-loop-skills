@@ -190,7 +190,7 @@
       "windows",
       "linux"
     ],
-    "bridgeRequirement": "optional",
+    "bridgeRequirement": "required",
     "workspaceSupport": "required",
     "workspaceSchemaVersion": "2.0.0",
     "longRunningSupport": "required",

@@ -7,25 +7,25 @@
 
 // ── Host Capabilities Interface ─────────────────────────────────────────────
 
-interface BridgeCommandResult {
+type BridgeCommandResult = {
   accepted: true; bridgeRunId: string; requestId: string;
 } | {
   accepted: false; code: string; message: string;
-}
+};
 
-interface BridgeInstallResult {
+type BridgeInstallResult = {
   accepted: true; bridgeRunId: string;
 } | {
   accepted: false; code: string; message: string;
-}
+};
 
-interface BridgeJobOutcome {
+type BridgeJobOutcome = {
   status: 'completed'; exitCode: number; stdout: string; stderr: string;
 } | {
   status: 'failed'; reason: string;
 } | {
   status: 'terminated';
-}
+};
 
 interface SkillHostBridge {
   isAvailable(): boolean;

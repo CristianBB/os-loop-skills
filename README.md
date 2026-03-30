@@ -1,6 +1,6 @@
 # OS Loop Skills
 
-Official skills repository for [OS Loop AI](https://github.com/os-loop/os-loop-ai). Skills are declarative, browser-executed modules that extend the agent's capabilities.
+Official skills repository for [OS Loop AI](https://github.com/CristianBB/os-loop-ai). Skills are declarative, browser-executed modules that extend the agent's capabilities.
 
 ## Repository Structure
 

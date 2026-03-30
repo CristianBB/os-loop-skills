@@ -1,0 +1,267 @@
+{
+  "name": "startup-product-studio",
+  "description": "Agentic multi-workspace skill for planning, designing, architecting, implementing, validating, and iterating production-grade software products end-to-end using a startup-style workflow with CEO, Product, UX/UI, Architecture, Development, and QA roles. Supports multi-project codebases, phased roadmaps, user approvals, and Claude Code-based implementation through the bridge.",
+  "version": "2.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": [
+    "product-development",
+    "roadmap-generation",
+    "multi-project-management"
+  ],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "llm",
+      "scope": "product-studio",
+      "description": "Generate roadmaps, architectural decisions, design specs, implementation plans, QA strategies, and status reports across all product development phases"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": [
+          "init-studio",
+          "create-project",
+          "run-phase",
+          "advance-phase",
+          "switch-project",
+          "generate-roadmap",
+          "review-artifact",
+          "status-report",
+          "run-implementation-subphase",
+          "redirect"
+        ],
+        "description": "The studio action to perform"
+      },
+      "studioName": {
+        "type": "string",
+        "description": "Name of the product studio (used during init-studio)"
+      },
+      "projectName": {
+        "type": "string",
+        "description": "Name of the product/project to create or switch to"
+      },
+      "projectDescription": {
+        "type": "string",
+        "description": "Description of the product vision and goals for the project"
+      },
+      "codeProjects": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "type": {
+              "type": "string",
+              "enum": ["web", "mobile", "backend", "worker", "infra", "shared", "docs"]
+            },
+            "techStack": { "type": "string" }
+          },
+          "required": ["name", "type"]
+        },
+        "description": "Code projects that compose this product (used during create-project)"
+      },
+      "targetPhase": {
+        "type": "string",
+        "enum": [
+          "discovery",
+          "roadmap-definition",
+          "product-definition",
+          "ux-definition",
+          "architecture-definition",
+          "implementation-phase",
+          "qa-validation",
+          "release-readiness"
+        ],
+        "description": "Phase to run or advance to"
+      },
+      "role": {
+        "type": "string",
+        "enum": [
+          "ceo",
+          "product-manager",
+          "ux-ui",
+          "software-architect",
+          "developer",
+          "qa"
+        ],
+        "description": "Optional role override for the current phase step"
+      },
+      "artifactId": {
+        "type": "string",
+        "description": "Artifact ID for review-artifact action"
+      },
+      "decision": {
+        "type": "string",
+        "enum": ["approve", "reject", "revise", "approve-with-changes", "pause", "cancel"],
+        "description": "Decision for review-artifact action"
+      },
+      "feedback": {
+        "type": "string",
+        "description": "Feedback text for revise or reject decisions"
+      },
+      "redirectionAction": {
+        "type": "string",
+        "enum": [
+          "redefine-roadmap",
+          "redefine-phase",
+          "reorder-phases",
+          "reduce-scope",
+          "expand-scope",
+          "pivot",
+          "change-priorities",
+          "pause",
+          "continue",
+          "stop"
+        ],
+        "description": "Redirection action type (used with redirect action)"
+      },
+      "roadmapPhaseIndex": {
+        "type": "number",
+        "description": "Target roadmap phase index for run-implementation-subphase"
+      }
+    },
+    "required": ["action"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      },
+      "message": {
+        "type": "string"
+      },
+      "studioState": {
+        "type": "object",
+        "description": "Current state of the studio and active project"
+      },
+      "artifactIds": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "IDs of artifacts produced in this execution"
+      },
+      "stepsUsed": {
+        "type": "number",
+        "description": "Total steps executed in this run"
+      },
+      "phasesCompleted": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Phases completed during this execution"
+      }
+    },
+    "required": ["success", "message"]
+  },
+  "compatibilityRequirements": ["system_tools"],
+  "oauth": [],
+  "llmUsage": [
+    {
+      "purposeId": "discovery-analysis",
+      "kind": "analysis",
+      "description": "Analyze market opportunity, competitive landscape, user needs, and business viability for a product idea",
+      "estimatedTokenBudget": 8000,
+      "modelPreference": null,
+      "temperatureHint": 0.3
+    },
+    {
+      "purposeId": "roadmap-generation",
+      "kind": "structured-output",
+      "description": "Generate phased product roadmaps with milestones, deliverables, dependencies, and time estimates",
+      "estimatedTokenBudget": 10000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    },
+    {
+      "purposeId": "product-definition",
+      "kind": "structured-output",
+      "description": "Define product vision, MVP scope, and user personas with structured outputs",
+      "estimatedTokenBudget": 8000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    },
+    {
+      "purposeId": "design-spec",
+      "kind": "generation",
+      "description": "Generate UX/UI design specifications, user flows, wireframe descriptions, and design system tokens",
+      "estimatedTokenBudget": 8000,
+      "modelPreference": null,
+      "temperatureHint": 0.3
+    },
+    {
+      "purposeId": "architecture-design",
+      "kind": "generation",
+      "description": "Generate software architecture decisions, system design, API contracts, data models, and infrastructure plans",
+      "estimatedTokenBudget": 10000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    },
+    {
+      "purposeId": "development-plan",
+      "kind": "generation",
+      "description": "Generate development task breakdowns, implementation plans, codebase structure, and integration specifications",
+      "estimatedTokenBudget": 8000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    },
+    {
+      "purposeId": "qa-strategy",
+      "kind": "generation",
+      "description": "Generate QA test strategies, acceptance criteria, quality gates, and test plans per code project",
+      "estimatedTokenBudget": 6000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    },
+    {
+      "purposeId": "status-report",
+      "kind": "summarization",
+      "description": "Generate cross-project and per-project status reports summarizing progress, blockers, and next steps",
+      "estimatedTokenBudget": 4000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    }
+  ],
+  "wasm": [],
+  "views": [
+    {
+      "viewId": "workspace-list",
+      "kind": "panel",
+      "entryComponent": "WorkspaceListView",
+      "description": "Studio workspace list with project overview cards and create dialog"
+    },
+    {
+      "viewId": "workspace-detail",
+      "kind": "panel",
+      "entryComponent": "WorkspaceDetailView",
+      "description": "Studio workspace detail with phase timeline, artifacts, run controls, and gate decisions"
+    }
+  ],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 300000,
+    "maxMemoryMB": 256,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": ["macos", "windows", "linux"],
+  "bridgeRequirement": "required",
+  "workspaceSupport": "required",
+  "workspaceSchemaVersion": "2.0.0",
+  "longRunningSupport": "required",
+  "userInputSupport": true,
+  "artifactVersioningSupport": true,
+  "executionMode": "agentic",
+  "agenticConfig": {
+    "enabled": true,
+    "requiresWorkspace": true,
+    "supportsBackgroundExecution": true,
+    "supportsRoleBasedExecution": true,
+    "maxStepsPerRun": 150,
+    "defaultStepBudget": 40
+  }
+}

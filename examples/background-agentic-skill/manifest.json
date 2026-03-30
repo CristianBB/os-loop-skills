@@ -1,0 +1,71 @@
+{
+  "name": "example-background-agentic",
+  "description": "Batch processor that processes items from workspace state with heavy checkpointing, supporting background execution and graceful resume",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": ["batch-processor"],
+  "requiredBindings": [],
+  "permissions": [],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "batchSize": {
+        "type": "number",
+        "description": "Number of items to process between checkpoints (default: 5)"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "processedCount": {
+        "type": "number",
+        "description": "Total items processed"
+      },
+      "skippedCount": {
+        "type": "number",
+        "description": "Items skipped due to errors"
+      },
+      "summaryArtifactId": {
+        "type": "string",
+        "description": "ID of the summary artifact"
+      },
+      "stepsUsed": {
+        "type": "number",
+        "description": "Total steps executed"
+      }
+    },
+    "required": ["processedCount", "skippedCount", "stepsUsed"]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 300000,
+    "maxMemoryMB": 128,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "required",
+  "workspaceSchemaVersion": "1.0.0",
+  "longRunningSupport": "required",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false,
+  "executionMode": "agentic",
+  "agenticConfig": {
+    "enabled": true,
+    "requiresWorkspace": true,
+    "supportsBackgroundExecution": true,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": 200,
+    "defaultStepBudget": 50
+  }
+}

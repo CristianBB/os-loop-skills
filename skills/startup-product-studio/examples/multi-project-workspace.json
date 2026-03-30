@@ -1,0 +1,261 @@
+{
+  "description": "Example workspace state for a multi-project studio with three products at different development phases",
+  "studioState": {
+    "studioName": "HealthTech Studio",
+    "projects": [
+      {
+        "id": "1711800000000-proj0001",
+        "name": "MedConnect Patient Portal",
+        "description": "Patient-facing portal for appointment scheduling, medical records access, prescription management, and secure messaging with healthcare providers. HIPAA-compliant, mobile-first design.",
+        "currentPhase": "implementation-phase",
+        "completedPhases": ["discovery", "roadmap-definition", "product-definition", "ux-definition", "architecture-definition"],
+        "roadmap": [
+          {
+            "phase": "implementation-phase",
+            "milestones": ["Core appointment flow", "Records viewer", "Messaging MVP"],
+            "deliverables": ["Implementation tasks", "Codebase scaffold", "Integration specs", "Implementation report"],
+            "estimatedDuration": "6 weeks",
+            "dependencies": ["architecture-definition"]
+          },
+          {
+            "phase": "qa-validation",
+            "milestones": ["HIPAA compliance verified", "Performance benchmarks met"],
+            "deliverables": ["Compliance test suite", "Load test results", "Security audit", "QA report"],
+            "estimatedDuration": "3 weeks",
+            "dependencies": ["implementation-phase"]
+          },
+          {
+            "phase": "release-readiness",
+            "milestones": ["Launch readiness confirmed"],
+            "deliverables": ["Release readiness report", "Launch checklist", "Monitoring setup"],
+            "estimatedDuration": "1 week",
+            "dependencies": ["qa-validation"]
+          }
+        ],
+        "codeProjects": [
+          {
+            "id": "1711800000001-web00001",
+            "name": "medconnect-web",
+            "type": "web",
+            "techStack": "Next.js, TypeScript, Tailwind CSS",
+            "repoPath": null
+          },
+          {
+            "id": "1711800000002-mob00001",
+            "name": "medconnect-mobile",
+            "type": "mobile",
+            "techStack": "React Native, TypeScript, Expo",
+            "repoPath": null
+          },
+          {
+            "id": "1711800000003-api00001",
+            "name": "medconnect-api",
+            "type": "backend",
+            "techStack": "Node.js, Fastify, PostgreSQL, Prisma",
+            "repoPath": null
+          },
+          {
+            "id": "1711800000004-inf00001",
+            "name": "medconnect-infra",
+            "type": "infra",
+            "techStack": "Terraform, AWS, Docker",
+            "repoPath": null
+          }
+        ],
+        "artifactIds": [
+          "art-101", "art-102", "art-103", "art-104", "art-105",
+          "art-106", "art-107", "art-108", "art-109", "art-110",
+          "art-111", "art-112", "art-113", "art-114", "art-115",
+          "art-116", "art-117", "art-118", "art-119", "art-120"
+        ],
+        "businessContext": {
+          "industry": "HealthTech / Digital Health",
+          "marketSegment": "Outpatient clinics and small practices",
+          "revenueModel": "Per-provider SaaS subscription",
+          "competitiveAdvantage": "HIPAA-compliant mobile-first experience with EHR integration"
+        },
+        "targetUsers": [
+          {
+            "persona": "Patient",
+            "description": "Adult patient managing appointments and records across multiple providers",
+            "painPoints": ["Phone-based scheduling", "No digital access to records", "Fragmented communication"]
+          },
+          {
+            "persona": "Practice Admin",
+            "description": "Front-desk staff managing schedules and patient communications",
+            "painPoints": ["Manual scheduling overhead", "No-show management", "Paper-based intake forms"]
+          }
+        ],
+        "constraints": {
+          "timeline": "6 months to launch",
+          "budget": null,
+          "technical": ["HIPAA compliant infrastructure", "EHR integration via HL7 FHIR"],
+          "regulatory": ["HIPAA", "SOC 2 Type II"]
+        },
+        "implementationStatus": {
+          "currentIteration": 2,
+          "totalIterationsPlanned": 3,
+          "completedTasks": 12,
+          "totalTasks": 28,
+          "blockers": ["EHR sandbox access pending"],
+          "executionPhases": [],
+          "activeExecutionPhaseIndex": null,
+          "roadmapPhaseRecords": [
+            {
+              "id": "ipr-001",
+              "roadmapEntryPhase": "implementation-phase",
+              "label": "Core appointment flow",
+              "status": "completed",
+              "planArtifactId": "art-115",
+              "implementationReportArtifactId": "art-116",
+              "qaReportArtifactId": "art-117",
+              "pmAlignmentDecision": "approve",
+              "userDecision": "approve",
+              "bridgeJobIds": []
+            },
+            {
+              "id": "ipr-002",
+              "roadmapEntryPhase": "implementation-phase",
+              "label": "Records viewer",
+              "status": "implementing",
+              "planArtifactId": "art-118",
+              "implementationReportArtifactId": null,
+              "qaReportArtifactId": null,
+              "pmAlignmentDecision": null,
+              "userDecision": null,
+              "bridgeJobIds": []
+            },
+            {
+              "id": "ipr-003",
+              "roadmapEntryPhase": "implementation-phase",
+              "label": "Messaging MVP",
+              "status": "not_started",
+              "planArtifactId": null,
+              "implementationReportArtifactId": null,
+              "qaReportArtifactId": null,
+              "pmAlignmentDecision": null,
+              "userDecision": null,
+              "bridgeJobIds": []
+            }
+          ],
+          "activeRoadmapPhaseIndex": 1
+        },
+        "validationHistory": [
+          { "phase": "discovery", "decision": "approved", "feedback": null, "decidedAt": "2026-03-12T10:00:00.000Z" },
+          { "phase": "roadmap-definition", "decision": "approved", "feedback": null, "decidedAt": "2026-03-14T10:00:00.000Z" },
+          { "phase": "product-definition", "decision": "approved", "feedback": null, "decidedAt": "2026-03-16T10:00:00.000Z" },
+          { "phase": "ux-definition", "decision": "revised", "feedback": "Need more focus on mobile-first flows", "decidedAt": "2026-03-19T10:00:00.000Z" },
+          { "phase": "ux-definition", "decision": "approved", "feedback": null, "decidedAt": "2026-03-20T10:00:00.000Z" },
+          { "phase": "architecture-definition", "decision": "approved", "feedback": "Approved with note to evaluate FHIR R4 vs R5", "decidedAt": "2026-03-23T10:00:00.000Z" }
+        ],
+        "createdAt": "2026-03-10T09:00:00.000Z",
+        "updatedAt": "2026-03-29T11:00:00.000Z"
+      },
+      {
+        "id": "1711800000000-proj0002",
+        "name": "MedConnect Provider Dashboard",
+        "description": "Provider-facing dashboard for patient management, scheduling, clinical notes, and analytics. Integrates with the Patient Portal API and EHR systems.",
+        "currentPhase": "architecture-definition",
+        "completedPhases": ["discovery", "roadmap-definition", "product-definition", "ux-definition"],
+        "roadmap": null,
+        "codeProjects": [
+          {
+            "id": "1711800000005-web00002",
+            "name": "provider-dashboard",
+            "type": "web",
+            "techStack": "Next.js, TypeScript, Tailwind CSS, Recharts",
+            "repoPath": null
+          },
+          {
+            "id": "1711800000006-wrk00001",
+            "name": "provider-workers",
+            "type": "worker",
+            "techStack": "Node.js, BullMQ, Redis",
+            "repoPath": null
+          }
+        ],
+        "artifactIds": [
+          "art-201", "art-202", "art-203", "art-204", "art-205",
+          "art-206", "art-207", "art-208", "art-209", "art-210",
+          "art-211", "art-212"
+        ],
+        "businessContext": {
+          "industry": "HealthTech / Digital Health",
+          "marketSegment": "Healthcare providers and clinics",
+          "revenueModel": "Per-seat subscription bundled with Patient Portal",
+          "competitiveAdvantage": "Unified platform spanning patient and provider experience"
+        },
+        "targetUsers": [
+          {
+            "persona": "Physician",
+            "description": "Primary care provider managing a panel of patients",
+            "painPoints": ["Excessive charting time", "Disconnected systems", "Difficulty tracking patient follow-ups"]
+          }
+        ],
+        "constraints": {
+          "timeline": null,
+          "budget": null,
+          "technical": ["Must share API with Patient Portal", "Must integrate with existing EHR"],
+          "regulatory": ["HIPAA"]
+        },
+        "implementationStatus": null,
+        "validationHistory": [
+          { "phase": "discovery", "decision": "approved", "feedback": null, "decidedAt": "2026-03-17T10:00:00.000Z" },
+          { "phase": "roadmap-definition", "decision": "approved", "feedback": null, "decidedAt": "2026-03-19T10:00:00.000Z" },
+          { "phase": "product-definition", "decision": "approved", "feedback": null, "decidedAt": "2026-03-21T10:00:00.000Z" },
+          { "phase": "ux-definition", "decision": "approved", "feedback": null, "decidedAt": "2026-03-24T10:00:00.000Z" }
+        ],
+        "createdAt": "2026-03-15T10:00:00.000Z",
+        "updatedAt": "2026-03-28T16:00:00.000Z"
+      },
+      {
+        "id": "1711800000000-proj0003",
+        "name": "MedConnect Shared Packages",
+        "description": "Shared TypeScript packages for types, validation schemas, API client, and design tokens used across Patient Portal and Provider Dashboard.",
+        "currentPhase": "roadmap-definition",
+        "completedPhases": ["discovery"],
+        "roadmap": null,
+        "codeProjects": [
+          {
+            "id": "1711800000007-shd00001",
+            "name": "medconnect-types",
+            "type": "shared",
+            "techStack": "TypeScript, Zod",
+            "repoPath": null
+          },
+          {
+            "id": "1711800000008-shd00002",
+            "name": "medconnect-ui",
+            "type": "shared",
+            "techStack": "React, TypeScript, Storybook",
+            "repoPath": null
+          },
+          {
+            "id": "1711800000009-doc00001",
+            "name": "medconnect-docs",
+            "type": "docs",
+            "techStack": "Nextra, MDX",
+            "repoPath": null
+          }
+        ],
+        "artifactIds": ["art-301", "art-302", "art-303", "art-304"],
+        "businessContext": null,
+        "targetUsers": [],
+        "constraints": {
+          "timeline": null,
+          "budget": null,
+          "technical": ["Must be consumable by both web and mobile projects"],
+          "regulatory": []
+        },
+        "implementationStatus": null,
+        "validationHistory": [
+          { "phase": "discovery", "decision": "approved", "feedback": null, "decidedAt": "2026-03-22T10:00:00.000Z" }
+        ],
+        "createdAt": "2026-03-20T11:00:00.000Z",
+        "updatedAt": "2026-03-27T09:00:00.000Z"
+      }
+    ],
+    "activeProjectId": "1711800000000-proj0001",
+    "createdAt": "2026-03-10T09:00:00.000Z"
+  }
+}

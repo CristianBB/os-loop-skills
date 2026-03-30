@@ -1,0 +1,103 @@
+{
+  "name": "quick-calculator",
+  "description": "Evaluates mathematical expressions and unit conversions without any persistent state",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": [
+    "math",
+    "conversion"
+  ],
+  "requiredBindings": [],
+  "permissions": [],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "expression": {
+        "type": "string",
+        "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'sqrt(144)', '15% of 200')"
+      },
+      "convert": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "Value to convert"
+          },
+          "from": {
+            "type": "string",
+            "description": "Source unit"
+          },
+          "to": {
+            "type": "string",
+            "description": "Target unit"
+          }
+        },
+        "required": [
+          "value",
+          "from",
+          "to"
+        ],
+        "description": "Unit conversion request"
+      },
+      "precision": {
+        "type": "number",
+        "description": "Decimal places for rounding (default: 6)",
+        "default": 6
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      },
+      "result": {
+        "type": "number",
+        "description": "Computed result"
+      },
+      "formatted": {
+        "type": "string",
+        "description": "Human-readable result"
+      },
+      "error": {
+        "type": "string",
+        "description": "Error message if computation failed"
+      }
+    },
+    "required": [
+      "success"
+    ]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 5000,
+    "maxMemoryMB": 32,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
+  "longRunningSupport": "none",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "name": "macos-shortcuts",
+  "description": "Runs macOS Shortcuts app automations via bridge command execution",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": [
+    "macos-shortcuts"
+  ],
+  "requiredBindings": [],
+  "permissions": [],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "shortcutName": {
+        "type": "string",
+        "description": "Name of the macOS Shortcut to run"
+      },
+      "input": {
+        "type": "string",
+        "description": "Optional input to pass to the shortcut"
+      }
+    },
+    "required": [
+      "shortcutName"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "output": {
+        "type": "string",
+        "description": "Shortcut execution output"
+      },
+      "exitCode": {
+        "type": "number",
+        "description": "Exit code of the shortcuts command"
+      }
+    },
+    "required": [
+      "output",
+      "exitCode"
+    ]
+  },
+  "compatibilityRequirements": [
+    "system_tools"
+  ],
+  "oauth": [],
+  "llmUsage": [],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 60000,
+    "maxMemoryMB": 64,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [
+    "macos"
+  ],
+  "bridgeRequirement": "required",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
+  "longRunningSupport": "none",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
+}

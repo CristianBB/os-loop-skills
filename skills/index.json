@@ -1,0 +1,201 @@
+[
+  {
+    "name": "web-summary",
+    "description": "Fetches a web page and produces an LLM-generated summary",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/web-summary",
+    "tags": [
+      "web",
+      "llm",
+      "summarization"
+    ],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "none",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "text-transform",
+    "description": "Transforms text between cases and formats",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/text-transform",
+    "tags": [
+      "text",
+      "transform",
+      "utility"
+    ],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "none",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "git-status-checker",
+    "description": "Checks the current git repository status via bridge command execution",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/git-status-checker",
+    "tags": [
+      "git",
+      "dev-tools",
+      "system"
+    ],
+    "supportedPlatforms": [
+      "macos",
+      "linux",
+      "windows"
+    ],
+    "bridgeRequirement": "required",
+    "workspaceSupport": "none",
+    "compatibilityRequirements": [
+      "system_tools"
+    ],
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "file-indexer",
+    "description": "Indexes files in a directory, with optional bridge filesystem for enhanced access",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/file-indexer",
+    "tags": [
+      "files",
+      "indexing",
+      "search"
+    ],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "optional",
+    "workspaceSupport": "none",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "macos-shortcuts",
+    "description": "Runs macOS Shortcuts app automations via bridge command execution",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/macos-shortcuts",
+    "tags": [
+      "macos",
+      "automation",
+      "shortcuts"
+    ],
+    "supportedPlatforms": [
+      "macos"
+    ],
+    "bridgeRequirement": "required",
+    "workspaceSupport": "none",
+    "compatibilityRequirements": [
+      "system_tools"
+    ],
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "project-tracker",
+    "description": "Tracks projects through planning, execution, and review phases with structured artifacts and approval workflows",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/project-tracker",
+    "tags": [
+      "project-management",
+      "workspace",
+      "artifacts"
+    ],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "required",
+    "workspaceSchemaVersion": "1.0.0",
+    "longRunningSupport": "optional",
+    "userInputSupport": false,
+    "artifactVersioningSupport": true,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "note-organizer",
+    "description": "Captures, tags, and retrieves notes with optional workspace persistence for cross-session organization",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/note-organizer",
+    "tags": [
+      "notes",
+      "organization",
+      "workspace"
+    ],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "optional",
+    "workspaceSchemaVersion": "1.0.0",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "quick-calculator",
+    "description": "Evaluates mathematical expressions and unit conversions without any persistent state",
+    "version": "1.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/quick-calculator",
+    "tags": [
+      "math",
+      "utility",
+      "conversion"
+    ],
+    "supportedPlatforms": [],
+    "bridgeRequirement": "never",
+    "workspaceSupport": "none",
+    "longRunningSupport": "none",
+    "userInputSupport": false,
+    "artifactVersioningSupport": false,
+    "executionMode": "declarative"
+  },
+  {
+    "name": "startup-product-studio",
+    "description": "Agentic multi-workspace skill for planning, designing, architecting, implementing, validating, and iterating production-grade software products end-to-end using a startup-style workflow with CEO, Product, UX/UI, Architecture, Development, and QA roles",
+    "version": "2.0.0",
+    "author": "OS Loop",
+    "folderPath": "skills/startup-product-studio",
+    "tags": [
+      "startup",
+      "product",
+      "roadmap",
+      "planning",
+      "software-architecture",
+      "ux-ui",
+      "development",
+      "qa",
+      "claude-code",
+      "multi-agent",
+      "workspace",
+      "agentic"
+    ],
+    "supportedPlatforms": [
+      "macos",
+      "windows",
+      "linux"
+    ],
+    "bridgeRequirement": "required",
+    "workspaceSupport": "required",
+    "workspaceSchemaVersion": "2.0.0",
+    "longRunningSupport": "required",
+    "userInputSupport": true,
+    "artifactVersioningSupport": true,
+    "executionMode": "agentic"
+  }
+]

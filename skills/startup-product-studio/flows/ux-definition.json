@@ -1,0 +1,43 @@
+{
+  "phaseId": "ux-definition",
+  "primaryRole": "ux-ui",
+  "steps": [
+    {
+      "id": "user-flow-design",
+      "role": "ux-ui",
+      "purposeId": "design-spec",
+      "artifactType": "user-flows",
+      "description": "Design primary user journeys and interaction flows"
+    },
+    {
+      "id": "wireframe-spec",
+      "role": "ux-ui",
+      "purposeId": "design-spec",
+      "artifactType": "wireframe-spec",
+      "description": "Specify wireframes for key screens and components"
+    },
+    {
+      "id": "design-system",
+      "role": "ux-ui",
+      "purposeId": "design-spec",
+      "artifactType": "design-system",
+      "description": "Define design tokens, typography, color palette, and component library"
+    },
+    {
+      "id": "prototype-brief",
+      "role": "ux-ui",
+      "purposeId": "design-spec",
+      "artifactType": "prototype-brief",
+      "description": "Create prototype brief with interaction specifications"
+    },
+    {
+      "id": "ux-ui-spec",
+      "role": "ux-ui",
+      "purposeId": "design-spec",
+      "artifactType": "ux-ui-spec",
+      "description": "Consolidate UX/UI specification with design decisions and component inventory"
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "architecture-definition"
+}

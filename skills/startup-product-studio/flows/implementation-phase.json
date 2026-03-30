@@ -1,0 +1,112 @@
+{
+  "phaseId": "implementation-phase",
+  "primaryRole": "developer",
+  "steps": [
+    {
+      "id": "task-breakdown",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "task-breakdown",
+      "description": "Break down implementation into concrete tasks per code project"
+    },
+    {
+      "id": "implementation-phase-plan",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "implementation-phase-plan",
+      "description": "Create implementation plan with task ordering and dependencies"
+    },
+    {
+      "id": "codebase-structure",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "codebase-structure",
+      "description": "Define codebase structure, module boundaries, and conventions"
+    },
+    {
+      "id": "integration-points",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "integration-points",
+      "description": "Map integration points between code projects and external services"
+    },
+    {
+      "id": "repository-bootstrap",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "repository-bootstrap-report",
+      "description": "Initialize git repositories and .claude configuration for each code project (requires bridge)",
+      "bridgeRequired": true
+    },
+    {
+      "id": "claude-configuration",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "claude-config-manifest",
+      "description": "Create .claude directory structure with coding standards, architecture context, and agent configuration (requires bridge)",
+      "bridgeRequired": true
+    },
+    {
+      "id": "code-execution",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "code-execution-report",
+      "description": "Execute implementation phases via Claude Code through the bridge (requires bridge)",
+      "bridgeRequired": true
+    },
+    {
+      "id": "implementation-report",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "implementation-report",
+      "description": "Generate implementation progress report with completed tasks and remaining work"
+    }
+  ],
+  "perRoadmapPhaseSubSteps": [
+    {
+      "id": "subphase-plan",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "implementation-phase-plan",
+      "description": "Generate implementation plan for this roadmap sub-phase",
+      "approvalRequired": true
+    },
+    {
+      "id": "subphase-implement",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "code-execution-report",
+      "description": "Execute implementation for this sub-phase via bridge",
+      "bridgeRequired": true
+    },
+    {
+      "id": "subphase-report",
+      "role": "developer",
+      "purposeId": "development-plan",
+      "artifactType": "implementation-report",
+      "description": "Generate implementation report summarizing what was done"
+    },
+    {
+      "id": "subphase-qa-validate",
+      "role": "qa",
+      "purposeId": "qa-strategy",
+      "artifactType": "qa-report",
+      "description": "QA validates implementation against acceptance criteria"
+    },
+    {
+      "id": "subphase-pm-review",
+      "role": "product-manager",
+      "purposeId": "status-report",
+      "artifactType": "phase-summary",
+      "description": "Product manager checks alignment with intended product value"
+    },
+    {
+      "id": "subphase-user-gate",
+      "role": "product-manager",
+      "description": "User reviews all reports and approves or redirects",
+      "approvalRequired": true
+    }
+  ],
+  "approvalRequired": true,
+  "nextPhase": "qa-validation"
+}

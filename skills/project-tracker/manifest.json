@@ -1,0 +1,128 @@
+{
+  "name": "project-tracker",
+  "description": "Tracks projects through planning, execution, and review phases with structured artifacts and approval workflows",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": [
+    "project-management",
+    "artifact-tracking"
+  ],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "llm",
+      "scope": "structured-output",
+      "description": "Generate project summaries and status reports"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": [
+          "init",
+          "add-task",
+          "update-task",
+          "generate-report",
+          "advance-phase"
+        ],
+        "description": "The project tracking action to perform"
+      },
+      "projectName": {
+        "type": "string",
+        "description": "Name of the project (used during init)"
+      },
+      "taskTitle": {
+        "type": "string",
+        "description": "Title of the task to add or update"
+      },
+      "taskStatus": {
+        "type": "string",
+        "enum": [
+          "todo",
+          "in-progress",
+          "blocked",
+          "done"
+        ],
+        "description": "Status for a task update"
+      },
+      "targetPhase": {
+        "type": "string",
+        "enum": [
+          "planning",
+          "execution",
+          "review",
+          "complete"
+        ],
+        "description": "Phase to advance to"
+      }
+    },
+    "required": [
+      "action"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      },
+      "message": {
+        "type": "string"
+      },
+      "projectState": {
+        "type": "object",
+        "description": "Current state of the project"
+      },
+      "artifact": {
+        "type": "object",
+        "description": "An artifact produced by the action, if any"
+      }
+    },
+    "required": [
+      "success",
+      "message"
+    ]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [
+    {
+      "purposeId": "generate-report",
+      "kind": "structured-output",
+      "description": "Generate a project status report from workspace state",
+      "estimatedTokenBudget": 3000,
+      "modelPreference": null,
+      "temperatureHint": 0.2
+    }
+  ],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 15000,
+    "maxMemoryMB": 64,
+    "allowedGlobals": [],
+    "networkRules": []
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "required",
+  "workspaceSchemaVersion": "1.0.0",
+  "longRunningSupport": "optional",
+  "userInputSupport": false,
+  "artifactVersioningSupport": true,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
+}

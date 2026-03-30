@@ -1,0 +1,414 @@
+{
+  "systemOverview": {
+    "description": "TaskFlow is a multi-tier web application composed of a React single-page application, a Node.js RESTful API, and a shared TypeScript types package. The system supports real-time collaboration on task management with GitHub/GitLab integration for engineering teams.",
+    "productRelationship": "Directly implements the product vision of reducing context-switching overhead by 40% through unified task, code review, and deployment tracking. The architecture prioritizes real-time responsiveness, integration extensibility, and multi-tenancy from day one.",
+    "technicalConstraints": [
+      "Must support 1000 concurrent users at launch",
+      "Real-time updates must propagate within 500ms",
+      "OAuth2 required for third-party integrations (GitHub, GitLab)",
+      "PostgreSQL and Redis are the chosen persistence technologies",
+      "All API endpoints must be versioned under /api/v1",
+      "Shared types package must be generated from OpenAPI schema"
+    ]
+  },
+  "projectTopology": [
+    {
+      "id": "web-app",
+      "name": "Web Application",
+      "purpose": "Primary user interface for task management, dashboards, sprint planning, and team collaboration",
+      "ownership": "Frontend team",
+      "type": "web-app",
+      "dependencies": ["shared-types"]
+    },
+    {
+      "id": "backend-api",
+      "name": "Backend API",
+      "purpose": "RESTful API handling authentication, business logic, integrations with GitHub/GitLab, and data persistence",
+      "ownership": "Backend team",
+      "type": "backend-api",
+      "dependencies": ["shared-types"]
+    },
+    {
+      "id": "shared-types",
+      "name": "Shared Types Package",
+      "purpose": "TypeScript type definitions and API contract types shared between web-app and backend-api",
+      "ownership": "Backend team",
+      "type": "shared-package",
+      "dependencies": []
+    }
+  ],
+  "runtimeArchitecture": {
+    "frontends": [
+      {
+        "name": "TaskFlow Web App",
+        "projectId": "web-app",
+        "description": "React SPA with real-time WebSocket updates and optimistic UI rendering",
+        "responsibilities": [
+          "Render task boards (kanban, sprint views)",
+          "Handle real-time collaboration via WebSocket",
+          "Manage local state with optimistic updates",
+          "OAuth2 redirect flows for GitHub/GitLab"
+        ]
+      }
+    ],
+    "backends": [
+      {
+        "name": "TaskFlow API Server",
+        "projectId": "backend-api",
+        "description": "Express.js REST API with WebSocket support for real-time event broadcasting",
+        "responsibilities": [
+          "Authenticate users via JWT with refresh tokens",
+          "Enforce multi-tenant data isolation",
+          "Process webhook events from GitHub/GitLab",
+          "Broadcast task updates via WebSocket pub/sub"
+        ]
+      }
+    ],
+    "backgroundProcessing": [
+      {
+        "name": "Webhook Processor",
+        "projectId": "backend-api",
+        "description": "Bull queue worker processing incoming GitHub/GitLab webhook events asynchronously",
+        "responsibilities": [
+          "Parse and validate incoming webhook payloads",
+          "Map PR events to task status updates",
+          "Retry failed webhook processing with exponential backoff"
+        ]
+      }
+    ],
+    "externalIntegrations": [
+      {
+        "name": "GitHub API",
+        "purpose": "PR tracking, commit linking, and webhook event ingestion",
+        "protocol": "REST + Webhooks"
+      },
+      {
+        "name": "GitLab API",
+        "purpose": "Merge request tracking and pipeline status",
+        "protocol": "REST + Webhooks"
+      },
+      {
+        "name": "Auth0",
+        "purpose": "OAuth2/OIDC identity provider for user authentication",
+        "protocol": "OAuth2/OIDC"
+      }
+    ]
+  },
+  "dataArchitecture": {
+    "dataDomains": [
+      {
+        "name": "Task Management",
+        "description": "Tasks, boards, columns, labels, assignees, and comments",
+        "ownerProjectId": "backend-api",
+        "entities": ["Task", "Board", "Column", "Label", "Comment", "Attachment"]
+      },
+      {
+        "name": "Sprint Planning",
+        "description": "Sprints, velocity tracking, capacity planning, and retrospectives",
+        "ownerProjectId": "backend-api",
+        "entities": ["Sprint", "SprintTask", "VelocitySnapshot", "Retrospective"]
+      },
+      {
+        "name": "Identity & Tenancy",
+        "description": "Users, organizations, teams, roles, and permissions",
+        "ownerProjectId": "backend-api",
+        "entities": ["User", "Organization", "Team", "Role", "Permission"]
+      },
+      {
+        "name": "Integrations",
+        "description": "Third-party integration configurations, tokens, and event logs",
+        "ownerProjectId": "backend-api",
+        "entities": ["IntegrationConfig", "WebhookEvent", "OAuthToken"]
+      }
+    ],
+    "persistenceStrategy": [
+      {
+        "projectId": "backend-api",
+        "technology": "PostgreSQL 15",
+        "rationale": "Strong relational model for multi-tenant task data with JSON support for flexible metadata"
+      },
+      {
+        "projectId": "backend-api",
+        "technology": "Redis 7",
+        "rationale": "Pub/sub for real-time WebSocket broadcasting and caching for session/rate-limiting"
+      }
+    ],
+    "boundaries": [
+      "All data access goes through the backend-api; web-app never connects directly to databases",
+      "Organization-level data isolation enforced at query level via tenant_id columns",
+      "Integration tokens encrypted at rest in PostgreSQL using application-level encryption"
+    ],
+    "stateOwnership": [
+      {
+        "domain": "Task Management",
+        "ownerProjectId": "backend-api",
+        "accessPattern": "CRUD via REST API, real-time updates via WebSocket"
+      },
+      {
+        "domain": "Sprint Planning",
+        "ownerProjectId": "backend-api",
+        "accessPattern": "CRUD via REST API, velocity computed server-side"
+      },
+      {
+        "domain": "UI State",
+        "ownerProjectId": "web-app",
+        "accessPattern": "Local state management with optimistic updates synced to backend"
+      }
+    ]
+  },
+  "integrationArchitecture": {
+    "apiBoundaries": [
+      {
+        "name": "TaskFlow REST API",
+        "producerProjectId": "backend-api",
+        "consumerProjectIds": ["web-app"],
+        "protocol": "REST over HTTPS with JWT auth"
+      },
+      {
+        "name": "Real-time Events",
+        "producerProjectId": "backend-api",
+        "consumerProjectIds": ["web-app"],
+        "protocol": "WebSocket with JSON message framing"
+      }
+    ],
+    "internalIntegrationPoints": [
+      {
+        "description": "Shared TypeScript types for API request/response contracts",
+        "projectIds": ["web-app", "backend-api", "shared-types"]
+      },
+      {
+        "description": "OpenAPI schema used to generate shared-types package",
+        "projectIds": ["backend-api", "shared-types"]
+      }
+    ],
+    "externalServices": [
+      {
+        "name": "GitHub API v4 (GraphQL)",
+        "purpose": "Query PR details, commit history, and review status",
+        "integrationMethod": "Server-side GraphQL client with OAuth2 app token"
+      },
+      {
+        "name": "Auth0 Management API",
+        "purpose": "User provisioning, role management, and organization setup",
+        "integrationMethod": "Server-side REST client with M2M token"
+      },
+      {
+        "name": "SendGrid",
+        "purpose": "Transactional email for invitations and notifications",
+        "integrationMethod": "Server-side REST API with API key"
+      }
+    ]
+  },
+  "securityAndTrustModel": {
+    "authAssumptions": [
+      "Auth0 handles identity, MFA, and session management",
+      "JWT tokens with 15-minute access / 7-day refresh rotation",
+      "Organization-level RBAC: owner, admin, member, viewer",
+      "API endpoints enforce role-based access via middleware"
+    ],
+    "secretHandling": [
+      "All secrets stored in environment variables, never in code",
+      "Integration OAuth tokens encrypted at rest in PostgreSQL",
+      "GitHub webhook secrets validated via HMAC-SHA256 signature",
+      "Redis connections use TLS in production"
+    ],
+    "trustBoundaries": [
+      "Web app to backend API: JWT-authenticated HTTPS",
+      "Backend API to PostgreSQL: Connection pooling with TLS",
+      "Backend API to external services: Server-side only, never exposed to frontend",
+      "Webhook ingestion: Signature validation before processing"
+    ],
+    "riskySurfaces": [
+      "Webhook endpoint is publicly accessible and must validate signatures rigorously",
+      "WebSocket connections must re-validate JWT on reconnection",
+      "File attachment uploads must be scanned and size-limited",
+      "Rate limiting required on auth endpoints to prevent credential stuffing"
+    ]
+  },
+  "deploymentAndEnvironmentModel": {
+    "environmentModel": [
+      {
+        "name": "local",
+        "purpose": "Developer machines with Docker Compose for PostgreSQL and Redis",
+        "characteristics": ["Hot reload", "Seed data", "Mock external services"]
+      },
+      {
+        "name": "staging",
+        "purpose": "Pre-production environment matching production configuration",
+        "characteristics": ["Real external integrations (sandbox)", "E2E test target", "Auto-deployed from main branch"]
+      },
+      {
+        "name": "production",
+        "purpose": "Live environment serving beta users",
+        "characteristics": ["High availability", "Monitoring and alerting", "Blue-green deployment"]
+      }
+    ],
+    "deploymentUnits": [
+      {
+        "projectId": "web-app",
+        "strategy": "Static SPA deployed to CDN with immutable cache headers",
+        "notes": "Vercel or Cloudflare Pages for automatic preview deployments"
+      },
+      {
+        "projectId": "backend-api",
+        "strategy": "Containerized Node.js deployed to managed container service",
+        "notes": "Auto-scaling based on CPU/memory; health check on /api/v1/health"
+      },
+      {
+        "projectId": "shared-types",
+        "strategy": "Published to private npm registry on version bump",
+        "notes": "CI publishes on merge to main when version changes in package.json"
+      }
+    ]
+  },
+  "qualityAttributes": {
+    "maintainability": "Strict TypeScript with shared types ensures contract safety across projects. Modular architecture with clear boundaries enables independent team velocity.",
+    "scalability": "Stateless API servers behind a load balancer scale horizontally. Redis pub/sub decouples WebSocket broadcasting from request handling. Database read replicas available for reporting queries.",
+    "testability": "Shared types enable contract testing. Backend has unit, integration, and API tests. Frontend has component and E2E tests. Webhook processing testable via Bull queue mocking.",
+    "reliability": "Database transactions for data consistency. Webhook processing with retry queues. Circuit breaker pattern for external API calls. Health checks and graceful shutdown.",
+    "performance": "P95 API latency target under 200ms. WebSocket event propagation under 500ms. CDN-served frontend with code splitting. Database query optimization with indexes on tenant_id and foreign keys.",
+    "developerExperience": "Mono-repo tooling with shared lint/format configs. Docker Compose for one-command local setup. OpenAPI-generated types eliminate manual sync. Preview deployments for every PR."
+  },
+  "phaseMapping": [
+    {
+      "phaseId": "discovery",
+      "phaseName": "Discovery & Market Validation",
+      "architectureSlices": [],
+      "technicalDependencies": []
+    },
+    {
+      "phaseId": "product-definition",
+      "phaseName": "Product Vision & MVP Scope",
+      "architectureSlices": ["Initial project topology definition"],
+      "technicalDependencies": []
+    },
+    {
+      "phaseId": "ux-definition",
+      "phaseName": "UX/UI Design",
+      "architectureSlices": ["web-app component architecture", "Design system integration"],
+      "technicalDependencies": ["product-definition"]
+    },
+    {
+      "phaseId": "architecture-definition",
+      "phaseName": "System Architecture",
+      "architectureSlices": [
+        "Full system overview and constraints",
+        "API contract design (OpenAPI)",
+        "Database schema and migration strategy",
+        "Real-time architecture (WebSocket + Redis pub/sub)",
+        "Authentication and authorization flow",
+        "Infrastructure and deployment topology"
+      ],
+      "technicalDependencies": ["ux-definition"]
+    },
+    {
+      "phaseId": "implementation-phase",
+      "phaseName": "Implementation",
+      "architectureSlices": [
+        "backend-api: Auth, task CRUD, sprint management",
+        "web-app: Task board, sprint views, real-time updates",
+        "shared-types: Generated from OpenAPI spec",
+        "GitHub integration: Webhook handler and PR sync"
+      ],
+      "technicalDependencies": ["architecture-definition"]
+    },
+    {
+      "phaseId": "qa-validation",
+      "phaseName": "QA & Validation",
+      "architectureSlices": [
+        "API integration tests against real PostgreSQL",
+        "E2E tests for critical user flows",
+        "Performance load testing for 1000 concurrent users",
+        "Security scan for OWASP Top 10"
+      ],
+      "technicalDependencies": ["implementation-phase"]
+    },
+    {
+      "phaseId": "release-readiness",
+      "phaseName": "Release Readiness",
+      "architectureSlices": [
+        "Production monitoring and alerting setup",
+        "Blue-green deployment configuration",
+        "Rollback procedure validation"
+      ],
+      "technicalDependencies": ["qa-validation"]
+    }
+  ],
+  "implementationGuidelines": {
+    "rules": [
+      "All API endpoints must validate input with Zod schemas before processing",
+      "Every database query must include tenant_id in WHERE clauses for multi-tenancy isolation",
+      "WebSocket messages must follow the shared event schema defined in shared-types",
+      "All external API calls must use the circuit breaker wrapper",
+      "Error responses must follow RFC 7807 Problem Details format"
+    ],
+    "boundariesToPreserve": [
+      "web-app must never import from backend-api directly; use shared-types for contracts",
+      "Database access is exclusively through backend-api; no direct DB connections from other projects",
+      "External service credentials must never be exposed to the frontend",
+      "Webhook processing must be asynchronous via the Bull queue, never synchronous in the request handler"
+    ],
+    "antiPatterns": [
+      "Do not store session state in the API server process; use Redis or JWT",
+      "Do not bypass the shared-types package by duplicating type definitions",
+      "Do not use raw SQL without parameterized queries",
+      "Do not add blocking I/O in WebSocket message handlers",
+      "Do not commit .env files or secrets to version control"
+    ],
+    "codingExpectations": [
+      "TypeScript strict mode enabled in all projects",
+      "100% of public API functions must have JSDoc documentation",
+      "Test coverage minimum: 80% for business logic, 60% for UI components",
+      "All PRs require at least one approval before merge",
+      "Conventional Commits format for all commit messages"
+    ]
+  },
+  "openRisks": [
+    {
+      "id": "risk-realtime-scale",
+      "description": "WebSocket connection scaling beyond 1000 concurrent users may require dedicated infrastructure (e.g., Socket.io with Redis adapter or dedicated WebSocket gateway)",
+      "severity": "medium",
+      "mitigation": "Design WebSocket layer as a pluggable adapter so it can be swapped from in-process to dedicated gateway without changing business logic"
+    },
+    {
+      "id": "risk-github-rate-limits",
+      "description": "GitHub API rate limits (5000 requests/hour for OAuth apps) may be insufficient for organizations with many active PRs",
+      "severity": "medium",
+      "mitigation": "Implement intelligent caching and webhook-driven updates to minimize polling; use GraphQL to reduce request count"
+    },
+    {
+      "id": "risk-multi-tenancy-leak",
+      "description": "Multi-tenancy data isolation relies on application-level enforcement; a missing tenant_id filter could leak data across organizations",
+      "severity": "critical",
+      "mitigation": "Implement tenant-scoped database middleware that automatically injects tenant_id into all queries; add integration tests that verify isolation"
+    },
+    {
+      "id": "risk-auth0-dependency",
+      "description": "Hard dependency on Auth0 for authentication; outage would prevent all user logins",
+      "severity": "high",
+      "mitigation": "JWT validation is local after initial login; implement graceful degradation that allows existing sessions to continue during Auth0 outages"
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "q-gitlab-priority",
+      "question": "Should GitLab integration be included in MVP or deferred to post-launch?",
+      "context": "Adding GitLab doubles the integration surface area and webhook handling complexity"
+    },
+    {
+      "id": "q-mobile-api",
+      "question": "Should the API be designed with mobile clients in mind from the start?",
+      "context": "Mobile app is currently deferred to v2 but API design decisions now could make mobile integration easier later"
+    },
+    {
+      "id": "q-file-storage",
+      "question": "What is the preferred file storage service for task attachments?",
+      "context": "Options include S3, Cloudflare R2, or GCS; choice affects deployment and cost model"
+    },
+    {
+      "id": "q-sso-mvp",
+      "question": "Is SAML/SSO required for beta launch or can it be added post-launch?",
+      "context": "Enterprise customers typically require SSO but it adds significant implementation effort to the auth flow"
+    }
+  ]
+}

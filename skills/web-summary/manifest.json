@@ -1,0 +1,109 @@
+{
+  "name": "web-summary",
+  "description": "Fetches a web page and produces an LLM-generated summary",
+  "version": "1.0.0",
+  "author": "OS Loop",
+  "schemaVersion": "2.0",
+  "capabilities": [
+    "web-fetch",
+    "summarization"
+  ],
+  "requiredBindings": [],
+  "permissions": [
+    {
+      "kind": "network",
+      "scope": "outbound-http",
+      "description": "Fetch the target URL"
+    },
+    {
+      "kind": "llm",
+      "scope": "summarization",
+      "description": "Generate a summary of the fetched content"
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "The URL to fetch and summarize"
+      },
+      "maxLength": {
+        "type": "number",
+        "description": "Maximum summary length in characters",
+        "default": 500
+      }
+    },
+    "required": [
+      "url"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "summary": {
+        "type": "string",
+        "description": "The generated summary"
+      },
+      "title": {
+        "type": "string",
+        "description": "Page title if available"
+      },
+      "fetchedAt": {
+        "type": "string",
+        "description": "ISO timestamp of when the page was fetched"
+      }
+    },
+    "required": [
+      "summary",
+      "fetchedAt"
+    ]
+  },
+  "compatibilityRequirements": [],
+  "oauth": [],
+  "llmUsage": [
+    {
+      "purposeId": "summarize-page",
+      "kind": "summarization",
+      "description": "Summarize the fetched web page content",
+      "estimatedTokenBudget": 2000,
+      "modelPreference": null,
+      "temperatureHint": 0.3
+    }
+  ],
+  "wasm": [],
+  "views": [],
+  "tools": [],
+  "lifecycleHooks": [],
+  "sandbox": {
+    "isolation": "standard",
+    "maxExecutionMs": 30000,
+    "maxMemoryMB": 128,
+    "allowedGlobals": [],
+    "networkRules": [
+      {
+        "urlPattern": "*",
+        "methods": [
+          "GET"
+        ],
+        "description": "Fetch the target URL"
+      }
+    ]
+  },
+  "supportedPlatforms": [],
+  "bridgeRequirement": "never",
+  "workspaceSupport": "none",
+  "workspaceSchemaVersion": null,
+  "longRunningSupport": "none",
+  "userInputSupport": false,
+  "artifactVersioningSupport": false,
+  "executionMode": "declarative",
+  "agenticConfig": {
+    "enabled": false,
+    "requiresWorkspace": false,
+    "supportsBackgroundExecution": false,
+    "supportsRoleBasedExecution": false,
+    "maxStepsPerRun": null,
+    "defaultStepBudget": null
+  }
+}

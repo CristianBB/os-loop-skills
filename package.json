@@ -1,0 +1,14 @@
+{
+  "name": "os-loop-skills",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "tsx scripts/validate.ts",
+    "validate:all": "tsx scripts/validate.ts --examples",
+    "test:workspace": "tsx scripts/validate-workspace-fields.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

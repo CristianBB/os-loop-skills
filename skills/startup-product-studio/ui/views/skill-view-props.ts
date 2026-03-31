@@ -29,6 +29,9 @@ export interface SkillUIRuntimeContext {
 
   navigateToWorkspace: (workspaceId: string) => void;
   navigateToList: () => void;
+
+  /** Execute a skill action directly (e.g. redirect, run-phase). */
+  executeSkillAction: (args: Record<string, unknown>) => Promise<void>;
 }
 
 export interface SkillViewProps {

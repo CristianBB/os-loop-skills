@@ -39,6 +39,13 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
   const studioState = workspace ? parseStudioState(workspace.state) : null;
   const activeProject = studioState ? getActiveProject(studioState) : null;
 
+  // Show the most recent failed run when no active run exists, so the user
+  // can see the Retry button after a timeout or failure.
+  const lastFailedRun = !activeRun
+    ? runs.find((r) => r.status === 'failed') ?? null
+    : null;
+  const displayRun = activeRun ?? lastFailedRun;
+
   if (!workspace || !studioState) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -77,7 +84,7 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {activeProject && (
+          {activeProject ? (
             <>
               <PhaseTimeline
                 project={activeProject}
@@ -118,7 +125,21 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
                   activeProject.currentPhase === 'implementation-phase'
                 }
                 isPaused={workspace.status === 'paused'}
-                onRedirect={(_action: UserRedirectionAction) => {}}
+                onRedirect={(action: UserRedirectionAction) => {
+                  if (action === 'pause' && activeRun) {
+                    pauseRun(activeRun.id);
+                  } else if (action === 'continue') {
+                    const target = activeRun ?? runs.find((r) => r.status === 'paused');
+                    if (target) continueRun(target.id);
+                  } else if (action === 'stop' && activeRun) {
+                    cancelRun(activeRun.id);
+                  } else {
+                    context.executeSkillAction({
+                      action: 'redirect',
+                      redirectionAction: action,
+                    });
+                  }
+                }}
               />
 
               <StudioArtifactPanel
@@ -126,6 +147,22 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
                 project={activeProject}
               />
             </>
+          ) : (
+            <div data-testid="no-project-empty-state" className="rounded-lg border border-dashed p-8 text-center space-y-3">
+              <p className="text-sm font-medium">No project created yet</p>
+              <p className="text-xs text-muted-foreground">
+                This studio has been initialised but does not have a project.
+                Ask the agent to create one, for example:
+              </p>
+              <code className="block text-xs bg-muted px-3 py-2 rounded-md">
+                Create a project called &quot;MyApp&quot; in the PlantValue studio
+              </code>
+              {studioState.projects.length > 0 && !studioState.activeProjectId && (
+                <p className="text-xs text-amber-600">
+                  {studioState.projects.length} project(s) exist but none is set as active.
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -137,15 +174,15 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
             />
           )}
 
-          {activeRun && (
+          {displayRun && (
             <ActiveRunSidebar
-              activeRun={activeRun}
+              activeRun={displayRun}
               inputRequests={inputRequests}
               bridgeJobs={bridgeJobs}
-              onPause={() => pauseRun(activeRun.id)}
-              onCancel={() => cancelRun(activeRun.id)}
-              onContinue={() => continueRun(activeRun.id)}
-              onRetry={() => retryRun(activeRun.id)}
+              onPause={() => pauseRun(displayRun.id)}
+              onCancel={() => cancelRun(displayRun.id)}
+              onContinue={() => continueRun(displayRun.id)}
+              onRetry={() => retryRun(displayRun.id)}
               onAnswerInput={answerUserInput}
               onCancelInput={cancelUserInput}
             />

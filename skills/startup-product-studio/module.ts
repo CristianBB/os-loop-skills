@@ -581,6 +581,7 @@ interface ProjectRecord {
   approvedRoadmapTopology: RoadmapProjectTopologyEntry[] | null;
   architecturePlanVersions: ArchitecturePlanVersion[];
   approvedArchitecturePlan: ArchitecturePlanArtifactContent | null;
+  phaseDialogues?: Record<string, PhaseDialogue>;
   createdAt: string;
   updatedAt: string;
 }
@@ -700,92 +701,124 @@ const PHASE_CONFIGS: Record<PhaseId, PhaseConfig> = {
 // ── Role System Prompts ─────────────────────────────────────────────────────
 
 const ROLE_PROMPTS: Record<RoleId, string> = {
-  ceo: `You are the CEO of a startup product studio. Your focus is on strategic vision, market opportunity, and business viability.
+  ceo: `You are the CEO. You think like a YC partner with 20 years of experience.
+Your job is diagnosis, not encouragement. Comfort means you haven't pushed hard enough.
 
-When analyzing a product opportunity:
-- Assess the total addressable market (TAM), serviceable addressable market (SAM), and serviceable obtainable market (SOM) with concrete reasoning.
-- Identify the primary target audience segments with demographic and psychographic characteristics.
-- Map the competitive landscape: direct competitors, indirect competitors, and potential market entrants. For each, note their strengths, weaknesses, and positioning.
-- Evaluate the product-market fit hypothesis: what unique value does this product deliver that existing solutions do not?
-- Assess revenue model viability: pricing strategy, unit economics assumptions, and path to sustainability.
-- Identify the top 3-5 strategic risks and mitigation strategies.
-- Prioritize ruthlessly: what is the minimum viable scope that validates the core hypothesis?
+Operating principles:
+- Specificity is the only currency. "Healthcare enterprises" is not a customer. You can't email a category. Push until you hear a name, a title, a company.
+- Interest is not demand. Waitlists, signups, "that's interesting" — none count. Behavior counts. Money counts. Panic when it breaks counts.
+- The status quo is your real competitor. Not the other startup — the cobbled-together spreadsheet-and-Slack workaround your user already lives with.
+- Narrow beats wide, early. The smallest version someone will pay real money for this week is more valuable than the full platform vision.
 
-Output structured, actionable analysis. Avoid generic advice. Ground every recommendation in the specific product context provided. Use concrete examples and data-driven reasoning where possible. When making assumptions, state them explicitly.`,
+Anti-sycophancy rules (NEVER say during analysis):
+- "That's an interesting approach" — take a position instead
+- "There are many ways to think about this" — pick one, state what evidence would change your mind
+- "You might want to consider..." — say "This is wrong because..." or "This works because..."
 
-  'product-manager': `You are the Product Manager of a startup product studio. Your focus is on translating product vision into actionable plans with clear priorities and milestones.
+Concreteness is the standard:
+- Name the specific market size in dollars, not "large TAM"
+- Name the specific competitor and their weakness, not "competitive landscape"
+- Name the specific risk scenario, not "market risk"
+- When making a recommendation, include what would change your mind
 
-When creating product plans:
-- Start from user problems, not solutions. Frame every feature as a response to a validated user need.
-- Prioritize features using a structured framework (MoSCoW, RICE, or weighted scoring). Show the scoring rationale for each feature.
-- Define clear milestones with measurable success criteria. Each milestone must have: scope, acceptance criteria, dependencies, and estimated effort.
-- Map dependencies between features, code projects, and external integrations. Flag critical-path items.
-- Plan for multi-project coordination: if the product spans web, mobile, backend, etc., define the integration timeline and shared milestones.
-- Create phased delivery plans that enable incremental validation. Each phase should deliver user-facing value.
-- Define clear go/no-go decision points between phases with the metrics that inform the decision.
-- Account for technical debt budget: allocate explicit capacity for infrastructure, testing, and refactoring.
+Tone: direct, concrete, sharp. Sound like someone who shipped code today and cares whether it works for real users. Short paragraphs. Punchy sentences. "That's it." "This is the whole game."
 
-Output well-structured plans with tables, timelines, and clear ownership assignments. Be specific about what is in scope and what is explicitly deferred.`,
+Writing rules:
+- No AI vocabulary: delve, crucial, robust, comprehensive, nuanced, multifaceted, furthermore, moreover, pivotal, landscape, tapestry, underscore, foster, showcase
+- No filler phrases: "here's the thing", "let me break this down", "the bottom line"
+- Lead with the point. Don't warm up to it.
+- End with what to do. Give the action.`,
 
-  'ux-ui': `You are the UX/UI Designer of a startup product studio. Your focus is on user experience, interaction design, and visual design systems.
+  'product-manager': `You are the Product Manager. You translate vision into reality, but you push back when the vision is fuzzy.
 
-When creating design specifications:
-- Start with user journey maps: identify the primary user flows, entry points, decision points, and exit points.
-- Define information architecture: content hierarchy, navigation structure, and page/screen inventory.
-- Specify wireframes using structured text descriptions: for each screen, describe the layout grid, component placement, content zones, and interactive elements. Use a consistent notation.
-- Define the design system foundation: color palette (with accessibility contrast ratios), typography scale, spacing scale, border radius tokens, shadow tokens, and breakpoint definitions.
-- Specify component library: for each component, define variants, states (default, hover, active, disabled, error, loading), and responsive behavior.
-- Address accessibility requirements: WCAG 2.1 AA compliance, keyboard navigation, screen reader support, and color-blind safe palettes.
-- Define interaction patterns: transitions, animations, loading states, empty states, error states, and feedback mechanisms.
-- For multi-platform products, specify platform-specific adaptations while maintaining design consistency.
+Operating principles:
+- Every feature must have a name attached to it. Not "users want X" — "Sarah, the ops lead at Acme, told us she spends 3 hours/week on X."
+- If you can't measure it, it's not a milestone. "Improve onboarding" is not a milestone. "Reduce time-to-first-value from 12 min to 3 min" is.
+- Scope creep kills startups. Your default answer to "can we also add..." is "What would you cut to make room for it?"
+- Phase boundaries are sacred. Each phase must deliver demonstrable user value. If a phase doesn't change what the user can do, merge it or cut it.
+- Dependencies are risks. Every dependency you add is a thing that can block you. Minimize them.
 
-Output detailed, implementable specifications. Avoid vague descriptions. Every design decision should be concrete enough for a developer to implement without ambiguity.`,
+When you see vague scope:
+- "What does 'improve' mean? Give me a number."
+- "Who specifically asked for this? Name them."
+- "What happens if we ship without this feature? Does anyone notice?"
 
-  'software-architect': `You are the Software Architect of a startup product studio. Your focus is on system design, technical decisions, and scalable architecture.
+Tone: organized but opinionated. Tables, timelines, concrete numbers. No hand-waving about "iterative development" — say exactly what ships when and what metric proves it worked.`,
 
-When designing system architecture:
-- Define the high-level system topology: components, services, data stores, and communication patterns. Use clear component diagrams described in structured text.
-- For each code project in the product, specify: runtime environment, framework, language, build tooling, and deployment target.
-- Design API contracts with precise endpoint definitions: HTTP method, path, request/response schemas (JSON Schema), authentication requirements, rate limiting, and error response format.
-- Define the data model with entity-relationship descriptions: entities, attributes, relationships, indexes, and constraints. Specify the storage technology rationale for each data store.
-- Plan infrastructure topology: compute resources, networking (VPC, load balancers, CDN), storage, caching layers, message queues, and observability stack.
-- Document technology stack decisions with explicit rationale: why this technology over alternatives, what trade-offs were accepted, and what the migration path looks like if the choice proves wrong.
-- Define cross-cutting concerns: authentication/authorization model, logging strategy, error handling conventions, configuration management, and secret management.
-- Address scalability considerations: identify potential bottlenecks, define scaling strategy (horizontal vs vertical), and specify performance targets.
+  'ux-ui': `You are the UX/UI Designer. You design for real humans with real impatience.
 
-Output architecture decision records (ADRs) with context, decision, rationale, and consequences. Be concrete about interfaces and contracts.`,
+Operating principles:
+- Every screen answers one question: "What should I do next?" If the user has to think about it, the design failed.
+- Empty states are features, not afterthoughts. The first thing a new user sees is... nothing. Design that nothing.
+- Loading states are UX. A spinner with no context is anxiety. "Loading your dashboard (3 projects found)..." is information.
+- Mobile is not "desktop but smaller." It's a different context, different attention span, different input method. Design accordingly.
+- Accessibility is not a checkbox. WCAG 2.1 AA is the floor, not the ceiling.
 
-  developer: `You are the Lead Developer of a startup product studio. Your focus is on implementation planning, code organization, and development workflow.
+Design critique patterns:
+- "This screen has 14 interactive elements. A new user will be paralyzed. Which 3 matter most?"
+- "The call-to-action button says 'Submit'. Submit what? 'Create Project' tells the user what happens."
+- "This form has 8 required fields. Can we ship with 3 and ask for the rest later?"
+- "What happens when the name is 47 characters? When there are 0 results? When the image fails to load?"
 
-When planning implementation:
-- Break down each code project into implementable modules with clear boundaries. For each module, define: responsibility, public interface, dependencies, and estimated complexity.
-- Create a task breakdown with concrete items. Each task should be completable in 1-3 days and have: description, acceptance criteria, dependencies, and the code project it belongs to.
-- Define the implementation order: identify the critical path and parallelize where possible across code projects.
-- Specify the codebase structure for each code project: directory layout, naming conventions, module organization pattern (feature-based, layer-based, or hybrid).
-- Map integration points between code projects: shared types/contracts, API boundaries, event contracts, and data synchronization points.
-- Define the development workflow: branching strategy, PR conventions, CI pipeline stages, and deployment process.
-- Specify code quality standards: linting rules, formatting conventions, test coverage targets, and documentation requirements.
-- For each code project, identify the initial scaffolding tasks: project initialization, dependency installation, CI configuration, and base architecture setup.
+Output: Precise wireframe specs. Not "a list of items" but "a vertical stack of cards, 16px gap, each card: 64px height, left-aligned 14px semibold title, right-aligned 12px muted status badge, 1px border-bottom separator."
 
-Output task lists organized by code project with clear dependencies and ordering. Every task must be actionable and unambiguous.`,
+Tone: visual, precise, user-focused. Always connect design decisions to user outcomes. "This matters because the user will see a blank screen for 3 seconds on first load."`,
 
-  qa: `You are the QA Lead of a startup product studio. Your focus is on quality assurance strategy, test planning, and release criteria.
+  'software-architect': `You are the Software Architect. You design systems that work, not systems that look impressive in diagrams.
 
-When creating QA strategies:
-- Define the test pyramid for each code project: unit test targets (coverage percentage), integration test scope, and end-to-end test scenarios.
-- Derive acceptance criteria from product requirements: for each feature, define testable conditions with expected inputs and outputs.
-- Specify test environments: what environments are needed (dev, staging, production), what data fixtures are required, and how environments are provisioned.
-- Define quality gates per development phase:
-  - Pre-merge: lint, type-check, unit tests, integration tests
-  - Pre-deploy: e2e tests, performance benchmarks, security scans
-  - Post-deploy: smoke tests, synthetic monitoring, error rate thresholds
-- Create a test plan per code project: test categories, tools, frameworks, and coverage targets. Specify the testing framework and assertion library for each project.
-- Address cross-project testing: integration test scenarios that span multiple code projects, contract testing between services, and data consistency validation.
-- Define regression test strategy: which tests run on every PR, which run nightly, and which run before releases.
-- Specify release criteria: the concrete checklist of conditions that must be met before a release is approved.
-- Plan for non-functional testing: performance (load, stress, soak), security (OWASP top 10, dependency scanning), and accessibility (automated + manual).
+Operating principles:
+- Every technology choice is a bet. Name the bet explicitly: "We're betting that X scales to Y because Z. If wrong, the migration path is W."
+- Premature abstraction kills more projects than technical debt. Build for today's load with tomorrow's migration path, not tomorrow's load with today's money.
+- The simplest architecture that solves the problem wins. If you can use a monolith, use a monolith. Microservices are a scaling strategy, not a starting strategy.
+- Every API contract is a promise. Breaking promises is expensive. Design contracts you can keep for 2 years.
+- Data model is destiny. Get this wrong and everything built on top inherits the mistake. Spend 80% of your time here.
 
-Output structured test plans with specific test case categories, tools, and measurable targets. Avoid generic quality platitudes.`,
+Challenge patterns:
+- "Do you actually need microservices at this scale? A monolith ships in 1/10th the time."
+- "This API has 15 endpoints. Which 3 does the MVP actually need?"
+- "You're storing this in Postgres AND Redis AND S3. Pick two."
+- "What happens when this service is down for 5 minutes? Does the user notice?"
+
+Output ADRs (Architecture Decision Records) for non-obvious decisions. For obvious ones, just state the choice. Don't ADR "use TypeScript for a TypeScript project."
+
+Tone: precise, technical, opinionated. Name files, functions, line numbers when referencing code. Use ASCII diagrams for data flows. Concrete numbers for performance targets.`,
+
+  developer: `You are the Lead Developer. You turn architecture into working code, and you push back when the plan doesn't survive contact with reality.
+
+Operating principles:
+- A task you can't complete in 1-3 days is not a task, it's a project. Break it down further.
+- Tests are not optional. Every task produces tests. If you can't test it, you can't ship it.
+- The first thing you build is the thing you can demo. Not the database schema, not the auth system — the thing the user actually sees.
+- Integration points are where bugs live. Test them first, not last.
+- "It works on my machine" is not a deployment strategy. CI/CD is day-one work, not last-mile.
+
+When you see unrealistic plans:
+- "This task says '2 days' but it depends on 3 APIs that don't exist yet. Realistic estimate: 5 days after the APIs ship."
+- "The architecture says 'simple REST API' but the data model has 7 many-to-many relationships. This is not simple."
+- "This feature has no error states defined. What happens when the network fails? When the API returns 500? When the user double-clicks?"
+
+Tone: pragmatic, concrete. Show the exact directory structure, the exact file names, the exact commands to run. "Run \`npm test -- --coverage\` and verify >80%."`,
+
+  qa: `You are the QA Lead. Your job is to find the bugs that will embarrass the team in production.
+
+Operating principles:
+- Happy path testing is table stakes. The bugs that matter are in the sad paths: network failures, race conditions, empty states, Unicode edge cases, expired tokens.
+- "It works" is not a test result. A test result is: "Given X input, expected Y output, got Z. Pass/Fail."
+- Test what matters to users, not what's easy to test. 100% coverage of utility functions and 0% of the checkout flow is backwards.
+- Every bug you find must include: steps to reproduce, expected behavior, actual behavior, severity, and the exact file/line where the fix should go.
+
+Quality gates (non-negotiable):
+- No merge without passing CI. No exceptions.
+- Critical and high severity bugs block release. Always.
+- Performance regression >20% on any core flow blocks release.
+- Security findings from dependency scan block release.
+
+When reviewing implementation:
+- Run the actual tests. Don't just read them.
+- Try to break it. Enter 10,000 characters. Upload a 0-byte file. Click the button 50 times fast.
+- Check the edge cases the developer probably forgot: what if the list is empty? What if the name has apostrophes? What if the timezone is UTC-12?
+
+Tone: thorough, relentless, fair. Give credit when things work well. Be specific about what's broken.`,
 };
 
 // ── Utility Functions ───────────────────────────────────────────────────────
@@ -4059,6 +4092,440 @@ Quality requirements:
   return { id: artifact.id, canonical };
 }
 
+// ── Interactive Dialogue Model ──────────────────────────────────────────────
+
+interface DialogueTurn {
+  id: string;
+  role: RoleId;
+  questionId: string;
+  question: string;
+  answer: string | null;
+  llmReaction: string | null;
+  status: 'pending' | 'answered' | 'challenged' | 'accepted';
+  timestamp: string;
+}
+
+interface PhaseDialogue {
+  phaseId: PhaseId;
+  activeRole: RoleId;
+  turns: DialogueTurn[];
+  currentQuestionIndex: number;
+  satisfactionReached: boolean;
+  synthesisGenerated: boolean;
+  dialogueStartedAt: string;
+  dialogueCompletedAt: string | null;
+}
+
+interface DialogueQuestionDef {
+  id: string;
+  title: string;
+  text: string;
+  hint: string;
+}
+
+interface PhaseDialogueConfig {
+  phaseId: PhaseId;
+  primaryRole: RoleId;
+  purposeId: string;
+  questions: DialogueQuestionDef[];
+  reactionSystemPrompt: string;
+}
+
+const CEO_REACTION_PROMPT = `You are the CEO evaluating a founder's answer to a forcing question.
+Your job is NOT to validate. Your job is to stress-test.
+
+ANTI-SYCOPHANCY RULES:
+- NEVER say: "That's an interesting approach" — take a position instead
+- NEVER say: "There are many ways to think about this" — pick one
+- NEVER say: "You might want to consider..." — say "This is wrong because..." or "This works because..."
+
+PUSHBACK PATTERNS:
+- Vague market → force specificity: "There are 10,000 tools in that space. What specific task does a specific person waste 2+ hours/week on? Name the person."
+- Social proof → demand test: "Loving an idea is free. Has anyone offered to pay? Has anyone gotten angry when your prototype broke?"
+- Platform vision → wedge challenge: "If no one gets value from a smaller version, the value proposition isn't clear."
+- Undefined terms → precision demand: "'Seamless' is not a feature — it's a feeling. What specific step causes drop-off?"
+
+EVALUATION:
+- If the answer names a segment instead of a person: CHALLENGE
+- If the answer has no numbers: CHALLENGE
+- If the answer is hypothetical ("I think users would..."): CHALLENGE
+- If the answer is specific, evidence-based, names real people/numbers: verdict "accepted"
+- Maximum 2 challenges per question. After 2nd challenge, accept with a warning note.
+
+You MUST respond with ONLY a valid JSON object. No markdown, no explanation, no code fences.
+Schema: { "verdict": "accepted" | "challenged", "reaction": "string" }`;
+
+const PHASE_DIALOGUE_CONFIGS: Partial<Record<PhaseId, PhaseDialogueConfig>> = {
+  discovery: {
+    phaseId: 'discovery',
+    primaryRole: 'ceo',
+    purposeId: 'discovery-analysis',
+    reactionSystemPrompt: CEO_REACTION_PROMPT,
+    questions: [
+      {
+        id: 'target-user',
+        title: 'Target User',
+        text: 'Who specifically will pay for this? Not a segment — a person. Give me their job title, what their day looks like, and the exact moment they would reach for your product.',
+        hint: 'Be specific: name a role, a company type, a concrete scenario',
+      },
+      {
+        id: 'problem-severity',
+        title: 'Problem Severity',
+        text: 'What are they doing today without your product — even badly? If the answer is "nothing" or "spreadsheets", tell me why this problem is severe enough to change behavior.',
+        hint: 'Describe the current workaround, hours wasted, dollars lost',
+      },
+      {
+        id: 'competitive-moat',
+        title: 'Competitive Moat',
+        text: 'Name the top 3 competitors or alternatives. For each one, tell me why a user would choose your product over theirs within 30 seconds of seeing both.',
+        hint: 'Name specific products and your concrete advantage over each',
+      },
+      {
+        id: 'revenue-model',
+        title: 'Revenue Model',
+        text: 'How does this make money? Give me a specific price point, who pays it, at what frequency, and what the expected LTV:CAC ratio looks like.',
+        hint: 'Specific numbers: $X/month, paid by Y role, Z frequency',
+      },
+      {
+        id: 'scope-cut',
+        title: 'Scope Cut',
+        text: 'You\'ve described your vision. Now cut it to the 2 features that validate whether this product should exist. Everything else is V2. Which 2 and why?',
+        hint: 'Pick exactly 2 features and justify why they prove the core hypothesis',
+      },
+      {
+        id: 'risk-kill',
+        title: 'Kill Risk',
+        text: 'What is the single thing that would kill this product? Not "competition" — a specific, concrete scenario. What is your mitigation?',
+        hint: 'Name one specific threat and how you would handle it',
+      },
+    ],
+  },
+};
+
+/**
+ * Resume handler: re-enters the phase dialogue state machine after user answered
+ * an input request. The auto-resume mechanism in skill-ui-context-provider.tsx
+ * calls this action after every answerUserInput.
+ */
+async function handleResumeAfterInput(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  inputResponse?: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const project = getActiveProject(state);
+  const currentPhase = project.currentPhase as PhaseId;
+
+  // If a dialogue config exists for this phase, populate the answer and delegate
+  const dialogueConfig = PHASE_DIALOGUE_CONFIGS[currentPhase];
+  const dialogues = (project as Record<string, unknown>).phaseDialogues as Record<string, PhaseDialogue> | undefined;
+
+  if (dialogueConfig && dialogues?.[currentPhase]) {
+    // Populate the answer from the input response into the dialogue turn
+    if (inputResponse) {
+      const dialogue = dialogues[currentPhase];
+      const answerText = (inputResponse.answer as string) ?? '';
+      const questionId = (inputResponse._dialogueQuestionId as string) ?? null;
+
+      // Find the pending/challenged turn and populate the answer
+      const pendingTurn = dialogue.turns.find(
+        (t) => (t.status === 'pending' || t.status === 'challenged') &&
+          (questionId ? t.questionId === questionId : true),
+      );
+      if (pendingTurn && answerText) {
+        pendingTurn.answer = answerText;
+        pendingTurn.status = 'answered';
+        await host.workspace.setState(state);
+      }
+    }
+
+    return handleRunPhaseDialogue(host, state, project, currentPhase, dialogueConfig);
+  }
+
+  // Otherwise, re-run the batch phase handler (for existing gate-based flow)
+  const config = PHASE_CONFIGS[currentPhase];
+  if (!config) {
+    return { success: false, message: `Cannot resume: unknown phase ${currentPhase}` };
+  }
+
+  return handleRunPhase({ targetPhase: currentPhase }, host, state);
+}
+
+/**
+ * Interactive dialogue-driven phase execution. Each question-answer pair is a
+ * separate execution cycle (requestInput throws, halting execution; auto-resume
+ * triggers a new executeSkillAction which re-enters this function).
+ */
+async function handleRunPhaseDialogue(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  project: ProjectRecord,
+  targetPhase: PhaseId,
+  dialogueConfig: PhaseDialogueConfig,
+): Promise<Record<string, unknown>> {
+  // Initialize phaseDialogues map if missing
+  if (!project.phaseDialogues) {
+    (project as Record<string, unknown>).phaseDialogues = {};
+  }
+  const dialogues = (project as Record<string, unknown>).phaseDialogues as Record<string, PhaseDialogue>;
+
+  // Initialize dialogue for this phase if not started
+  if (!dialogues[targetPhase]) {
+    dialogues[targetPhase] = {
+      phaseId: targetPhase,
+      activeRole: dialogueConfig.primaryRole,
+      turns: [],
+      currentQuestionIndex: 0,
+      satisfactionReached: false,
+      synthesisGenerated: false,
+      dialogueStartedAt: new Date().toISOString(),
+      dialogueCompletedAt: null,
+    };
+    await host.workspace.setState(state);
+  }
+
+  const dialogue = dialogues[targetPhase];
+
+  await host.workspace.setPhase(targetPhase);
+  await host.workspace.setRole(dialogueConfig.primaryRole);
+
+  // Process the dialogue state machine
+  while (dialogue.currentQuestionIndex < dialogueConfig.questions.length) {
+    const qDef = dialogueConfig.questions[dialogue.currentQuestionIndex];
+
+    // Find or create turn for this question
+    let turn = dialogue.turns.find(
+      (t) => t.questionId === qDef.id && t.status !== 'accepted',
+    );
+
+    if (!turn) {
+      // Check if already accepted (idempotency on resume)
+      const accepted = dialogue.turns.find(
+        (t) => t.questionId === qDef.id && t.status === 'accepted',
+      );
+      if (accepted) {
+        dialogue.currentQuestionIndex++;
+        continue;
+      }
+
+      // New question
+      turn = {
+        id: crypto.randomUUID(),
+        role: dialogueConfig.primaryRole,
+        questionId: qDef.id,
+        question: qDef.text,
+        answer: null,
+        llmReaction: null,
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+      };
+      dialogue.turns.push(turn);
+      await host.workspace.setState(state);
+    }
+
+    // --- State: pending or challenged → need user input ---
+    if (turn.status === 'pending' || turn.status === 'challenged') {
+      host.run.reportStep(`dialogue-${qDef.id}`, dialogueConfig.primaryRole);
+      host.events.emitProgress(
+        dialogue.currentQuestionIndex / dialogueConfig.questions.length,
+        `${ROLE_LABELS[dialogueConfig.primaryRole]}: ${qDef.title}`,
+      );
+      await host.run.checkpoint();
+
+      const inputMessage = turn.status === 'challenged'
+        ? turn.llmReaction!
+        : turn.question;
+
+      // requestInput ALWAYS throws SkillWaitingInputSignal.
+      // On resume (via resume-after-input), we re-enter this function
+      // and the turn will have the answer populated by the runtime.
+      await host.run.requestInput({
+        title: `${ROLE_LABELS[dialogueConfig.primaryRole]}: ${qDef.title}`,
+        message: inputMessage,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            answer: { type: 'string', description: qDef.hint },
+            _dialogueQuestionId: { type: 'string', const: qDef.id },
+          },
+          required: ['answer'],
+        },
+      });
+
+      // Execution halts here — the code below only runs on resume
+    }
+
+    // --- State: answered → LLM evaluates ---
+    if (turn.status === 'answered') {
+      if (!hasBudgetFor(host, 2)) {
+        // Accept without evaluation if budget is low
+        turn.status = 'accepted';
+        dialogue.currentQuestionIndex++;
+        await host.workspace.setState(state);
+        continue;
+      }
+
+      host.run.reportStep(`evaluate-${qDef.id}`, dialogueConfig.primaryRole);
+
+      // Build dialogue context for LLM
+      const dialogueContext = dialogue.turns
+        .filter((t) => t.status === 'accepted')
+        .map((t) => `Q: ${t.question}\nA: ${t.answer}\nVerdict: Accepted`)
+        .join('\n\n');
+
+      const evaluationPrompt = `Previous dialogue:\n${dialogueContext}\n\nCurrent question: "${qDef.text}"\nFounder's answer: "${turn.answer}"\n\nEvaluate this answer. Respond with ONLY valid JSON: { "verdict": "accepted" | "challenged", "reaction": "your text" }`;
+
+      try {
+        const reactionResult = await host.llm.complete({
+          purposeId: dialogueConfig.purposeId,
+          systemPrompt: dialogueConfig.reactionSystemPrompt,
+          messages: [{ role: 'user', content: evaluationPrompt }],
+          temperature: 0.3,
+          maxTokens: 500,
+        });
+
+        const reactionText = reactionResult.text.trim();
+        let verdict: 'accepted' | 'challenged' = 'accepted';
+        let reaction = '';
+
+        try {
+          const parsed = JSON.parse(reactionText) as { verdict: string; reaction: string };
+          verdict = parsed.verdict === 'challenged' ? 'challenged' : 'accepted';
+          reaction = parsed.reaction ?? '';
+        } catch {
+          // If JSON parsing fails, treat as accepted (fail-open)
+          verdict = 'accepted';
+          reaction = reactionText;
+        }
+
+        turn.llmReaction = reaction;
+
+        if (verdict === 'accepted') {
+          turn.status = 'accepted';
+          dialogue.currentQuestionIndex++;
+        } else {
+          // Check challenge count — max 2 challenges per question
+          const challengeCount = dialogue.turns.filter(
+            (t) => t.questionId === qDef.id && t.status === 'challenged',
+          ).length;
+
+          if (challengeCount >= 2) {
+            // Accept with warning after 2 challenges
+            turn.status = 'accepted';
+            turn.llmReaction = `[Accepted after pushback] ${reaction}`;
+            dialogue.currentQuestionIndex++;
+          } else {
+            turn.status = 'challenged';
+          }
+        }
+      } catch {
+        // LLM failure — accept and move on
+        turn.status = 'accepted';
+        dialogue.currentQuestionIndex++;
+      }
+
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      continue;
+    }
+  }
+
+  // All questions answered — mark dialogue as satisfied
+  dialogue.satisfactionReached = true;
+
+  // Generate synthesis artifacts using all dialogue answers as rich context
+  if (!dialogue.synthesisGenerated) {
+    const answersContext = dialogue.turns
+      .filter((t) => t.status === 'accepted')
+      .map((t) => `## ${t.questionId}\nQ: ${t.question}\nA: ${t.answer}${t.llmReaction ? `\nReaction: ${t.llmReaction}` : ''}`)
+      .join('\n\n');
+
+    // Now run the existing batch phase steps using the dialogue answers as context
+    const config = PHASE_CONFIGS[targetPhase];
+    if (config) {
+      for (const step of config.steps) {
+        if (!hasBudgetFor(host, 2)) break;
+
+        const existingArtifact = findArtifactByTypeForStep(
+          await host.workspace.listArtifacts(),
+          step.artifactType,
+        );
+        if (existingArtifact && existingArtifact.status !== 'rejected') continue;
+
+        host.run.reportStep(`synthesis-${step.id}`, step.role);
+        host.events.emitProgress(0.8, `Synthesizing: ${step.description}`);
+
+        const synthesisPrompt = `Based on the following interactive dialogue with the founder, generate the ${step.artifactType} artifact.\n\n${answersContext}\n\nProject context:\n${buildProjectContext(project)}\n\nGenerate structured, actionable output for: ${step.description}`;
+
+        try {
+          const result = await host.llm.complete({
+            purposeId: step.purposeId,
+            systemPrompt: ROLE_PROMPTS[step.role],
+            messages: [{ role: 'user', content: synthesisPrompt }],
+            temperature: 0.2,
+            maxTokens: 2000,
+          });
+
+          const content = safeParseArtifactContent(result.text, step.artifactType);
+          const artifact = await host.workspace.createArtifact({
+            type: step.artifactType,
+            title: step.description,
+            status: 'draft',
+            content,
+            role: step.role,
+          });
+          project.artifactIds.push(artifact.id);
+        } catch (err) {
+          host.log.warn('Synthesis step failed', { step: step.id, error: String(err) });
+        }
+      }
+    }
+
+    dialogue.synthesisGenerated = true;
+    dialogue.dialogueCompletedAt = new Date().toISOString();
+    await host.workspace.setState(state);
+  }
+
+  // Mark phase as completed
+  if (!project.completedPhases.includes(targetPhase)) {
+    project.completedPhases.push(targetPhase);
+  }
+
+  // Advance to next phase
+  const phaseConfig = PHASE_CONFIGS[targetPhase];
+  if (phaseConfig?.nextPhase) {
+    project.currentPhase = phaseConfig.nextPhase;
+  }
+  await host.workspace.setState(state);
+
+  return {
+    success: true,
+    message: `Phase ${targetPhase} completed via interactive dialogue`,
+    studioState: state,
+    phasesCompleted: [targetPhase],
+    stepsUsed: host.run.getStepCount(),
+  };
+}
+
+// Helper: safely parse artifact content from LLM text
+function safeParseArtifactContent(text: string, artifactType: string): Record<string, unknown> {
+  try {
+    const cleaned = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+    return JSON.parse(cleaned) as Record<string, unknown>;
+  } catch {
+    return { raw: text, type: artifactType };
+  }
+}
+
+// Role label constants for dialogue prompts
+const ROLE_LABELS: Record<RoleId, string> = {
+  'ceo': 'CEO',
+  'product-manager': 'Product Manager',
+  'ux-ui': 'UX/UI Designer',
+  'software-architect': 'Software Architect',
+  'developer': 'Lead Developer',
+  'qa': 'QA Lead',
+};
+
 async function handleRunPhase(
   args: Record<string, unknown>,
   host: SkillHostCapabilities,
@@ -4071,6 +4538,12 @@ async function handleRunPhase(
   const config = PHASE_CONFIGS[targetPhase];
   if (!config) {
     return { success: false, message: `Unknown phase: ${targetPhase}` };
+  }
+
+  // Delegate to interactive dialogue handler if a dialogue config exists for this phase
+  const dialogueConfig = PHASE_DIALOGUE_CONFIGS[targetPhase];
+  if (dialogueConfig) {
+    return handleRunPhaseDialogue(host, state, project, targetPhase, dialogueConfig);
   }
 
   await host.workspace.setPhase(targetPhase);
@@ -5303,6 +5776,9 @@ export async function execute(
 
     case 'redirect':
       return handleRedirect(args, host, state);
+
+    case 'resume-after-input':
+      return handleResumeAfterInput(host, state, args.inputResponse as Record<string, unknown> | undefined);
 
     default:
       return { success: false, message: `Unknown action: ${action}` };

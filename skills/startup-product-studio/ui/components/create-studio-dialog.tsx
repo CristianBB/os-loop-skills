@@ -28,6 +28,7 @@ export function CreateStudioDialog({
   const [studioName, setStudioName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
+  const [baseDirectory, setBaseDirectory] = useState('');
   const [codeProjects, setCodeProjects] = useState<CodeProjectEntry[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export function CreateStudioDialog({
     setStudioName('');
     setProjectName('');
     setProjectDescription('');
+    setBaseDirectory('');
     setCodeProjects([]);
     setError(null);
     onOpenChange(false);
@@ -60,6 +62,7 @@ export function CreateStudioDialog({
     const trimmedStudio = studioName.trim();
     const trimmedProject = projectName.trim();
     const trimmedDesc = projectDescription.trim();
+    const trimmedBaseDir = baseDirectory.trim();
     if (!trimmedStudio || !trimmedProject || !trimmedDesc) return;
 
     setSubmitting(true);
@@ -68,6 +71,25 @@ export function CreateStudioDialog({
     const now = new Date().toISOString();
     const projectId = crypto.randomUUID();
 
+    // If a base directory is set, auto-assign repo paths for code projects
+    const resolvedCodeProjects = codeProjects
+      .filter((cp) => cp.name.trim())
+      .map((cp) => {
+        const cpName = cp.name.trim();
+        const repoPath = trimmedBaseDir
+          ? `${trimmedBaseDir.replace(/\/+$/, '')}/${cpName}`
+          : null;
+        return {
+          id: crypto.randomUUID(),
+          name: cpName,
+          type: cp.type,
+          techStack: cp.techStack.trim(),
+          repoPath,
+          bootstrapStatus: null,
+          bootstrapBridgeJobId: null,
+        };
+      });
+
     const project: ProjectRecord = {
       id: projectId,
       name: trimmedProject,
@@ -75,17 +97,7 @@ export function CreateStudioDialog({
       currentPhase: 'discovery',
       completedPhases: [],
       roadmap: null,
-      codeProjects: codeProjects
-        .filter((cp) => cp.name.trim())
-        .map((cp) => ({
-          id: crypto.randomUUID(),
-          name: cp.name.trim(),
-          type: cp.type,
-          techStack: cp.techStack.trim(),
-          repoPath: null,
-          bootstrapStatus: null,
-          bootstrapBridgeJobId: null,
-        })),
+      codeProjects: resolvedCodeProjects,
       artifactIds: [],
       businessContext: null,
       targetUsers: [],
@@ -108,11 +120,18 @@ export function CreateStudioDialog({
       createdAt: now,
     };
 
+    // Store baseDirectory in workspace metadata so the runtime can use it
+    const metadata: Record<string, unknown> = {};
+    if (trimmedBaseDir) {
+      metadata.baseDirectory = trimmedBaseDir;
+    }
+
     try {
       await onCreateWorkspace({
         skillId: skillId as UUIDv7,
         name: trimmedStudio,
         description: trimmedDesc,
+        metadata,
         state: state as unknown as Record<string, unknown>,
       });
       handleClose();
@@ -190,6 +209,26 @@ export function CreateStudioDialog({
             />
           </div>
 
+          {/* Base directory for code generation */}
+          <div>
+            <label htmlFor="base-directory" className="block text-sm font-medium">
+              Base Directory
+            </label>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-1">
+              Local filesystem path where code repositories will be created. Each code project gets its own subfolder.
+            </p>
+            <input
+              id="base-directory"
+              data-testid="base-directory-input"
+              type="text"
+              value={baseDirectory}
+              onChange={(e) => setBaseDirectory(e.target.value)}
+              className="mt-1 w-full rounded-md border bg-transparent px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-primary"
+              placeholder="e.g. /Users/you/Projects/my-startup"
+              disabled={submitting}
+            />
+          </div>
+
           {/* Code Projects */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -198,12 +237,18 @@ export function CreateStudioDialog({
                 type="button"
                 data-testid="add-code-project"
                 onClick={addCodeProject}
-                className="text-xs text-primary hover:underline"
+                className="cursor-pointer text-xs text-primary hover:underline"
                 disabled={submitting}
               >
                 + Add code project
               </button>
             </div>
+
+            {codeProjects.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No code projects added yet. You can add them later or the agent will create them during the architecture phase.
+              </p>
+            )}
 
             {codeProjects.map((cp, idx) => (
               <div key={idx} className="flex items-center gap-2">
@@ -218,7 +263,7 @@ export function CreateStudioDialog({
                 <select
                   value={cp.type}
                   onChange={(e) => updateCodeProject(idx, 'type', e.target.value)}
-                  className="rounded-md border bg-transparent px-2 py-1.5 text-sm"
+                  className="cursor-pointer rounded-md border bg-transparent px-2 py-1.5 text-sm"
                   disabled={submitting}
                 >
                   {Object.entries(CODE_PROJECT_TYPE_LABELS).map(([value, label]) => (
@@ -238,13 +283,26 @@ export function CreateStudioDialog({
                 <button
                   type="button"
                   onClick={() => removeCodeProject(idx)}
-                  className="text-xs text-destructive hover:underline"
+                  className="cursor-pointer text-xs text-destructive hover:underline"
                   disabled={submitting}
                 >
                   Remove
                 </button>
               </div>
             ))}
+
+            {baseDirectory.trim() && codeProjects.length > 0 && (
+              <div className="rounded-md bg-muted/50 px-3 py-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Resolved paths
+                </p>
+                {codeProjects.filter((cp) => cp.name.trim()).map((cp, idx) => (
+                  <p key={idx} className="text-xs font-mono text-muted-foreground">
+                    {baseDirectory.trim().replace(/\/+$/, '')}/{cp.name.trim()}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -254,7 +312,7 @@ export function CreateStudioDialog({
               type="button"
               onClick={handleClose}
               disabled={submitting}
-              className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50"
+              className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent active:bg-accent/80 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -262,7 +320,7 @@ export function CreateStudioDialog({
               type="submit"
               data-testid="create-studio-submit"
               disabled={!canSubmit}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Creating...' : 'Create Studio'}
             </button>

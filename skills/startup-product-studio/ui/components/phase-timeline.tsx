@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   PHASE_ORDER,
   PHASE_LABELS,
@@ -7,6 +8,7 @@ import {
 } from '../types';
 import type { ProjectRecord, PhaseId, RoadmapEntry, ValidationEntry } from '../types';
 import { RoleBadge } from './role-badge';
+import { Spinner, PulsingDot } from './spinner';
 import type { PhaseStatus } from './phase-badge';
 
 // ---------------------------------------------------------------------------
@@ -56,15 +58,77 @@ const INDICATOR_STYLES: Record<PhaseStatus, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Phase Feedback / Rerun
+// ---------------------------------------------------------------------------
+
+interface PhaseFeedbackProps {
+  phase: PhaseId;
+  onRerunWithFeedback: (phase: PhaseId, feedback: string) => void;
+}
+
+function PhaseFeedbackInput({ phase, onRerunWithFeedback }: PhaseFeedbackProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  if (!expanded) {
+    return (
+      <button
+        data-testid={`rerun-phase-btn-${phase}`}
+        onClick={() => setExpanded(true)}
+        className="cursor-pointer mt-1.5 text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 hover:underline transition-colors"
+      >
+        Re-run this phase with feedback
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <textarea
+        data-testid={`rerun-feedback-${phase}`}
+        value={feedback}
+        onChange={(e) => setFeedback(e.target.value)}
+        placeholder="Describe what you'd like to change or improve in this phase..."
+        rows={2}
+        className="w-full rounded-md border bg-background px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary resize-none"
+      />
+      <div className="flex items-center gap-1.5">
+        <button
+          data-testid={`rerun-submit-${phase}`}
+          onClick={() => {
+            if (feedback.trim()) {
+              onRerunWithFeedback(phase, feedback.trim());
+              setExpanded(false);
+              setFeedback('');
+            }
+          }}
+          disabled={!feedback.trim()}
+          className="cursor-pointer rounded-md bg-blue-600 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Re-run Phase
+        </button>
+        <button
+          onClick={() => { setExpanded(false); setFeedback(''); }}
+          className="cursor-pointer rounded-md border px-2.5 py-1 text-[10px] text-muted-foreground hover:bg-muted transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 interface PhaseTimelineProps {
   project: ProjectRecord;
   activePhase: PhaseId | null;
+  onRerunPhase?: (phase: PhaseId, feedback: string) => void;
 }
 
-export function PhaseTimeline({ project, activePhase }: PhaseTimelineProps) {
+export function PhaseTimeline({ project, activePhase, onRerunPhase }: PhaseTimelineProps) {
   const roadmapMap = new Map<PhaseId, RoadmapEntry>();
   if (project.roadmap) {
     for (const entry of project.roadmap) {
@@ -84,6 +148,8 @@ export function PhaseTimeline({ project, activePhase }: PhaseTimelineProps) {
         const roadmap = roadmapMap.get(phase);
         const validation = validationMap.get(phase);
         const isLast = idx === PHASE_ORDER.length - 1;
+        const isActive = status === 'active';
+        const isCompleted = status === 'completed';
 
         return (
           <div key={phase} data-testid={`phase-node-${phase}`} className="relative flex gap-4">
@@ -94,27 +160,37 @@ export function PhaseTimeline({ project, activePhase }: PhaseTimelineProps) {
                 data-status={status}
                 className={INDICATOR_STYLES[status]}
               >
-                {status === 'completed' ? (
+                {isCompleted ? (
                   <CheckIcon />
+                ) : isActive ? (
+                  <PulsingDot />
                 ) : (
                   <span>{idx + 1}</span>
                 )}
               </div>
               {!isLast && (
-                <div className="w-px flex-1 min-h-4 bg-gray-200 dark:bg-gray-700" />
+                <div className={`w-px flex-1 min-h-4 ${isCompleted ? 'bg-green-300 dark:bg-green-700' : 'bg-gray-200 dark:bg-gray-700'}`} />
               )}
             </div>
 
             {/* Phase content */}
-            <div className={`pb-6 min-w-0 flex-1 ${status === 'upcoming' ? 'opacity-60' : ''}`}>
+            <div className={`pb-6 min-w-0 flex-1 ${status === 'upcoming' ? 'opacity-50' : ''}`}>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium">{PHASE_LABELS[phase]}</span>
+                <span className={`text-sm font-medium ${isActive ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+                  {PHASE_LABELS[phase]}
+                </span>
                 <RoleBadge role={PHASE_ROLE_MAP[phase]} />
                 {validation && (
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${DECISION_STYLES[validation.decision] ?? ''}`}
                   >
                     {DECISION_LABELS[validation.decision] ?? validation.decision}
+                  </span>
+                )}
+                {isActive && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                    <Spinner size="sm" className="text-blue-500" />
+                    In progress
                   </span>
                 )}
               </div>
@@ -140,6 +216,14 @@ export function PhaseTimeline({ project, activePhase }: PhaseTimelineProps) {
                 <p className="mt-1 text-xs text-muted-foreground italic">
                   {validation.feedback}
                 </p>
+              )}
+
+              {/* Rerun with feedback - available for completed phases */}
+              {isCompleted && onRerunPhase && (
+                <PhaseFeedbackInput
+                  phase={phase}
+                  onRerunWithFeedback={onRerunPhase}
+                />
               )}
             </div>
           </div>

@@ -1,8 +1,9 @@
 'use client';
 
 type UUIDv7 = string;
-import type { WorkspaceRun, UserInputRequest, BridgeJobRef } from '../views/skill-view-props';
+import type { WorkspaceRun, UserInputRequest, BridgeJobRef, SkillWorkspaceRef } from '../views/skill-view-props';
 import { StudioInputPanel } from './studio-input-panel';
+import { Spinner, PulsingDot } from './spinner';
 
 const RUN_STATUS_STYLES: Record<string, string> = {
   running: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -14,17 +15,91 @@ const RUN_STATUS_STYLES: Record<string, string> = {
   waiting_bridge_job: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
 };
 
+const RUN_STATUS_LABELS: Record<string, string> = {
+  running: 'Processing...',
+  paused: 'Paused',
+  completed: 'Completed',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+  waiting_user_input: 'Awaiting your input',
+  waiting_bridge_job: 'Executing bridge command',
+};
+
+const BRIDGE_JOB_STATUS_STYLES: Record<string, string> = {
+  pending: 'text-muted-foreground',
+  running: 'text-blue-600 dark:text-blue-400',
+  completed: 'text-green-600 dark:text-green-400',
+  failed: 'text-red-600 dark:text-red-400',
+  terminated: 'text-gray-600 dark:text-gray-400',
+};
+
 function WorkspaceRunPanel({ run }: { run: WorkspaceRun }) {
+  const isActive = run.status === 'running' || run.status === 'waiting_bridge_job';
+
   return (
-    <div data-testid="workspace-run-panel" className="rounded-md border p-3 space-y-1">
+    <div data-testid="workspace-run-panel" className="rounded-md border p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">Active Run</span>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${RUN_STATUS_STYLES[run.status] ?? ''}`}>
-          {run.status.replace(/_/g, ' ')}
+        <span className="text-xs font-semibold">Active Run</span>
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${RUN_STATUS_STYLES[run.status] ?? ''}`}>
+          {isActive && <PulsingDot />}
+          {RUN_STATUS_LABELS[run.status] ?? run.status.replace(/_/g, ' ')}
         </span>
       </div>
-      {run.currentStep && <p className="text-xs text-muted-foreground">{run.currentStep}</p>}
-      {run.progress.message && <p className="text-xs text-muted-foreground">{run.progress.message}</p>}
+
+      {/* Current step - what's happening right now */}
+      {run.currentStep && (
+        <div className="rounded bg-muted/50 px-2.5 py-1.5">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Current Step</p>
+          <p className="text-xs font-medium mt-0.5">{run.currentStep}</p>
+        </div>
+      )}
+
+      {/* Progress message - detailed activity */}
+      {run.progress.message && (
+        <div className="rounded bg-muted/50 px-2.5 py-1.5">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Activity</p>
+          <p className="text-xs mt-0.5">{run.progress.message}</p>
+        </div>
+      )}
+
+      {/* Phase and role context */}
+      {(run.currentPhase || run.currentRole) && (
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          {run.currentPhase && <span>Phase: {run.currentPhase.replace(/-/g, ' ')}</span>}
+          {run.currentRole && <span>Role: {run.currentRole.replace(/-/g, ' ')}</span>}
+        </div>
+      )}
+
+      {/* Progress bar */}
+      {run.stepCount != null && run.stepBudget != null && run.stepBudget > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>Steps</span>
+            <span className="tabular-nums">{run.stepCount} / {run.stepBudget}</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${Math.min(100, (run.stepCount / run.stepBudget) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Waiting indicator */}
+      {run.waitingFor?.kind && run.waitingFor.kind !== 'none' && (
+        <div className="flex items-center gap-2 text-[10px]">
+          <Spinner size="sm" className="text-muted-foreground" />
+          <span className="text-muted-foreground">
+            {run.waitingFor.kind === 'user_input' && 'Waiting for your input...'}
+            {run.waitingFor.kind === 'bridge_job' && 'Waiting for bridge job...'}
+            {run.waitingFor.kind !== 'user_input' && run.waitingFor.kind !== 'bridge_job' && `Waiting: ${run.waitingFor.kind}`}
+          </span>
+          {run.waitingFor.prompt && (
+            <span className="text-muted-foreground truncate">{run.waitingFor.prompt}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -44,18 +119,18 @@ function WorkspaceRunControls({ run, onPause, onCancel, onContinue, onRetry }: {
     <div data-testid="workspace-run-controls" className="flex gap-2">
       {isRunning && (
         <>
-          <button onClick={onPause} className="rounded-md border px-2 py-1 text-xs hover:bg-accent">Pause</button>
-          <button onClick={onCancel} className="rounded-md border px-2 py-1 text-xs text-destructive hover:bg-accent">Cancel</button>
+          <button onClick={onPause} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent active:bg-accent/80 transition-colors">Pause</button>
+          <button onClick={onCancel} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors">Cancel</button>
         </>
       )}
       {isPaused && (
         <>
-          <button onClick={onContinue} className="rounded-md border px-2 py-1 text-xs hover:bg-accent">Continue</button>
-          <button onClick={onCancel} className="rounded-md border px-2 py-1 text-xs text-destructive hover:bg-accent">Cancel</button>
+          <button onClick={onContinue} className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors">Continue</button>
+          <button onClick={onCancel} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors">Cancel</button>
         </>
       )}
       {isFailed && (
-        <button onClick={onRetry} className="rounded-md border px-2 py-1 text-xs hover:bg-accent">Retry</button>
+        <button onClick={onRetry} className="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors">Retry</button>
       )}
     </div>
   );
@@ -64,14 +139,20 @@ function WorkspaceRunControls({ run, onPause, onCancel, onContinue, onRetry }: {
 function WorkspaceBridgeJobs({ jobs }: { jobs: BridgeJobRef[] }) {
   if (jobs.length === 0) return null;
   return (
-    <div data-testid="workspace-bridge-jobs" className="space-y-1">
-      <h4 className="text-xs font-medium text-muted-foreground">Bridge Jobs</h4>
-      {jobs.map((job) => (
-        <div key={job.id} className="flex items-center justify-between text-xs rounded-md border px-2 py-1.5">
-          <span className="truncate">{job.summary.command}</span>
-          <span className="shrink-0 text-muted-foreground">{job.status}</span>
-        </div>
-      ))}
+    <div data-testid="workspace-bridge-jobs" className="space-y-1.5">
+      <h4 className="text-xs font-semibold text-muted-foreground">Bridge Jobs</h4>
+      {jobs.map((job) => {
+        const isRunning = job.status === 'running' || job.status === 'pending';
+        return (
+          <div key={job.id} className="flex items-center gap-2 text-xs rounded-md border px-2.5 py-2">
+            {isRunning && <Spinner size="sm" className="text-blue-500 shrink-0" />}
+            <span className="truncate flex-1 font-mono text-[11px]">{job.summary.command}</span>
+            <span className={`shrink-0 text-[10px] font-medium ${BRIDGE_JOB_STATUS_STYLES[job.status] ?? 'text-muted-foreground'}`}>
+              {job.status}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -80,6 +161,7 @@ interface ActiveRunSidebarProps {
   activeRun: WorkspaceRun | null;
   inputRequests: UserInputRequest[];
   bridgeJobs: BridgeJobRef[];
+  workspace?: SkillWorkspaceRef | null;
   onPause: () => void;
   onCancel: () => void;
   onContinue: () => void;
@@ -92,6 +174,7 @@ export function ActiveRunSidebar({
   activeRun,
   inputRequests,
   bridgeJobs,
+  workspace,
   onPause,
   onCancel,
   onContinue,
@@ -105,12 +188,6 @@ export function ActiveRunSidebar({
     <div data-testid="active-run-sidebar" className="space-y-4">
       <WorkspaceRunPanel run={activeRun} />
 
-      {activeRun.stepCount != null && activeRun.stepBudget != null && (
-        <p className="text-xs text-muted-foreground">
-          Steps: {activeRun.stepCount} / {activeRun.stepBudget}
-        </p>
-      )}
-
       <WorkspaceRunControls
         run={activeRun}
         onPause={onPause}
@@ -123,13 +200,20 @@ export function ActiveRunSidebar({
         requests={inputRequests}
         onAnswer={onAnswerInput}
         onCancel={onCancelInput}
+        workspace={workspace}
       />
 
       {activeRun.status === 'waiting_bridge_job' && bridgeJobs.length > 0 && (
-        <div data-testid="bridge-job-waiting-indicator" className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-          <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
-            Waiting for bridge job to complete
-          </p>
+        <div data-testid="bridge-job-waiting-indicator" className="flex items-center gap-2.5 rounded-md border border-purple-200 bg-purple-50 p-3 dark:border-purple-800 dark:bg-purple-950">
+          <Spinner size="sm" className="text-purple-600 dark:text-purple-400" />
+          <div>
+            <p className="text-xs font-medium text-purple-900 dark:text-purple-100">
+              Executing bridge command
+            </p>
+            <p className="text-[10px] text-purple-700 dark:text-purple-300">
+              {bridgeJobs[bridgeJobs.length - 1]?.summary.command}
+            </p>
+          </div>
         </div>
       )}
 

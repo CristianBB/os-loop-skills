@@ -32,7 +32,8 @@
           "review-artifact",
           "status-report",
           "run-implementation-subphase",
-          "redirect"
+          "redirect",
+          "resume-after-input"
         ],
         "description": "The studio action to perform"
       },
@@ -261,7 +262,7 @@
     "requiresWorkspace": true,
     "supportsBackgroundExecution": true,
     "supportsRoleBasedExecution": true,
-    "maxStepsPerRun": 150,
-    "defaultStepBudget": 40
+    "maxStepsPerRun": 250,
+    "defaultStepBudget": 60
   }
 }

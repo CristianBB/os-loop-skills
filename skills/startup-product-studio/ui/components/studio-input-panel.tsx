@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 type UUIDv7 = string;
-import type { UserInputRequest } from '../views/skill-view-props';
+import type { UserInputRequest, SkillWorkspaceRef } from '../views/skill-view-props';
 import { ArchitectureGateDecisionPanel } from './architecture-gate-decision-panel';
+import { DialoguePanel } from './dialogue-panel';
 import { GateDecisionPanel } from './gate-decision-panel';
 import { ImplPlanGateDecisionPanel } from './impl-plan-gate-decision-panel';
 import { QaGateDecisionPanel } from './qa-gate-decision-panel';
 import { RoadmapGateDecisionPanel } from './roadmap-gate-decision-panel';
 import { ARCHITECTURE_SECTION_LABELS, ARCHITECTURE_SECTION_IDS, IMPL_PLAN_TASK_TYPE_LABELS, QA_CHECK_STATUS_LABELS } from '../types';
-import type { ArchitectureSectionId, ImplPlanTaskType, ImplPlanRiskSeverity, QaCheckStatus, QaOverallVerdict } from '../types';
+import type { ArchitectureSectionId, PhaseDialogue, ImplPlanTaskType, ImplPlanRiskSeverity, QaCheckStatus, QaOverallVerdict } from '../types';
 
 // ---------------------------------------------------------------------------
 // Schema detection
@@ -80,6 +81,34 @@ function isRoadmapGateSchema(schema: Record<string, unknown>): boolean {
   return enumValues.includes('approve-with-changes');
 }
 
+function isDialogueInputSchema(schema: Record<string, unknown>): boolean {
+  const properties = schema.properties as Record<string, unknown> | undefined;
+  if (!properties) return false;
+  return '_dialogueQuestionId' in properties || 'answer' in properties;
+}
+
+function resolveCurrentDialogue(workspace: SkillWorkspaceRef | null): PhaseDialogue | null {
+  if (!workspace) return null;
+  const state = workspace.state as Record<string, unknown> | undefined;
+  if (!state) return null;
+  const projects = state.projects as Array<Record<string, unknown>> | undefined;
+  if (!Array.isArray(projects)) return null;
+
+  const activeProjectId = state.activeProjectId as string | undefined;
+  const activeProject = activeProjectId
+    ? projects.find((p) => p.id === activeProjectId)
+    : projects[0];
+  if (!activeProject) return null;
+
+  const phaseDialogues = activeProject.phaseDialogues as Record<string, PhaseDialogue> | undefined;
+  if (!phaseDialogues) return null;
+
+  const currentPhase = activeProject.currentPhase as string | undefined;
+  if (!currentPhase) return null;
+
+  return phaseDialogues[currentPhase] ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -97,13 +126,14 @@ interface StudioInputPanelProps {
   onAnswer: (id: UUIDv7, response: Record<string, unknown>) => void;
   onCancel: (id: UUIDv7) => void;
   artifacts?: ArtifactSummary[];
+  workspace?: SkillWorkspaceRef | null;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function StudioInputPanel({ requests, onAnswer, onCancel, artifacts }: StudioInputPanelProps) {
+export function StudioInputPanel({ requests, onAnswer, onCancel, artifacts, workspace }: StudioInputPanelProps) {
   const pending = requests.filter((r) => r.status === 'pending');
   if (pending.length === 0) return null;
 
@@ -120,6 +150,17 @@ export function StudioInputPanel({ requests, onAnswer, onCancel, artifacts }: St
     <div data-testid="studio-input-panel" className="space-y-3">
       <h2 className="text-sm font-medium">Pending Input</h2>
       {pending.map((req) => {
+        if (isDialogueInputSchema(req.inputSchema)) {
+          return (
+            <DialoguePanel
+              key={req.id}
+              request={req}
+              workspace={workspace ?? null}
+              onAnswer={onAnswer}
+              onCancel={onCancel}
+            />
+          );
+        }
         if (isArchitectureGateSchema(req.inputSchema)) {
           return (
             <ArchitectureGateDecisionPanel

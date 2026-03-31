@@ -1,6 +1,7 @@
 'use client';
 
 import type { ImplementationPhaseRecord, RoadmapPhaseStatus, TaskGroupProgressStatus } from '../types';
+import { Spinner, PulsingDot } from './spinner';
 
 interface RoadmapPhaseProgressProps {
   records: ImplementationPhaseRecord[];
@@ -19,6 +20,8 @@ const STATUS_CONFIG: Record<RoadmapPhaseStatus, { label: string; className: stri
   failed: { label: 'Failed', className: 'bg-red-100 text-red-800' },
 };
 
+const ACTIVE_STATUSES = new Set<RoadmapPhaseStatus>(['planning', 'implementing', 'qa_validating', 'pm_reviewing']);
+
 const TASK_GROUP_STATUS_CONFIG: Record<TaskGroupProgressStatus, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-muted text-muted-foreground' },
   running: { label: 'Running', className: 'bg-blue-100 text-blue-800' },
@@ -29,13 +32,32 @@ const TASK_GROUP_STATUS_CONFIG: Record<TaskGroupProgressStatus, { label: string;
 export function RoadmapPhaseProgress({ records, activeIndex }: RoadmapPhaseProgressProps) {
   if (records.length === 0) return null;
 
+  const completedCount = records.filter((r) => r.status === 'completed').length;
+
   return (
     <div data-testid="roadmap-phase-progress" className="rounded-lg border bg-card p-4 space-y-3">
-      <h3 className="text-sm font-medium">Implementation Sub-Phases</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium">Implementation Sub-Phases</h3>
+        <span className="text-[10px] text-muted-foreground">
+          {completedCount}/{records.length} completed
+        </span>
+      </div>
+
+      {/* Overall progress bar */}
+      {records.length > 0 && (
+        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-green-500 transition-all duration-500"
+            style={{ width: `${(completedCount / records.length) * 100}%` }}
+          />
+        </div>
+      )}
+
       <div className="space-y-2">
         {records.map((record, index) => {
           const config = STATUS_CONFIG[record.status] ?? STATUS_CONFIG.not_started;
           const isActive = index === activeIndex;
+          const isProcessing = ACTIVE_STATUSES.has(record.status);
 
           const hasTaskGroups = record.taskGroupProgress && record.taskGroupProgress.length > 0;
           const completedGroups = hasTaskGroups
@@ -46,11 +68,14 @@ export function RoadmapPhaseProgress({ records, activeIndex }: RoadmapPhaseProgr
             <div key={record.id} className="space-y-1">
             <div
               data-testid={`phase-record-${record.id}`}
-              className={`flex items-center justify-between rounded-md border px-3 py-2 text-xs ${
-                isActive ? 'ring-2 ring-primary border-primary' : ''
+              className={`flex items-center justify-between rounded-md border px-3 py-2.5 text-xs transition-all ${
+                isActive ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
+                {isActive && isProcessing && (
+                  <Spinner size="sm" className="text-blue-500 shrink-0" />
+                )}
                 <span className="font-medium truncate">{record.label}</span>
                 {record.involvedProjectIds && record.involvedProjectIds.length > 0 && (
                   <span
@@ -65,7 +90,7 @@ export function RoadmapPhaseProgress({ records, activeIndex }: RoadmapPhaseProgr
                   <span
                     data-testid={`goals-count-${record.id}`}
                     className="text-[10px] text-muted-foreground"
-                    title={`${record.goals.length} goal(s)`}
+                    title={record.goals.join('\n')}
                   >
                     {record.goals.length}G
                   </span>
@@ -74,36 +99,9 @@ export function RoadmapPhaseProgress({ records, activeIndex }: RoadmapPhaseProgr
                   <span
                     data-testid={`deliverables-count-${record.id}`}
                     className="text-[10px] text-muted-foreground"
-                    title={`${record.deliverables.length} deliverable(s)`}
+                    title={record.deliverables.join('\n')}
                   >
                     {record.deliverables.length}D
-                  </span>
-                )}
-                {record.validationCriteria && record.validationCriteria.length > 0 && (
-                  <span
-                    data-testid={`criteria-count-${record.id}`}
-                    className="text-[10px] text-muted-foreground"
-                    title={`${record.validationCriteria.length} validation criteria`}
-                  >
-                    {record.validationCriteria.length}V
-                  </span>
-                )}
-                {record.architectureSlices && record.architectureSlices.length > 0 && (
-                  <span
-                    data-testid={`arch-slices-count-${record.id}`}
-                    className="text-[10px] text-muted-foreground"
-                    title={record.architectureSlices.join(', ')}
-                  >
-                    {record.architectureSlices.length}A
-                  </span>
-                )}
-                {record.technicalDependencies && record.technicalDependencies.length > 0 && (
-                  <span
-                    data-testid={`tech-deps-count-${record.id}`}
-                    className="text-[10px] text-muted-foreground"
-                    title={record.technicalDependencies.join(', ')}
-                  >
-                    {record.technicalDependencies.length}T
                   </span>
                 )}
               </div>
@@ -127,17 +125,30 @@ export function RoadmapPhaseProgress({ records, activeIndex }: RoadmapPhaseProgr
                 {hasTaskGroups && (
                   <span
                     data-testid={`task-groups-count-${record.id}`}
-                    className="text-[10px] text-muted-foreground"
+                    className="text-[10px] text-muted-foreground tabular-nums"
                     title={`${completedGroups}/${record.taskGroupProgress.length} task groups`}
                   >
-                    {completedGroups}/{record.taskGroupProgress.length}G
+                    {completedGroups}/{record.taskGroupProgress.length}
                   </span>
                 )}
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${config.className}`}>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${config.className}`}>
+                  {isActive && isProcessing && <PulsingDot />}
                   {config.label}
                 </span>
               </div>
             </div>
+
+            {/* Active phase goals */}
+            {isActive && record.goals && record.goals.length > 0 && (
+              <div className="ml-4 rounded bg-muted/50 px-3 py-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Goals</p>
+                <ul className="space-y-0.5">
+                  {record.goals.map((goal, gi) => (
+                    <li key={gi} className="text-[11px] text-muted-foreground">• {goal}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {hasTaskGroups && isActive && (
               <div data-testid={`task-group-details-${record.id}`} className="ml-4 space-y-1">
@@ -152,11 +163,14 @@ export function RoadmapPhaseProgress({ records, activeIndex }: RoadmapPhaseProgr
                     <div
                       key={`${record.id}-group-${gi}`}
                       data-testid={`task-group-${record.id}-${gi}`}
-                      className={`flex items-center justify-between rounded border px-2 py-1 text-[10px] ${
-                        isActiveGroup ? 'ring-1 ring-primary border-primary' : ''
+                      className={`flex items-center justify-between rounded border px-2.5 py-1.5 text-[10px] transition-all ${
+                        isActiveGroup ? 'ring-1 ring-primary border-primary bg-primary/5' : ''
                       }`}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
+                        {isActiveGroup && group.status === 'running' && (
+                          <Spinner size="sm" className="text-blue-500 shrink-0" />
+                        )}
                         <span className="font-medium truncate">{group.groupLabel}</span>
                         <span className="text-muted-foreground">{group.taskIds.length}T</span>
                       </div>

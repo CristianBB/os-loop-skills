@@ -188,7 +188,11 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
 
             {/* Pending action prompt: no active run and current phase not completed */}
             {!displayRun && activeProject && (() => {
-              const currentPhase = (workspace.currentPhase as PhaseId) ?? activeProject.currentPhase;
+              const wsPhase = workspace.currentPhase as PhaseId | null;
+              // If workspace.currentPhase is stale (already completed), fall back to project state
+              const currentPhase = (wsPhase && !activeProject.completedPhases.includes(wsPhase))
+                ? wsPhase
+                : activeProject.currentPhase;
               const phaseCompleted = activeProject.completedPhases.includes(currentPhase);
               if (phaseCompleted) return null;
               const phaseLabel = PHASE_LABELS[currentPhase] ?? currentPhase.replace(/-/g, ' ');

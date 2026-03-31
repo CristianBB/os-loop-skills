@@ -4536,6 +4536,7 @@ async function handleRunPhaseDialogue(
   if (phaseConfig?.nextPhase) {
     project.currentPhase = phaseConfig.nextPhase;
     host.events.emitProgress(1.0, `${targetPhase} complete — advancing to ${phaseConfig.nextPhase}`);
+    await host.workspace.setPhase(phaseConfig.nextPhase);
   }
   await host.workspace.setState(state);
 

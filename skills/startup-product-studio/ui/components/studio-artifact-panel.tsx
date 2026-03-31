@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { SkillWorkspaceArtifact } from '../views/skill-view-props';
 import type { ProjectRecord } from '../types';
 import { RoadmapArtifactRenderer } from './roadmap-artifact-renderer';
@@ -81,6 +83,10 @@ function ArtifactRow({ artifact }: { artifact: SkillWorkspaceArtifact }) {
             <QaReportArtifactRenderer content={artifact.content} />
           ) : artifact.type === 'implementation-phase-plan' ? (
             <ImplementationPhasePlanArtifactRenderer content={artifact.content} />
+          ) : typeof artifact.content.raw === 'string' ? (
+            <div className="prose prose-xs dark:prose-invert max-w-none">
+              <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.raw}</Markdown>
+            </div>
           ) : (
             <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
               {JSON.stringify(artifact.content, null, 2)}

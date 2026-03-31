@@ -81,33 +81,33 @@ export function StudioHeader({ workspace, studioState, activeProject, activeRun 
       {isRunning && (
         <div
           data-testid="activity-strip"
-          className="flex items-center gap-2.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800 dark:bg-blue-950"
+          className="flex items-center gap-2.5 rounded-md border-2 border-blue-400 bg-blue-100 px-3 py-2 dark:border-blue-500 dark:bg-blue-900"
         >
-          <Spinner size="sm" className="text-blue-600 dark:text-blue-400" />
+          <Spinner size="sm" className="text-blue-700 dark:text-blue-200" />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-medium text-blue-900 dark:text-blue-100">
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-950 dark:text-white">
               {currentPhase && PHASE_LABELS[currentPhase] && (
                 <span>{PHASE_LABELS[currentPhase]}</span>
               )}
               {isKnownRole && (
-                <span className="text-blue-600 dark:text-blue-300">
+                <span className="text-blue-700 dark:text-blue-200">
                   ({ROLE_LABELS[currentRole]})
                 </span>
               )}
             </div>
             {activeRun.currentStep && (
-              <p className="text-[11px] text-blue-700 dark:text-blue-300 truncate">
+              <p className="text-[11px] text-blue-900 dark:text-blue-100 truncate">
                 {activeRun.currentStep}
               </p>
             )}
             {activeRun.progress.message && (
-              <p className="text-[11px] text-blue-600 dark:text-blue-400 truncate">
+              <p className="text-[11px] text-blue-800 dark:text-blue-200 truncate">
                 {activeRun.progress.message}
               </p>
             )}
           </div>
           {activeRun.stepCount != null && activeRun.stepBudget != null && (
-            <span className="shrink-0 text-[10px] text-blue-500 dark:text-blue-400 tabular-nums">
+            <span className="shrink-0 text-[10px] text-blue-800 dark:text-blue-200 tabular-nums">
               {activeRun.stepCount}/{activeRun.stepBudget}
             </span>
           )}
@@ -117,10 +117,10 @@ export function StudioHeader({ workspace, studioState, activeProject, activeRun 
       {activeRun?.status === 'waiting_user_input' && (
         <div
           data-testid="input-required-strip"
-          className="flex items-center gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950"
+          className="flex items-center gap-2.5 rounded-md border-2 border-amber-400 bg-amber-100 px-3 py-2 dark:border-amber-500 dark:bg-amber-900"
         >
-          <span className="text-amber-600 text-sm">⏳</span>
-          <p className="text-xs font-medium text-amber-900 dark:text-amber-100">
+          <span className="text-amber-700 dark:text-amber-200 text-sm">⏳</span>
+          <p className="text-xs font-semibold text-amber-950 dark:text-white">
             Your input is required to continue — see the panel below
           </p>
         </div>

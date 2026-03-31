@@ -57,7 +57,7 @@ function ArtifactRow({ artifact }: { artifact: SkillWorkspaceArtifact }) {
     <div className="rounded-md border bg-card text-xs">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between px-3 py-2 hover:bg-accent transition-colors text-left"
+        className="cursor-pointer flex w-full items-center justify-between px-3 py-2 hover:bg-accent active:bg-accent/80 transition-colors text-left"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium truncate">{artifact.title}</span>

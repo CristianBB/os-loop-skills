@@ -155,42 +155,42 @@ export function RoadmapGateDecisionPanel({
           <button
             data-testid="roadmap-gate-btn-approve"
             onClick={() => handleImmediate('approve')}
-            className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors"
+            className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors"
           >
             Approve
           </button>
           <button
             data-testid="roadmap-gate-btn-approve-with-changes"
             onClick={() => handleOpenEditPanel('approve-with-changes')}
-            className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 transition-colors"
+            className="cursor-pointer rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 active:bg-teal-800 transition-colors"
           >
             Approve with Changes
           </button>
           <button
             data-testid="roadmap-gate-btn-revise"
             onClick={() => handleOpenEditPanel('revise')}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+            className="cursor-pointer rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 active:bg-amber-800 transition-colors"
           >
             Revise
           </button>
           <button
             data-testid="roadmap-gate-btn-reject"
             onClick={() => handleOpenEditPanel('reject')}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors"
+            className="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
           >
             Reject
           </button>
           <button
             data-testid="roadmap-gate-btn-pause"
             onClick={() => handleImmediate('pause')}
-            className="rounded-md bg-slate-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 transition-colors"
+            className="cursor-pointer rounded-md bg-slate-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 active:bg-slate-800 transition-colors"
           >
             Pause
           </button>
           <button
             data-testid="roadmap-gate-btn-cancel"
             onClick={() => handleImmediate('cancel')}
-            className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+            className="cursor-pointer rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 active:bg-red-100 dark:hover:bg-red-950 dark:active:bg-red-900 transition-colors"
           >
             Cancel
           </button>
@@ -313,14 +313,14 @@ export function RoadmapGateDecisionPanel({
           <button
             data-testid="roadmap-gate-submit"
             onClick={handleSubmit}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors"
           >
             {SUBMIT_LABELS[editMode] ?? 'Submit'}
           </button>
           <button
             data-testid="roadmap-gate-back"
             onClick={() => setEditMode(null)}
-            className="rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+            className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted active:bg-muted/80 transition-colors"
           >
             Back
           </button>

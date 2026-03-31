@@ -25,7 +25,7 @@ export function StudioWorkspaceCard({ workspace }: StudioWorkspaceCardProps) {
   return (
     <div
       data-testid="studio-workspace-card"
-      className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 hover:bg-accent transition-colors"
+      className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 cursor-pointer hover:bg-accent hover:border-primary/30 active:bg-accent/80 transition-all"
     >
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-medium truncate">{workspace.name}</p>

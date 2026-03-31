@@ -50,39 +50,39 @@ export function GateDecisionPanel({ request, onAnswer, onCancel }: GateDecisionP
       <p className="text-xs text-muted-foreground">{request.message}</p>
 
       {feedbackMode === null ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             data-testid="gate-btn-approve"
             onClick={handleApprove}
-            className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors"
+            className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors"
           >
             Approve
           </button>
           <button
             data-testid="gate-btn-revise"
             onClick={() => handleDecisionWithFeedback('revise')}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+            className="cursor-pointer rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 active:bg-amber-800 transition-colors"
           >
             Revise
           </button>
           <button
             data-testid="gate-btn-reject"
             onClick={() => handleDecisionWithFeedback('reject')}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors"
+            className="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
           >
             Reject
           </button>
           <button
             data-testid="gate-btn-pause"
             onClick={handlePause}
-            className="rounded-md bg-slate-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 transition-colors"
+            className="cursor-pointer rounded-md bg-slate-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 active:bg-slate-800 transition-colors"
           >
             Pause
           </button>
           <button
             data-testid="gate-btn-cancel"
             onClick={handleCancelDecision}
-            className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+            className="cursor-pointer rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors"
           >
             Cancel
           </button>
@@ -100,14 +100,14 @@ export function GateDecisionPanel({ request, onAnswer, onCancel }: GateDecisionP
             <button
               data-testid="gate-submit"
               onClick={handleSubmitFeedback}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors"
             >
               Submit {feedbackMode === 'revise' ? 'Revision Request' : 'Rejection'}
             </button>
             <button
               data-testid="gate-cancel"
               onClick={() => setFeedbackMode(null)}
-              className="rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+              className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted active:bg-muted/80 transition-colors"
             >
               Back
             </button>

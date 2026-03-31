@@ -17,7 +17,7 @@ export function ProjectSelector({ projects, activeProjectId, onSelect }: Project
       data-testid="project-selector"
       value={activeProjectId ?? ''}
       onChange={(e) => onSelect(e.target.value)}
-      className="rounded-md border bg-background px-2 py-1 text-sm"
+      className="cursor-pointer rounded-md border bg-background px-2 py-1 text-sm"
     >
       {projects.map((p) => (
         <option key={p.id} value={p.id}>

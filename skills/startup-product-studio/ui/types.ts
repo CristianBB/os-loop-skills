@@ -129,6 +129,7 @@ export interface ProjectRecord {
   approvedRoadmapTopology: RoadmapProjectTopologyEntry[] | null;
   architecturePlanVersions: ArchitecturePlanVersion[];
   approvedArchitecturePlan: ArchitecturePlanArtifactContent | null;
+  phaseDialogues?: Record<string, PhaseDialogue>;
   createdAt: string;
   updatedAt: string;
 }
@@ -898,3 +899,31 @@ export const ARCHITECTURE_SECTION_IDS: readonly ArchitectureSectionId[] = [
   'integrationArchitecture', 'securityAndTrustModel', 'deploymentAndEnvironmentModel',
   'qualityAttributes', 'phaseMapping', 'implementationGuidelines', 'openRisks', 'openQuestions',
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Interactive Dialogue Model
+// ---------------------------------------------------------------------------
+
+export type DialogueTurnStatus = 'pending' | 'answered' | 'challenged' | 'accepted';
+
+export interface DialogueTurn {
+  id: string;
+  role: RoleId;
+  questionId: string;
+  question: string;
+  answer: string | null;
+  llmReaction: string | null;
+  status: DialogueTurnStatus;
+  timestamp: string;
+}
+
+export interface PhaseDialogue {
+  phaseId: PhaseId;
+  activeRole: RoleId;
+  turns: DialogueTurn[];
+  currentQuestionIndex: number;
+  satisfactionReached: boolean;
+  synthesisGenerated: boolean;
+  dialogueStartedAt: string;
+  dialogueCompletedAt: string | null;
+}

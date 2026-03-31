@@ -22,8 +22,8 @@ export function WorkspaceListView({ context }: SkillViewProps) {
   );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="h-full flex flex-col overflow-hidden min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold">Product Studio</h1>
           <button
@@ -48,6 +48,10 @@ export function WorkspaceListView({ context }: SkillViewProps) {
               <div
                 key={ws.id}
                 onClick={() => navigateToWorkspace(ws.id)}
+                className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigateToWorkspace(ws.id); }}
               >
                 <StudioWorkspaceCard workspace={ws} />
               </div>

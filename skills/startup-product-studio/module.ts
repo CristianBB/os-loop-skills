@@ -1668,6 +1668,8 @@ async function handleCreateProject(
 
   const rawCodeProjects = (args.codeProjects as Array<{ name: string; type: string; techStack?: string }>) ?? [];
 
+  host.events.emitProgress(0.1, 'Validating project parameters...');
+
   const codeProjects: CodeProject[] = rawCodeProjects.map((cp) => ({
     id: generateId(),
     name: cp.name,
@@ -1677,6 +1679,8 @@ async function handleCreateProject(
     bootstrapStatus: null,
     bootstrapBridgeJobId: null,
   }));
+
+  host.events.emitProgress(0.2, 'Initializing project structure...');
 
   const project: ProjectRecord = {
     id: generateId(),
@@ -1707,6 +1711,7 @@ async function handleCreateProject(
   await host.workspace.setPhase('discovery');
 
   host.run.reportStep('create-project', 'product-manager');
+  host.events.emitProgress(0.3, 'Creating project brief artifact...');
 
   const artifact = await host.workspace.createArtifact({
     type: 'project-brief',
@@ -1726,8 +1731,16 @@ async function handleCreateProject(
   await host.run.checkpoint();
 
   host.log.info('Project created', { projectId: project.id, projectName, codeProjectCount: codeProjects.length });
-  host.events.emitProgress(1.0, `Project "${projectName}" created`);
+  host.events.emitProgress(0.5, `Project "${projectName}" created — starting Discovery phase...`);
 
+  // Auto-chain into discovery dialogue so the user immediately sees the first question
+  const discoveryDialogue = PHASE_DIALOGUE_CONFIGS['discovery'];
+  if (discoveryDialogue && hasBudgetFor(host, 3)) {
+    host.log.info('Auto-chaining discovery dialogue after project creation');
+    return handleRunPhaseDialogue(host, state, project, 'discovery', discoveryDialogue);
+  }
+
+  // Fallback: return if no dialogue config or insufficient budget
   return {
     success: true,
     message: `Project "${projectName}" created with ${codeProjects.length} code project(s). Current phase: discovery.`,
@@ -1887,6 +1900,8 @@ Quality requirements:
     maxTokens: 8000,
   });
 
+  host.events.emitProgress(0.45, 'Product Manager: Roadmap draft complete, validating structure...');
+
   let canonical: RoadmapArtifactContent;
   try {
     canonical = JSON.parse(roadmapResult.text.trim());
@@ -1895,6 +1910,8 @@ Quality requirements:
   }
   validateRoadmapCanonical(canonical);
   roleFlow.push('product-manager');
+
+  host.events.emitProgress(0.5, 'Roadmap structure validated — preparing CEO review...');
 
   // ── Step 3: CEO Strategic Validation (optional) ───────────────────────────
   let strategicValidation: CeoStrategicValidation | undefined;
@@ -4365,6 +4382,10 @@ async function handleRunPhaseDialogue(
       }
 
       host.run.reportStep(`evaluate-${qDef.id}`, dialogueConfig.primaryRole);
+      host.events.emitProgress(
+        (dialogue.currentQuestionIndex + 0.5) / dialogueConfig.questions.length,
+        `${ROLE_LABELS[dialogueConfig.primaryRole]}: Evaluating your answer to "${qDef.title}"...`,
+      );
 
       // Build dialogue context for LLM
       const dialogueContext = dialogue.turns
@@ -4402,6 +4423,10 @@ async function handleRunPhaseDialogue(
         if (verdict === 'accepted') {
           turn.status = 'accepted';
           dialogue.currentQuestionIndex++;
+          host.events.emitProgress(
+            (dialogue.currentQuestionIndex) / dialogueConfig.questions.length,
+            `${ROLE_LABELS[dialogueConfig.primaryRole]}: Answer accepted — moving to next question`,
+          );
         } else {
           // Check challenge count — max 2 challenges per question
           const challengeCount = dialogue.turns.filter(
@@ -4413,8 +4438,16 @@ async function handleRunPhaseDialogue(
             turn.status = 'accepted';
             turn.llmReaction = `[Accepted after pushback] ${reaction}`;
             dialogue.currentQuestionIndex++;
+            host.events.emitProgress(
+              (dialogue.currentQuestionIndex) / dialogueConfig.questions.length,
+              `${ROLE_LABELS[dialogueConfig.primaryRole]}: Accepted after pushback — moving on`,
+            );
           } else {
             turn.status = 'challenged';
+            host.events.emitProgress(
+              (dialogue.currentQuestionIndex + 0.7) / dialogueConfig.questions.length,
+              `${ROLE_LABELS[dialogueConfig.primaryRole]}: Pushing back — needs more specificity`,
+            );
           }
         }
       } catch {
@@ -4434,6 +4467,8 @@ async function handleRunPhaseDialogue(
 
   // Generate synthesis artifacts using all dialogue answers as rich context
   if (!dialogue.synthesisGenerated) {
+    host.events.emitProgress(0.8, 'All questions answered — synthesizing discovery artifacts...');
+
     const answersContext = dialogue.turns
       .filter((t) => t.status === 'accepted')
       .map((t) => `## ${t.questionId}\nQ: ${t.question}\nA: ${t.answer}${t.llmReaction ? `\nReaction: ${t.llmReaction}` : ''}`)
@@ -4442,7 +4477,9 @@ async function handleRunPhaseDialogue(
     // Now run the existing batch phase steps using the dialogue answers as context
     const config = PHASE_CONFIGS[targetPhase];
     if (config) {
-      for (const step of config.steps) {
+      const totalSynthesisSteps = config.steps.length;
+      for (let si = 0; si < totalSynthesisSteps; si++) {
+        const step = config.steps[si];
         if (!hasBudgetFor(host, 2)) break;
 
         const existingArtifact = findArtifactByTypeForStep(
@@ -4452,7 +4489,10 @@ async function handleRunPhaseDialogue(
         if (existingArtifact && existingArtifact.status !== 'rejected') continue;
 
         host.run.reportStep(`synthesis-${step.id}`, step.role);
-        host.events.emitProgress(0.8, `Synthesizing: ${step.description}`);
+        host.events.emitProgress(
+          0.8 + (si / totalSynthesisSteps) * 0.15,
+          `Synthesizing (${si + 1}/${totalSynthesisSteps}): ${step.description}`,
+        );
 
         const synthesisPrompt = `Based on the following interactive dialogue with the founder, generate the ${step.artifactType} artifact.\n\n${answersContext}\n\nProject context:\n${buildProjectContext(project)}\n\nGenerate structured, actionable output for: ${step.description}`;
 
@@ -4483,6 +4523,7 @@ async function handleRunPhaseDialogue(
     dialogue.synthesisGenerated = true;
     dialogue.dialogueCompletedAt = new Date().toISOString();
     await host.workspace.setState(state);
+    host.events.emitProgress(0.95, `${targetPhase} synthesis complete — finalizing phase`);
   }
 
   // Mark phase as completed
@@ -4494,6 +4535,7 @@ async function handleRunPhaseDialogue(
   const phaseConfig = PHASE_CONFIGS[targetPhase];
   if (phaseConfig?.nextPhase) {
     project.currentPhase = phaseConfig.nextPhase;
+    host.events.emitProgress(1.0, `${targetPhase} complete — advancing to ${phaseConfig.nextPhase}`);
   }
   await host.workspace.setState(state);
 

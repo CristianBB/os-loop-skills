@@ -451,13 +451,13 @@ function FallbackInputPanel({
       <div className="flex items-center gap-2 pt-1">
         <button
           onClick={handleSubmit}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors"
         >
           Submit
         </button>
         <button
           onClick={() => onCancel(request.id)}
-          className="rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+          className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted active:bg-muted/80 transition-colors"
         >
           Cancel
         </button>

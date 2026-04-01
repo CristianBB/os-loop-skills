@@ -217,16 +217,23 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
               );
             })()}
 
+            {context.actionError && (
+              <div data-testid="action-error-banner" className="rounded-md border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/50 p-3 text-xs text-red-800 dark:text-red-200">
+                <p className="font-medium">Action failed</p>
+                <p className="mt-1 break-words">{context.actionError}</p>
+              </div>
+            )}
+
             {displayRun && (
               <ActiveRunSidebar
                 activeRun={displayRun}
                 inputRequests={inputRequests}
                 bridgeJobs={bridgeJobs}
                 workspace={workspace}
-                onPause={() => pauseRun(displayRun.id)}
-                onCancel={() => cancelRun(displayRun.id)}
-                onContinue={() => continueRun(displayRun.id)}
-                onRetry={() => retryRun(displayRun.id)}
+                onPause={() => { pauseRun(displayRun.id).catch(() => {}); }}
+                onCancel={() => { cancelRun(displayRun.id).catch(() => {}); }}
+                onContinue={() => { continueRun(displayRun.id).catch(() => {}); }}
+                onRetry={() => { retryRun(displayRun.id).catch(() => {}); }}
                 onAnswerInput={answerUserInput}
                 onCancelInput={cancelUserInput}
               />

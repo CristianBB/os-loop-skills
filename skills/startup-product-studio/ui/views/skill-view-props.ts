@@ -32,6 +32,9 @@ export interface SkillUIRuntimeContext {
 
   /** Execute a skill action directly (e.g. redirect, run-phase). */
   executeSkillAction: (args: Record<string, unknown>) => Promise<void>;
+
+  /** Last error from a run action (retry, pause, cancel, etc.). Null when no error. */
+  actionError: string | null;
 }
 
 export interface SkillViewProps {

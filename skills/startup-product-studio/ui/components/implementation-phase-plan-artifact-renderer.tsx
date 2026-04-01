@@ -64,7 +64,7 @@ export function ImplementationPhasePlanArtifactRenderer({ content }: Implementat
             </div>
           )}
         </div>
-        <div className="prose prose-xs dark:prose-invert max-w-none">
+        <div className="prose prose-xs max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-code:text-foreground">
           <Markdown remarkPlugins={[remarkGfm]}>{plan.body}</Markdown>
         </div>
       </div>

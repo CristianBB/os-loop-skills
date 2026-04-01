@@ -84,15 +84,15 @@ function ArtifactRow({ artifact }: { artifact: SkillWorkspaceArtifact }) {
           ) : artifact.type === 'implementation-phase-plan' ? (
             <ImplementationPhasePlanArtifactRenderer content={artifact.content} />
           ) : typeof artifact.content.raw === 'string' ? (
-            <div className="prose prose-xs dark:prose-invert max-w-none">
+            <div className="prose prose-xs max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-code:text-foreground">
               <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.raw}</Markdown>
             </div>
           ) : typeof artifact.content.body === 'string' ? (
-            <div className="prose prose-xs dark:prose-invert max-w-none">
+            <div className="prose prose-xs max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-code:text-foreground">
               <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.body}</Markdown>
             </div>
           ) : typeof artifact.content.markdown === 'string' ? (
-            <div className="prose prose-xs dark:prose-invert max-w-none">
+            <div className="prose prose-xs max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-code:text-foreground">
               <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.markdown}</Markdown>
             </div>
           ) : (

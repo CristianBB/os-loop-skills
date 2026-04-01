@@ -40,7 +40,7 @@ export function QaReportArtifactRenderer({ content }: QaReportArtifactRendererPr
 
   return (
     <div data-testid="qa-report-view" className="space-y-4 text-xs">
-      <div className="prose prose-xs dark:prose-invert max-w-none">
+      <div className="prose prose-xs max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-code:text-foreground">
         <Markdown remarkPlugins={[remarkGfm]}>{body}</Markdown>
       </div>
 

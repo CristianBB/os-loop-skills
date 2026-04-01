@@ -571,6 +571,9 @@ interface ProjectRecord {
   roadmap: RoadmapEntry[] | null;
   codeProjects: CodeProject[];
   artifactIds: string[];
+  /** Cached artifact bodies keyed by artifact ID — used to propagate context between phases.
+   *  The host API's listArtifacts() strips content, so we store bodies here. */
+  artifactBodies: Record<string, { body: string; type: string; phase: string }>;
   businessContext: BusinessContext | null;
   targetUsers: UserPersona[];
   constraints: Constraints;
@@ -1125,6 +1128,64 @@ ${codeProjectsDesc}`;
   }
 
   return context;
+}
+
+/** Backbone artifact types that are always included in full (they carry cross-phase decisions). */
+const BACKBONE_ARTIFACT_TYPES = new Set([
+  'business-context', 'roadmap', 'architecture-plan', 'product-vision', 'mvp-definition',
+]);
+
+/** Max characters per artifact body in context. */
+const ARTIFACT_BODY_LIMIT = 3000;
+/** Max total characters for the entire artifact context block. */
+const ARTIFACT_CONTEXT_BUDGET = 12000;
+
+/**
+ * Builds a context string from previously generated artifact bodies stored in project state.
+ * Prioritises backbone artifacts and the immediately preceding phase, truncating older/less
+ * critical artifacts to stay within token budget.
+ */
+function buildArtifactContext(project: ProjectRecord, currentPhase?: string): string {
+  const bodies = project.artifactBodies ?? {};
+  const entries = Object.values(bodies);
+  if (entries.length === 0) return '';
+
+  // Determine immediately preceding phase for priority
+  const phaseIdx = currentPhase ? PHASE_ORDER.indexOf(currentPhase as PhaseId) : -1;
+  const prevPhase = phaseIdx > 0 ? PHASE_ORDER[phaseIdx - 1] : null;
+
+  // Sort: backbone first, then previous phase, then rest
+  const sorted = [...entries].sort((a, b) => {
+    const aBack = BACKBONE_ARTIFACT_TYPES.has(a.type) ? 0 : 1;
+    const bBack = BACKBONE_ARTIFACT_TYPES.has(b.type) ? 0 : 1;
+    if (aBack !== bBack) return aBack - bBack;
+    const aPrev = a.phase === prevPhase ? 0 : 1;
+    const bPrev = b.phase === prevPhase ? 0 : 1;
+    return aPrev - bPrev;
+  });
+
+  const sections: string[] = [];
+  let totalLen = 0;
+
+  for (const entry of sorted) {
+    if (totalLen >= ARTIFACT_CONTEXT_BUDGET) break;
+
+    const remaining = ARTIFACT_CONTEXT_BUDGET - totalLen;
+    const limit = Math.min(ARTIFACT_BODY_LIMIT, remaining - 80); // 80 chars for header
+    if (limit <= 0) break;
+
+    const truncated = entry.body.length > limit
+      ? entry.body.slice(0, limit) + '\n[... truncated]'
+      : entry.body;
+
+    const section = `### ${entry.type} (${entry.phase})\n${truncated}`;
+    sections.push(section);
+    totalLen += section.length;
+  }
+
+  return sections.length > 0
+    ? `\n\n--- Previously Generated Artifacts ---\n${sections.join('\n\n')}`
+    : '';
 }
 
 function buildArchitectureContextForPhase(
@@ -1691,6 +1752,7 @@ async function handleCreateProject(
     roadmap: null,
     codeProjects,
     artifactIds: [],
+    artifactBodies: {},
     businessContext: null,
     targetUsers: [],
     constraints: { timeline: null, budget: null, technical: [], regulatory: [] },
@@ -1775,6 +1837,7 @@ async function handleGenerateRoadmap(
   }
 
   const projectContext = buildProjectContext(project);
+  const artifactContext = buildArtifactContext(project, 'roadmap-definition');
 
   // ── Step 1: CEO Strategic Framing ──────────────────────────────────────────
   await host.workspace.setRole('ceo');
@@ -1806,7 +1869,7 @@ You are producing a strategic brief to guide the Product Manager's roadmap gener
 Ground every field in the specific product context. No generic advice. Be concrete about market positioning, risks, and scope boundaries.`,
     messages: [{
       role: 'user',
-      content: `Produce a strategic brief for roadmap generation for this product:\n\n${projectContext}${feedback ? `\n\nUser feedback on the previous roadmap version:\n${feedback}` : ''}${previousCanonical ? `\n\nPrevious roadmap for reference:\n${JSON.stringify(previousCanonical, null, 2)}` : ''}`,
+      content: `Produce a strategic brief for roadmap generation for this product:\n\n${projectContext}${artifactContext}${feedback ? `\n\nUser feedback on the previous roadmap version:\n${feedback}` : ''}${previousCanonical ? `\n\nPrevious roadmap for reference:\n${JSON.stringify(previousCanonical, null, 2)}` : ''}`,
     }],
     temperature: 0.2,
     maxTokens: 3000,
@@ -1894,7 +1957,7 @@ Quality requirements:
 - Define project structure (projectTopology) early and reference it consistently across phases.`,
     messages: [{
       role: 'user',
-      content: `Generate a canonical product roadmap for this product:\n\n${projectContext}\n\nCEO Strategic Brief:\n${JSON.stringify(strategicBrief, null, 2)}${feedback ? `\n\nUser feedback on the previous roadmap version:\n${feedback}` : ''}${previousCanonical ? `\n\nPrevious roadmap for reference:\n${JSON.stringify(previousCanonical, null, 2)}` : ''}`,
+      content: `Generate a canonical product roadmap for this product:\n\n${projectContext}${artifactContext}\n\nCEO Strategic Brief:\n${JSON.stringify(strategicBrief, null, 2)}${feedback ? `\n\nUser feedback on the previous roadmap version:\n${feedback}` : ''}${previousCanonical ? `\n\nPrevious roadmap for reference:\n${JSON.stringify(previousCanonical, null, 2)}` : ''}`,
     }],
     temperature: 0.2,
     maxTokens: 8000,
@@ -1993,6 +2056,7 @@ Be specific. If the roadmap is well-aligned, return "aligned" with empty arrays 
   });
 
   project.artifactIds.push(artifact.id);
+  project.artifactBodies[artifact.id] = { body: JSON.stringify(canonical, null, 2), type: 'roadmap', phase: 'roadmap-definition' };
   await host.workspace.setState(state);
 
   host.events.emitProgress(0.8, 'Roadmap generated, requesting approval');
@@ -2221,6 +2285,7 @@ You are applying targeted changes to an approved roadmap. Do NOT redesign the ro
       });
       await host.workspace.updateArtifact(newArtifact.id, { status: 'approved' });
       project.artifactIds.push(newArtifact.id);
+      project.artifactBodies[newArtifact.id] = { body: JSON.stringify(updatedCanonical, null, 2), type: 'roadmap', phase: 'roadmap-definition' };
       project.updatedAt = new Date().toISOString();
       await host.workspace.setState(state);
       await host.run.checkpoint();
@@ -2376,6 +2441,7 @@ Quality requirements:
         parentArtifactId: currentArtifact.id,
       });
       project.artifactIds.push(newArtifact.id);
+      project.artifactBodies[newArtifact.id] = { body: JSON.stringify(revisedCanonical, null, 2), type: 'roadmap', phase: 'roadmap-definition' };
       await host.workspace.setState(state);
 
       host.events.emitProgress(0.8, `Roadmap revised (v${newVersionNumber}), requesting approval`);
@@ -3465,6 +3531,7 @@ async function handleRunImplementationSubphase(
   record.planArtifactId = planArtifact.id;
   artifactIds.push(planArtifact.id);
   project.artifactIds.push(planArtifact.id);
+  project.artifactBodies[planArtifact.id] = { body: JSON.stringify(planContent, null, 2), type: 'implementation-phase-plan', phase: 'implementation-phase' };
 
   // Record initial version
   const initialPlanVersion: ImplementationPlanVersion = {
@@ -3615,6 +3682,7 @@ Schema:\n${implPlanSchema}`,
       record.planArtifactId = newPlanArtifact.id;
       artifactIds.push(newPlanArtifact.id);
       project.artifactIds.push(newPlanArtifact.id);
+      project.artifactBodies[newPlanArtifact.id] = { body: JSON.stringify(updatedPlanContent, null, 2), type: 'implementation-phase-plan', phase: 'implementation-phase' };
       record.userDecision = 'approve';
       currentPlanContent = updatedPlanContent;
       await host.workspace.setState(state);
@@ -3717,6 +3785,7 @@ Schema:\n${implPlanSchema}`,
       record.planArtifactId = newPlanArtifact.id;
       artifactIds.push(newPlanArtifact.id);
       project.artifactIds.push(newPlanArtifact.id);
+      project.artifactBodies[newPlanArtifact.id] = { body: JSON.stringify(revisedPlanContent, null, 2), type: 'implementation-phase-plan', phase: 'implementation-phase' };
       await host.workspace.setState(state);
 
       currentPlanContent = revisedPlanContent;
@@ -3790,6 +3859,7 @@ Schema:\n${implPlanSchema}`,
   record.implementationReportArtifactId = reportArtifact.id;
   artifactIds.push(reportArtifact.id);
   project.artifactIds.push(reportArtifact.id);
+  project.artifactBodies[reportArtifact.id] = { body: reportResult.text.trim(), type: 'implementation-report', phase: 'implementation-phase' };
   await host.workspace.setState(state);
 
   // 4. QA Validation — structured JSON report
@@ -3848,6 +3918,7 @@ Schema:\n${implPlanSchema}`,
   record.qaReportArtifactId = qaArtifact.id;
   artifactIds.push(qaArtifact.id);
   project.artifactIds.push(qaArtifact.id);
+  project.artifactBodies[qaArtifact.id] = { body: JSON.stringify(qaReport, null, 2), type: 'qa-report', phase: 'implementation-phase' };
   await host.workspace.setState(state);
 
   // 5. PM Alignment Check
@@ -3882,6 +3953,7 @@ Schema:\n${implPlanSchema}`,
   });
   artifactIds.push(pmArtifact.id);
   project.artifactIds.push(pmArtifact.id);
+  project.artifactBodies[pmArtifact.id] = { body: pmResult.text.trim(), type: 'pm-review', phase: 'implementation-phase' };
   await host.workspace.setState(state);
   await host.run.checkpoint();
 
@@ -4076,7 +4148,7 @@ Quality requirements:
 - Every project in projectTopology must appear in at least one runtimeArchitecture section.`,
     messages: [{
       role: 'user',
-      content: `Generate a canonical architecture plan for this product:\n\n${projectContext}${roadmapContext}${topologyContext}`,
+      content: `Generate a canonical architecture plan for this product:\n\n${projectContext}${buildArtifactContext(project, 'architecture-definition')}${roadmapContext}${topologyContext}`,
     }],
     temperature: 0.2,
     maxTokens: 8000,
@@ -4098,6 +4170,7 @@ Quality requirements:
     createdByRole: 'software-architect',
   });
 
+  project.artifactBodies[artifact.id] = { body: JSON.stringify(canonical, null, 2), type: 'architecture-plan', phase: 'architecture-definition' };
   project.architecturePlanVersions.push({
     id: generateId(),
     version: 1,
@@ -4509,11 +4582,11 @@ async function handleRunPhaseDialogue(
           const artifact = await host.workspace.createArtifact({
             type: step.artifactType,
             title: step.description,
-            status: 'draft',
             content,
-            role: step.role,
+            createdByRole: step.role,
           });
           project.artifactIds.push(artifact.id);
+          project.artifactBodies[artifact.id] = { body: result.text.trim(), type: step.artifactType, phase: targetPhase };
         } catch (err) {
           host.log.warn('Synthesis step failed', { step: step.id, error: String(err) });
         }
@@ -4590,7 +4663,9 @@ async function handleRunPhase(
   }
 
   await host.workspace.setPhase(targetPhase);
+  await host.workspace.setRole(config.primaryRole);
   const projectContext = buildProjectContext(project);
+  const artifactContext = buildArtifactContext(project, targetPhase);
   const existingArtifacts = await host.workspace.listArtifacts();
   const createdArtifactIds: string[] = [];
   const totalSteps = config.steps.length;
@@ -4641,7 +4716,7 @@ async function handleRunPhase(
       systemPrompt,
       messages: [{
         role: 'user',
-        content: `${projectContext}\n\nPhase: ${targetPhase}\nTask: ${step.description}\n\nProduce a detailed, actionable ${step.artifactType} deliverable for this product. Be specific and thorough. Reference the code projects where applicable.`,
+        content: `${projectContext}${artifactContext}\n\nPhase: ${targetPhase}\nTask: ${step.description}\n\nProduce a detailed, actionable ${step.artifactType} deliverable for this product. Be specific and thorough. Reference the code projects where applicable. Build upon the findings and decisions from previously generated artifacts above.`,
       }],
       temperature: 0.2,
       maxTokens: 2000,
@@ -4664,6 +4739,7 @@ async function handleRunPhase(
 
     createdArtifactIds.push(artifact.id);
     project.artifactIds.push(artifact.id);
+    project.artifactBodies[artifact.id] = { body: llmResult.text.trim(), type: step.artifactType, phase: targetPhase };
 
     // Populate enriched project fields from discovery phase artifacts
     if (step.artifactType === 'business-context') {
@@ -4717,6 +4793,7 @@ async function handleRunPhase(
   }
 
   // Phase summary artifact
+  await host.workspace.setRole(config.primaryRole);
   host.run.reportStep(`${targetPhase}-summary`, config.primaryRole);
   host.events.emitProgress(
     (totalSteps + 1) / (totalSteps + 2),
@@ -4728,7 +4805,7 @@ async function handleRunPhase(
     systemPrompt: ROLE_PROMPTS[config.primaryRole],
     messages: [{
       role: 'user',
-      content: `${projectContext}\n\nSummarize the deliverables produced during the "${targetPhase}" phase. List key decisions made, artifacts created (${createdArtifactIds.length} total), and any open questions or risks that need user attention before proceeding to the next phase.`,
+      content: `${projectContext}${artifactContext}\n\nSummarize the deliverables produced during the "${targetPhase}" phase. List key decisions made, artifacts created (${createdArtifactIds.length} total), and any open questions or risks that need user attention before proceeding to the next phase.`,
     }],
     temperature: 0.2,
     maxTokens: 1500,
@@ -4749,6 +4826,7 @@ async function handleRunPhase(
   });
   createdArtifactIds.push(summaryArtifact.id);
   project.artifactIds.push(summaryArtifact.id);
+  project.artifactBodies[summaryArtifact.id] = { body: summaryResult.text.trim(), type: 'phase-summary', phase: targetPhase };
   await host.workspace.setState(state);
 
   // Bridge-backed code execution for implementation phase
@@ -5034,6 +5112,7 @@ You are applying targeted changes to an approved architecture plan. Do NOT redes
           };
           project.architecturePlanVersions.push(newArchVersion);
           project.artifactIds.push(newArchArtifact.id);
+          project.artifactBodies[newArchArtifact.id] = { body: JSON.stringify(updatedArchCanonical, null, 2), type: 'architecture-plan', phase: 'architecture-definition' };
           createdArtifactIds.push(newArchArtifact.id);
           project.approvedArchitecturePlan = updatedArchCanonical;
           project.updatedAt = new Date().toISOString();
@@ -5136,6 +5215,7 @@ Quality requirements:
           };
           project.architecturePlanVersions.push(newArchVersion);
           project.artifactIds.push(newArchArtifact.id);
+          project.artifactBodies[newArchArtifact.id] = { body: JSON.stringify(revisedArchCanonical, null, 2), type: 'architecture-plan', phase: 'architecture-definition' };
           createdArtifactIds.push(newArchArtifact.id);
           project.updatedAt = new Date().toISOString();
           await host.workspace.setState(state);

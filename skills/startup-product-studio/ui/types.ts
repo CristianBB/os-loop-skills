@@ -119,6 +119,7 @@ export interface ProjectRecord {
   roadmap: RoadmapEntry[] | null;
   codeProjects: CodeProject[];
   artifactIds: string[];
+  artifactBodies: Record<string, { body: string; type: string; phase: string }>;
   businessContext: BusinessContext | null;
   targetUsers: UserPersona[];
   constraints: Constraints;

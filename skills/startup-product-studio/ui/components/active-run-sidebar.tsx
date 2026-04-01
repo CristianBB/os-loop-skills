@@ -121,11 +121,11 @@ function WorkspaceRunControls({ run, onPause, onCancel, onContinue, onRetry }: {
 }) {
   const status = run.status;
   const isTerminal = TERMINAL_STATUSES.has(status);
-  const isFailed = status === 'failed';
+  const canRetry = status === 'failed' || status === 'cancelled';
   const canPause = status === 'running';
   const canContinue = status === 'paused' || status === 'recovering';
 
-  if (isTerminal && !isFailed) return null;
+  if (isTerminal && !canRetry) return null;
 
   return (
     <div data-testid="workspace-run-controls" className="flex gap-2">
@@ -135,7 +135,7 @@ function WorkspaceRunControls({ run, onPause, onCancel, onContinue, onRetry }: {
       {canPause && (
         <button onClick={onPause} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent active:bg-accent/80 transition-colors">Pause</button>
       )}
-      {isFailed && (
+      {canRetry && (
         <button onClick={onRetry} className="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors">Retry</button>
       )}
       {!isTerminal && (

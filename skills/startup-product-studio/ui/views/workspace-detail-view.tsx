@@ -40,12 +40,12 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
   const studioState = workspace ? parseStudioState(workspace.state) : null;
   const activeProject = studioState ? getActiveProject(studioState) : null;
 
-  // Show the most recent failed run when no active run exists, so the user
-  // can see the Retry button after a timeout or failure.
-  const lastFailedRun = !activeRun
-    ? runs.find((r) => r.status === 'failed') ?? null
+  // Show the most recent failed/cancelled run when no active run exists, so
+  // the user can see the Retry button after a failure or cancellation.
+  const lastTerminalRun = !activeRun
+    ? runs.find((r) => r.status === 'failed' || r.status === 'cancelled') ?? null
     : null;
-  const displayRun = activeRun ?? lastFailedRun;
+  const displayRun = activeRun ?? lastTerminalRun;
 
   if (!workspace || !studioState) {
     return (

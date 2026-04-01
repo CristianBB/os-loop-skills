@@ -6,24 +6,32 @@ import { StudioInputPanel } from './studio-input-panel';
 import { Spinner, PulsingDot } from './spinner';
 
 const RUN_STATUS_STYLES: Record<string, string> = {
+  queued: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
   running: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   paused: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  recovering: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
   completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
   waiting_user_input: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  waiting_approval: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
   waiting_bridge_job: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
 };
 
 const RUN_STATUS_LABELS: Record<string, string> = {
+  queued: 'Queued',
   running: 'Processing...',
   paused: 'Paused',
+  recovering: 'Recovering...',
   completed: 'Completed',
   failed: 'Failed',
   cancelled: 'Cancelled',
   waiting_user_input: 'Awaiting your input',
+  waiting_approval: 'Awaiting approval',
   waiting_bridge_job: 'Executing bridge command',
 };
+
+const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled']);
 
 const BRIDGE_JOB_STATUS_STYLES: Record<string, string> = {
   pending: 'text-muted-foreground',
@@ -111,26 +119,27 @@ function WorkspaceRunControls({ run, onPause, onCancel, onContinue, onRetry }: {
   onContinue: () => void;
   onRetry: () => void;
 }) {
-  const isRunning = run.status === 'running';
-  const isPaused = run.status === 'paused';
-  const isFailed = run.status === 'failed';
+  const status = run.status;
+  const isTerminal = TERMINAL_STATUSES.has(status);
+  const isFailed = status === 'failed';
+  const canPause = status === 'running';
+  const canContinue = status === 'paused' || status === 'recovering';
+
+  if (isTerminal && !isFailed) return null;
 
   return (
     <div data-testid="workspace-run-controls" className="flex gap-2">
-      {isRunning && (
-        <>
-          <button onClick={onPause} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent active:bg-accent/80 transition-colors">Pause</button>
-          <button onClick={onCancel} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors">Cancel</button>
-        </>
+      {canContinue && (
+        <button onClick={onContinue} className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors">Continue</button>
       )}
-      {isPaused && (
-        <>
-          <button onClick={onContinue} className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors">Continue</button>
-          <button onClick={onCancel} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors">Cancel</button>
-        </>
+      {canPause && (
+        <button onClick={onPause} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent active:bg-accent/80 transition-colors">Pause</button>
       )}
       {isFailed && (
         <button onClick={onRetry} className="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors">Retry</button>
+      )}
+      {!isTerminal && (
+        <button onClick={onCancel} className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors">Cancel</button>
       )}
     </div>
   );

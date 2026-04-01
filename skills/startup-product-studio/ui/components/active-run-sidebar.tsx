@@ -188,6 +188,15 @@ export function ActiveRunSidebar({
     <div data-testid="active-run-sidebar" className="space-y-4">
       <WorkspaceRunPanel run={activeRun} />
 
+      {activeRun.status === 'failed' && (
+        <div data-testid="run-error-display" className="rounded-md border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/50 p-2.5 text-xs text-red-800 dark:text-red-200">
+          <p className="font-medium">Run Failed</p>
+          <p className="mt-0.5">
+            {activeRun.progress.message ?? activeRun.currentStep ?? 'The run failed unexpectedly. You can retry or start a new run.'}
+          </p>
+        </div>
+      )}
+
       <WorkspaceRunControls
         run={activeRun}
         onPause={onPause}

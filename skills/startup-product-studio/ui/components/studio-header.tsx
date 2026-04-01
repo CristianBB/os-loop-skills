@@ -81,33 +81,33 @@ export function StudioHeader({ workspace, studioState, activeProject, activeRun 
       {isRunning && (
         <div
           data-testid="activity-strip"
-          className="flex items-center gap-2.5 rounded-md border-2 border-blue-400 bg-blue-100 px-3 py-2 dark:border-blue-500 dark:bg-blue-900"
+          className="flex items-center gap-2.5 rounded-md border-2 border-blue-700 bg-blue-800 px-3 py-2 dark:border-blue-500 dark:bg-blue-900"
         >
-          <Spinner size="sm" className="text-blue-700 dark:text-blue-200" />
+          <Spinner size="sm" className="text-blue-200" />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-950 dark:text-white">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
               {currentPhase && PHASE_LABELS[currentPhase] && (
                 <span>{PHASE_LABELS[currentPhase]}</span>
               )}
               {isKnownRole && (
-                <span className="text-blue-700 dark:text-blue-200">
+                <span className="text-blue-200">
                   ({ROLE_LABELS[currentRole]})
                 </span>
               )}
             </div>
             {activeRun.currentStep && (
-              <p className="text-[11px] text-blue-900 dark:text-blue-100 truncate">
+              <p className="text-[11px] text-blue-100 truncate">
                 {activeRun.currentStep}
               </p>
             )}
             {activeRun.progress.message && (
-              <p className="text-[11px] text-blue-800 dark:text-blue-200 truncate">
+              <p className="text-[11px] text-blue-200 truncate">
                 {activeRun.progress.message}
               </p>
             )}
           </div>
           {activeRun.stepCount != null && activeRun.stepBudget != null && (
-            <span className="shrink-0 text-[10px] text-blue-800 dark:text-blue-200 tabular-nums">
+            <span className="shrink-0 text-[10px] text-blue-200 tabular-nums">
               {activeRun.stepCount}/{activeRun.stepBudget}
             </span>
           )}

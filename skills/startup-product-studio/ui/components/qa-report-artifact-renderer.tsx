@@ -1,5 +1,7 @@
 'use client';
 
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { isQaReportArtifactContent } from '../types';
 import type { QaArchitectureAlignmentStatus, QaCheckStatus, QaOverallVerdict } from '../types';
 
@@ -38,7 +40,9 @@ export function QaReportArtifactRenderer({ content }: QaReportArtifactRendererPr
 
   return (
     <div data-testid="qa-report-view" className="space-y-4 text-xs">
-      <div className="whitespace-pre-wrap">{body}</div>
+      <div className="prose prose-xs dark:prose-invert max-w-none">
+        <Markdown remarkPlugins={[remarkGfm]}>{body}</Markdown>
+      </div>
 
       {overallVerdict && (
         <div className="flex items-center gap-2">

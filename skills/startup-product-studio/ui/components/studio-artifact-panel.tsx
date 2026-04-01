@@ -87,6 +87,14 @@ function ArtifactRow({ artifact }: { artifact: SkillWorkspaceArtifact }) {
             <div className="prose prose-xs dark:prose-invert max-w-none">
               <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.raw}</Markdown>
             </div>
+          ) : typeof artifact.content.body === 'string' ? (
+            <div className="prose prose-xs dark:prose-invert max-w-none">
+              <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.body}</Markdown>
+            </div>
+          ) : typeof artifact.content.markdown === 'string' ? (
+            <div className="prose prose-xs dark:prose-invert max-w-none">
+              <Markdown remarkPlugins={[remarkGfm]}>{artifact.content.markdown}</Markdown>
+            </div>
           ) : (
             <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
               {JSON.stringify(artifact.content, null, 2)}

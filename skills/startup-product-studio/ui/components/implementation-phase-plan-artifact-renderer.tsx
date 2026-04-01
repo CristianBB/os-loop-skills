@@ -1,5 +1,7 @@
 'use client';
 
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useState } from 'react';
 import { isImplementationPhasePlanArtifactContent, IMPL_PLAN_TASK_TYPE_LABELS, ROLE_LABELS } from '../types';
 import type {
@@ -62,7 +64,9 @@ export function ImplementationPhasePlanArtifactRenderer({ content }: Implementat
             </div>
           )}
         </div>
-        <p className="whitespace-pre-wrap text-muted-foreground">{plan.body}</p>
+        <div className="prose prose-xs dark:prose-invert max-w-none">
+          <Markdown remarkPlugins={[remarkGfm]}>{plan.body}</Markdown>
+        </div>
       </div>
     );
   }

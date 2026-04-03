@@ -244,7 +244,7 @@
   "lifecycleHooks": [],
   "sandbox": {
     "isolation": "standard",
-    "maxExecutionMs": 300000,
+    "maxExecutionMs": 600000,
     "maxMemoryMB": 256,
     "allowedGlobals": [],
     "networkRules": []

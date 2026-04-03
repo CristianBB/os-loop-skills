@@ -153,42 +153,48 @@ export function ArchitectureGateDecisionPanel({
           <button
             data-testid="arch-gate-btn-approve"
             onClick={() => handleImmediate('approve')}
-            className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
           >
             Approve
           </button>
           <button
             data-testid="arch-gate-btn-approve-with-changes"
             onClick={() => handleOpenEditPanel('approve-with-changes')}
-            className="cursor-pointer rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 active:bg-teal-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#0d9488', color: '#ffffff' }}
           >
             Approve with Changes
           </button>
           <button
             data-testid="arch-gate-btn-revise"
             onClick={() => handleOpenEditPanel('revise')}
-            className="cursor-pointer rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 active:bg-amber-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#d97706', color: '#ffffff' }}
           >
             Revise
           </button>
           <button
             data-testid="arch-gate-btn-reject"
             onClick={() => handleOpenEditPanel('reject')}
-            className="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
           >
             Reject
           </button>
           <button
             data-testid="arch-gate-btn-pause"
             onClick={() => handleImmediate('pause')}
-            className="cursor-pointer rounded-md bg-slate-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 active:bg-slate-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#475569', color: '#ffffff' }}
           >
             Pause
           </button>
           <button
             data-testid="arch-gate-btn-cancel"
             onClick={() => handleImmediate('cancel')}
-            className="cursor-pointer rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors"
+            className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ borderColor: '#fca5a5', color: '#dc2626' }}
           >
             Cancel
           </button>

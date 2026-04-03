@@ -54,35 +54,40 @@ export function GateDecisionPanel({ request, onAnswer, onCancel }: GateDecisionP
           <button
             data-testid="gate-btn-approve"
             onClick={handleApprove}
-            className="cursor-pointer rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 active:bg-green-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
           >
             Approve
           </button>
           <button
             data-testid="gate-btn-revise"
             onClick={() => handleDecisionWithFeedback('revise')}
-            className="cursor-pointer rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 active:bg-amber-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#d97706', color: '#ffffff' }}
           >
             Revise
           </button>
           <button
             data-testid="gate-btn-reject"
             onClick={() => handleDecisionWithFeedback('reject')}
-            className="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
           >
             Reject
           </button>
           <button
             data-testid="gate-btn-pause"
             onClick={handlePause}
-            className="cursor-pointer rounded-md bg-slate-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 active:bg-slate-800 transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ backgroundColor: '#475569', color: '#ffffff' }}
           >
             Pause
           </button>
           <button
             data-testid="gate-btn-cancel"
             onClick={handleCancelDecision}
-            className="cursor-pointer rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950 active:bg-red-100 transition-colors"
+            className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ borderColor: '#fca5a5', color: '#dc2626' }}
           >
             Cancel
           </button>

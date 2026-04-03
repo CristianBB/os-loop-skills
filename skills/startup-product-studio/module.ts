@@ -2069,12 +2069,14 @@ Be specific. If the roadmap is well-aligned, return "aligned" with empty arrays 
   project.updatedAt = new Date().toISOString();
   await host.workspace.setState(state);
 
+  const canonicalBody = JSON.stringify(canonical, null, 2);
   const artifact = await host.workspace.createArtifact({
     type: 'roadmap',
     title: `Roadmap: ${project.name}`,
     content: {
       projectId: project.id,
       projectName: project.name,
+      body: canonicalBody,
       ...canonical,
       generatedAt: new Date().toISOString(),
     },
@@ -2082,7 +2084,7 @@ Be specific. If the roadmap is well-aligned, return "aligned" with empty arrays 
   });
 
   project.artifactIds.push(artifact.id);
-  project.artifactBodies[artifact.id] = { body: JSON.stringify(canonical, null, 2), type: 'roadmap', phase: 'roadmap-definition' };
+  project.artifactBodies[artifact.id] = { body: canonicalBody, type: 'roadmap', phase: 'roadmap-definition' };
   await host.workspace.setState(state);
 
   host.events.emitProgress(0.8, 'Roadmap generated, requesting approval');
@@ -2297,12 +2299,14 @@ You are applying targeted changes to an approved roadmap. Do NOT redesign the ro
       };
       project.roadmapVersions.push(newVersion);
 
+      const updatedCanonicalBody = JSON.stringify(updatedCanonical, null, 2);
       const newArtifact = await host.workspace.createArtifact({
         type: 'roadmap',
         title: `Roadmap: ${project.name}`,
         content: {
           projectId: project.id,
           projectName: project.name,
+          body: updatedCanonicalBody,
           ...updatedCanonical,
           generatedAt: new Date().toISOString(),
         },
@@ -2311,7 +2315,7 @@ You are applying targeted changes to an approved roadmap. Do NOT redesign the ro
       });
       await host.workspace.updateArtifact(newArtifact.id, { status: 'approved' });
       project.artifactIds.push(newArtifact.id);
-      project.artifactBodies[newArtifact.id] = { body: JSON.stringify(updatedCanonical, null, 2), type: 'roadmap', phase: 'roadmap-definition' };
+      project.artifactBodies[newArtifact.id] = { body: updatedCanonicalBody, type: 'roadmap', phase: 'roadmap-definition' };
       project.updatedAt = new Date().toISOString();
       await host.workspace.setState(state);
       await host.run.checkpoint();
@@ -2454,12 +2458,14 @@ Quality requirements:
       project.updatedAt = new Date().toISOString();
       await host.workspace.setState(state);
 
+      const revisedCanonicalBody = JSON.stringify(revisedCanonical, null, 2);
       const newArtifact = await host.workspace.createArtifact({
         type: 'roadmap',
         title: `Roadmap: ${project.name}`,
         content: {
           projectId: project.id,
           projectName: project.name,
+          body: revisedCanonicalBody,
           ...revisedCanonical,
           generatedAt: new Date().toISOString(),
         },
@@ -2467,7 +2473,7 @@ Quality requirements:
         parentArtifactId: currentArtifact.id,
       });
       project.artifactIds.push(newArtifact.id);
-      project.artifactBodies[newArtifact.id] = { body: JSON.stringify(revisedCanonical, null, 2), type: 'roadmap', phase: 'roadmap-definition' };
+      project.artifactBodies[newArtifact.id] = { body: revisedCanonicalBody, type: 'roadmap', phase: 'roadmap-definition' };
       await host.workspace.setState(state);
 
       host.events.emitProgress(0.8, `Roadmap revised (v${newVersionNumber}), requesting approval`);

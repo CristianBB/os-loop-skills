@@ -47,6 +47,12 @@ interface SkillHostBridge {
   waitForJob(bridgeRunId: string): Promise<BridgeJobOutcome>;
 }
 
+interface SkillLlmOutputSchema {
+  name: string;
+  description?: string;
+  schema: Record<string, unknown>;
+}
+
 interface SkillHostCapabilities {
   llm: {
     complete(req: {
@@ -55,7 +61,8 @@ interface SkillHostCapabilities {
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       temperature?: number;
       maxTokens?: number;
-    }): Promise<{ text: string; tokensUsed: { prompt: number; completion: number } }>;
+      outputSchema?: SkillLlmOutputSchema;
+    }): Promise<{ text: string; tokensUsed: { prompt: number; completion: number }; structured?: Record<string, unknown> }>;
   };
   events: { emitProgress(progress: number, message: string): void };
   log: {
@@ -194,6 +201,7 @@ interface RoadmapVersionMetadata {
 }
 
 interface RoadmapArtifactContent {
+  body: string;
   productSummary: RoadmapProductSummary;
   productScope: RoadmapProductScope;
   projectTopology: RoadmapProjectTopologyEntry[];
@@ -314,6 +322,7 @@ interface ArchitecturePlanVersionMetadata {
 }
 
 interface ArchitecturePlanArtifactContent {
+  body: string;
   systemOverview: ArchitectureSystemOverview;
   projectTopology: ArchitectureProjectEntry[];
   runtimeArchitecture: ArchitectureRuntimeArchitecture;
@@ -698,6 +707,22 @@ const PHASE_CONFIGS: Record<PhaseId, PhaseConfig> = {
       { id: 'monitoring-plan', role: 'software-architect', purposeId: 'architecture-design', artifactType: 'monitoring-plan', description: 'Plan observability, alerting, and post-launch monitoring' },
     ],
     nextPhase: null,
+  },
+};
+
+// ── Common Structured Output Schema ─────────────────────────────────────────
+// Every artifact-producing LLM call uses this schema so that `body` is always
+// present and the UI can always extract markdown from the same field.
+
+const PHASE_ARTIFACT_SCHEMA: SkillLlmOutputSchema = {
+  name: 'PhaseArtifactOutput',
+  description: 'Structured output for a phase deliverable. The body field must contain the complete deliverable in Markdown.',
+  schema: {
+    type: 'object',
+    properties: {
+      body: { type: 'string', description: 'Complete deliverable content in Markdown format. Use headings, lists, tables, and code blocks as appropriate.' },
+    },
+    required: ['body'],
   },
 };
 
@@ -1896,6 +1921,7 @@ Ground every field in the specific product context. No generic advice. Be concre
 You are generating a canonical product roadmap informed by a CEO strategic brief. Output ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
 
 {
+  "body": "string - complete roadmap rendered in Markdown format with headings, lists, and tables. This is the human-readable version of the roadmap below.",
   "productSummary": {
     "description": "string - concise product description",
     "targetUsers": ["string - specific user segments"],
@@ -3841,8 +3867,10 @@ Schema:\n${implPlanSchema}`,
     }],
     temperature: 0.2,
     maxTokens: 1500,
+    outputSchema: PHASE_ARTIFACT_SCHEMA,
   });
 
+  const reportBody = reportResult.structured?.body as string ?? reportResult.text.trim();
   const reportArtifact = await host.workspace.createArtifact({
     type: 'implementation-report',
     title: `Implementation Report: ${record.label}`,
@@ -3850,7 +3878,7 @@ Schema:\n${implPlanSchema}`,
       projectId: project.id,
       subphaseId: record.id,
       label: record.label,
-      body: reportResult.text.trim(),
+      body: reportBody,
       bridgeJobIds: record.bridgeJobIds,
       generatedAt: new Date().toISOString(),
     },
@@ -3859,7 +3887,7 @@ Schema:\n${implPlanSchema}`,
   record.implementationReportArtifactId = reportArtifact.id;
   artifactIds.push(reportArtifact.id);
   project.artifactIds.push(reportArtifact.id);
-  project.artifactBodies[reportArtifact.id] = { body: reportResult.text.trim(), type: 'implementation-report', phase: 'implementation-phase' };
+  project.artifactBodies[reportArtifact.id] = { body: reportBody, type: 'implementation-report', phase: 'implementation-phase' };
   await host.workspace.setState(state);
 
   // 4. QA Validation — structured JSON report
@@ -3932,12 +3960,14 @@ Schema:\n${implPlanSchema}`,
     systemPrompt: ROLE_PROMPTS['product-manager'],
     messages: [{
       role: 'user',
-      content: `${projectContext}\n\nCheck alignment of implementation sub-phase "${record.label}" with product intent.${record.goals.length > 0 ? `\n\nPhase Goals:\n${record.goals.map((g) => `- ${g}`).join('\n')}` : ''}${record.deliverables.length > 0 ? `\n\nExpected Deliverables:\n${record.deliverables.map((d) => `- ${d}`).join('\n')}` : ''}\n\nDoes this implementation deliver the intended value? Is it aligned with the roadmap and product vision?\n\nQA Report (verdict: ${qaReport.overallVerdict}):\n${qaReport.body}\n\nImplementation Report:\n${reportResult.text.trim()}`,
+      content: `${projectContext}\n\nCheck alignment of implementation sub-phase "${record.label}" with product intent.${record.goals.length > 0 ? `\n\nPhase Goals:\n${record.goals.map((g) => `- ${g}`).join('\n')}` : ''}${record.deliverables.length > 0 ? `\n\nExpected Deliverables:\n${record.deliverables.map((d) => `- ${d}`).join('\n')}` : ''}\n\nDoes this implementation deliver the intended value? Is it aligned with the roadmap and product vision?\n\nQA Report (verdict: ${qaReport.overallVerdict}):\n${qaReport.body}\n\nImplementation Report:\n${reportBody}`,
     }],
     temperature: 0.2,
     maxTokens: 1000,
+    outputSchema: PHASE_ARTIFACT_SCHEMA,
   });
 
+  const pmBody = pmResult.structured?.body as string ?? pmResult.text.trim();
   const pmArtifact = await host.workspace.createArtifact({
     type: 'phase-summary',
     title: `PM Alignment: ${record.label}`,
@@ -3945,7 +3975,7 @@ Schema:\n${implPlanSchema}`,
       projectId: project.id,
       subphaseId: record.id,
       label: record.label,
-      body: pmResult.text.trim(),
+      body: pmBody,
       role: 'product-manager',
       generatedAt: new Date().toISOString(),
     },
@@ -3953,7 +3983,7 @@ Schema:\n${implPlanSchema}`,
   });
   artifactIds.push(pmArtifact.id);
   project.artifactIds.push(pmArtifact.id);
-  project.artifactBodies[pmArtifact.id] = { body: pmResult.text.trim(), type: 'pm-review', phase: 'implementation-phase' };
+  project.artifactBodies[pmArtifact.id] = { body: pmBody, type: 'pm-review', phase: 'implementation-phase' };
   await host.workspace.setState(state);
   await host.run.checkpoint();
 
@@ -4055,6 +4085,7 @@ async function generateArchitecturePlan(
 You are generating a canonical architecture plan for a product. Output ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
 
 {
+  "body": "string - complete architecture plan rendered in Markdown format with headings, diagrams (ASCII), and tables. This is the human-readable version of the plan below.",
   "systemOverview": {
     "description": "string - concise description of the whole technical system",
     "productRelationship": "string - how the architecture relates to the product vision and roadmap",
@@ -4576,17 +4607,18 @@ async function handleRunPhaseDialogue(
             messages: [{ role: 'user', content: synthesisPrompt }],
             temperature: 0.2,
             maxTokens: 2000,
+            outputSchema: PHASE_ARTIFACT_SCHEMA,
           });
 
-          const content = safeParseArtifactContent(result.text, step.artifactType);
+          const synthesisBody = result.structured?.body as string ?? result.text.trim();
           const artifact = await host.workspace.createArtifact({
             type: step.artifactType,
             title: step.description,
-            content,
+            content: { body: synthesisBody },
             createdByRole: step.role,
           });
           project.artifactIds.push(artifact.id);
-          project.artifactBodies[artifact.id] = { body: result.text.trim(), type: step.artifactType, phase: targetPhase };
+          project.artifactBodies[artifact.id] = { body: synthesisBody, type: step.artifactType, phase: targetPhase };
         } catch (err) {
           host.log.warn('Synthesis step failed', { step: step.id, error: String(err) });
         }
@@ -4620,16 +4652,6 @@ async function handleRunPhaseDialogue(
     phasesCompleted: [targetPhase],
     stepsUsed: host.run.getStepCount(),
   };
-}
-
-// Helper: safely parse artifact content from LLM text
-function safeParseArtifactContent(text: string, artifactType: string): Record<string, unknown> {
-  try {
-    const cleaned = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
-    return JSON.parse(cleaned) as Record<string, unknown>;
-  } catch {
-    return { raw: text, type: artifactType };
-  }
 }
 
 // Role label constants for dialogue prompts
@@ -4720,8 +4742,10 @@ async function handleRunPhase(
       }],
       temperature: 0.2,
       maxTokens: 2000,
+      outputSchema: PHASE_ARTIFACT_SCHEMA,
     });
 
+    const artifactBody = llmResult.structured?.body as string ?? llmResult.text.trim();
     const artifact = await host.workspace.createArtifact({
       type: step.artifactType,
       title: `${step.artifactType}: ${project.name}`,
@@ -4730,7 +4754,7 @@ async function handleRunPhase(
         phase: targetPhase,
         step: step.id,
         role: stepRole,
-        body: llmResult.text.trim(),
+        body: artifactBody,
         codeProjects: project.codeProjects.map((cp) => cp.name),
         generatedAt: new Date().toISOString(),
       },
@@ -4739,7 +4763,7 @@ async function handleRunPhase(
 
     createdArtifactIds.push(artifact.id);
     project.artifactIds.push(artifact.id);
-    project.artifactBodies[artifact.id] = { body: llmResult.text.trim(), type: step.artifactType, phase: targetPhase };
+    project.artifactBodies[artifact.id] = { body: artifactBody, type: step.artifactType, phase: targetPhase };
 
     // Populate enriched project fields from discovery phase artifacts
     if (step.artifactType === 'business-context') {
@@ -4800,24 +4824,29 @@ async function handleRunPhase(
     `${targetPhase}: Generating phase summary`,
   );
 
+  // Rebuild artifact context so it includes artifacts created during this phase
+  const freshArtifactContext = buildArtifactContext(project, targetPhase);
+
   const summaryResult = await host.llm.complete({
     purposeId: 'status-report',
     systemPrompt: ROLE_PROMPTS[config.primaryRole],
     messages: [{
       role: 'user',
-      content: `${projectContext}${artifactContext}\n\nSummarize the deliverables produced during the "${targetPhase}" phase. List key decisions made, artifacts created (${createdArtifactIds.length} total), and any open questions or risks that need user attention before proceeding to the next phase.`,
+      content: `${projectContext}${freshArtifactContext}\n\nSummarize the deliverables produced during the "${targetPhase}" phase. List key decisions made, artifacts created (${createdArtifactIds.length} total), and any open questions or risks that need user attention before proceeding to the next phase.`,
     }],
     temperature: 0.2,
     maxTokens: 1500,
+    outputSchema: PHASE_ARTIFACT_SCHEMA,
   });
 
+  const summaryBody = summaryResult.structured?.body as string ?? summaryResult.text.trim();
   const summaryArtifact = await host.workspace.createArtifact({
     type: 'phase-summary',
     title: `Phase Summary: ${targetPhase} — ${project.name}`,
     content: {
       projectId: project.id,
       phase: targetPhase,
-      body: summaryResult.text.trim(),
+      body: summaryBody,
       artifactCount: createdArtifactIds.length,
       nextPhase: config.nextPhase,
       generatedAt: new Date().toISOString(),
@@ -4826,7 +4855,7 @@ async function handleRunPhase(
   });
   createdArtifactIds.push(summaryArtifact.id);
   project.artifactIds.push(summaryArtifact.id);
-  project.artifactBodies[summaryArtifact.id] = { body: summaryResult.text.trim(), type: 'phase-summary', phase: targetPhase };
+  project.artifactBodies[summaryArtifact.id] = { body: summaryBody, type: 'phase-summary', phase: targetPhase };
   await host.workspace.setState(state);
 
   // Bridge-backed code execution for implementation phase
@@ -5569,15 +5598,17 @@ async function handleStatusReport(
     }],
     temperature: 0.2,
     maxTokens: 1500,
+    outputSchema: PHASE_ARTIFACT_SCHEMA,
   });
 
+  const statusBody = result.structured?.body as string ?? result.text.trim();
   const artifact = await host.workspace.createArtifact({
     type: 'status-report',
     title: `Status Report: ${state.studioName}`,
     content: {
       studioName: state.studioName,
       projectCount: state.projects.length,
-      body: result.text.trim(),
+      body: statusBody,
       generatedAt: new Date().toISOString(),
     },
     createdByRole: 'product-manager',
@@ -5714,6 +5745,7 @@ async function handleRedirect(
         title: `Pivot Context: ${project.name}`,
         content: {
           projectId: project.id,
+          body: `# Pivot: ${project.name}\n\n**Reason:** ${(args.feedback as string) ?? 'User-initiated pivot'}\n\n**Previous Phase:** ${project.currentPhase}\n\nThe project has been reset to the discovery phase. All previous phase completions have been cleared.`,
           pivotReason: (args.feedback as string) ?? 'User-initiated pivot',
           previousContext: pivotContext,
           previousPhase: project.currentPhase,

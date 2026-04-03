@@ -186,7 +186,7 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
               />
             )}
 
-            {/* Pending action prompt: no active run and current phase not completed */}
+            {/* Pending action prompt: no active run and current phase not started */}
             {!displayRun && activeProject && (() => {
               const wsPhase = workspace.currentPhase as PhaseId | null;
               // If workspace.currentPhase is stale (already completed), fall back to project state
@@ -195,6 +195,21 @@ export function WorkspaceDetailView({ context, workspaceId }: SkillViewProps) {
                 : activeProject.currentPhase;
               const phaseCompleted = activeProject.completedPhases.includes(currentPhase);
               if (phaseCompleted) return null;
+
+              // Hide if the phase already has artifacts (it's been started / is mid-execution)
+              const phaseHasArtifacts = artifacts.some(
+                (a) => (a.content as Record<string, unknown>)?.phase === currentPhase,
+              );
+              if (phaseHasArtifacts) return null;
+
+              // Hide if there are pending input requests (e.g. dialogue in progress)
+              const hasPendingInput = inputRequests.some((r) => r.status === 'pending');
+              if (hasPendingInput) return null;
+
+              // Hide if the phase has an active dialogue in project state
+              const phaseDialogue = activeProject.phaseDialogues?.[currentPhase];
+              if (phaseDialogue && !phaseDialogue.dialogueCompletedAt) return null;
+
               const phaseLabel = PHASE_LABELS[currentPhase] ?? currentPhase.replace(/-/g, ' ');
               return (
                 <div data-testid="pending-action-prompt" className="rounded-lg border border-dashed border-blue-300 bg-blue-50 p-4 space-y-3 dark:border-blue-700 dark:bg-blue-950">

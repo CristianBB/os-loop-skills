@@ -1,7 +1,7 @@
 {
   "name": "startup-product-studio",
   "description": "Agentic multi-workspace skill for planning, designing, architecting, implementing, validating, and iterating production-grade software products end-to-end using a startup-style workflow with CEO, Product, UX/UI, Architecture, Development, and QA roles. Supports multi-project codebases, phased roadmaps, user approvals, and Claude Code-based implementation through the bridge.",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "author": "OS Loop",
   "schemaVersion": "2.0",
   "capabilities": [

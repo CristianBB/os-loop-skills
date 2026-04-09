@@ -594,6 +594,9 @@ interface ProjectRecord {
   architecturePlanVersions: ArchitecturePlanVersion[];
   approvedArchitecturePlan: ArchitecturePlanArtifactContent | null;
   phaseDialogues?: Record<string, PhaseDialogue>;
+  /** Tracks which approval gate is currently waiting for user input.
+   *  Set before each requestInput() call, cleared on resume. */
+  pendingGateType?: 'roadmap-gate' | 'architecture-gate' | 'phase-gate' | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -2143,6 +2146,8 @@ Be specific. If the roadmap is well-aligned, return "aligned" with empty arrays 
     };
   }
 
+  project.pendingGateType = 'roadmap-gate';
+  await host.workspace.setState(state);
   await host.run.checkpoint();
   host.run.reportStep('roadmap-approval', 'product-manager');
   let gateResponse = (await host.run.requestInput({
@@ -2482,6 +2487,8 @@ Quality requirements:
       currentArtifact = newArtifact;
       currentRoadmapVersion = newRoadmapVersion;
 
+      project.pendingGateType = 'roadmap-gate';
+      await host.workspace.setState(state);
       await host.run.checkpoint();
       host.run.reportStep(`roadmap-approval-v${newVersionNumber}`, 'product-manager');
       gateResponse = (await host.run.requestInput({
@@ -4329,10 +4336,758 @@ const PHASE_DIALOGUE_CONFIGS: Partial<Record<PhaseId, PhaseDialogueConfig>> = {
   },
 };
 
+// ── Gate Response Handlers ─────────────────────────────────────────────────
+// These process user approval decisions after resume, without re-running the
+// entire phase handler. This prevents the infinite approval loop that occurs
+// when handleRunPhase is blindly re-invoked on resume.
+
+async function handleRoadmapGateResume(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  inputResponse: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const project = getActiveProject(state);
+  const projectContext = buildProjectContext(project);
+
+  // Reconstruct context from persisted state
+  const latestVersion = project.roadmapVersions[project.roadmapVersions.length - 1] ?? null;
+  const allArtifacts = await host.workspace.listArtifacts();
+  const currentArtifact = latestVersion
+    ? allArtifacts.find((a) => a.id === latestVersion.artifactId)
+    : allArtifacts.filter((a) => a.type === 'roadmap').pop();
+
+  if (!currentArtifact || !latestVersion) {
+    host.log.warn('Cannot find roadmap artifact/version for gate resume, falling back');
+    return handleRunPhase({ targetPhase: project.currentPhase }, host, state);
+  }
+
+  const cachedBody = project.artifactBodies[currentArtifact.id];
+  let currentCanonical: RoadmapArtifactContent;
+  try {
+    currentCanonical = JSON.parse(cachedBody?.body ?? '{}');
+  } catch {
+    host.log.warn('Cannot parse cached roadmap canonical, falling back');
+    return handleRunPhase({ targetPhase: project.currentPhase }, host, state);
+  }
+
+  const decision = (inputResponse.decision as string) ?? 'approve';
+  const feedback = inputResponse.feedback as string | undefined;
+  const phaseEdits = inputResponse.phaseEdits as Array<{ phaseId: string; action: string; details: string }> | undefined;
+  const scopeChanges = inputResponse.scopeChanges as { addToIncluded?: string[]; removeFromIncluded?: string[]; addToExcluded?: string[]; removeFromExcluded?: string[] } | undefined;
+
+  // Record in validation history
+  project.validationHistory.push({
+    phase: project.currentPhase,
+    decision: decision as ValidationEntry['decision'],
+    feedback: feedback ?? null,
+    timestamp: new Date().toISOString(),
+  });
+
+  // ── pause / cancel
+  if (decision === 'pause') {
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    return {
+      success: true,
+      message: `Roadmap review paused for "${project.name}". Resume when ready.`,
+      studioState: state,
+      artifactIds: [currentArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  if (decision === 'cancel') {
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    return {
+      success: true,
+      message: `Roadmap generation cancelled for "${project.name}".`,
+      studioState: state,
+      artifactIds: [currentArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  // ── approve
+  if (decision === 'approve') {
+    await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+    latestVersion.decision = 'approve' as RoadmapVersion['decision'];
+    project.approvedRoadmapPhases = currentCanonical.phases;
+    project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+    host.log.info('Roadmap approved (via resume)', { artifactId: currentArtifact.id });
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    host.events.emitProgress(1.0, 'Roadmap approved');
+    return {
+      success: true,
+      message: `Roadmap for "${project.name}" approved with ${project.roadmap?.length ?? 0} phases`,
+      studioState: state,
+      artifactIds: [currentArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  // ── approve-with-changes
+  if (decision === 'approve-with-changes') {
+    if (!hasBudgetFor(host, 1)) {
+      await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+      latestVersion.decision = 'approve' as RoadmapVersion['decision'];
+      project.approvedRoadmapPhases = currentCanonical.phases;
+      project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+      host.log.warn('No budget for approve-with-changes, approving as-is');
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return {
+        success: true,
+        message: `Roadmap for "${project.name}" approved (no budget for requested changes)`,
+        studioState: state,
+        artifactIds: [currentArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    const editContext = buildEditContext(phaseEdits, scopeChanges);
+    const changeInstructions = [
+      feedback ? `User feedback: ${feedback}` : '',
+      editContext,
+    ].filter(Boolean).join('\n\n');
+
+    await host.workspace.setRole('product-manager');
+    host.run.reportStep('pm-apply-changes', 'product-manager');
+
+    const changeResult = await host.llm.complete({
+      purposeId: 'roadmap-generation',
+      systemPrompt: `${ROLE_PROMPTS['product-manager']}
+
+You are applying targeted changes to an approved roadmap. Do NOT redesign the roadmap. Only incorporate the specific adjustments requested. Output the COMPLETE updated roadmap as valid JSON matching the same schema as the input (no markdown fences, no explanation).`,
+      messages: [{
+        role: 'user',
+        content: `Apply these changes to the roadmap:\n\n${changeInstructions}\n\nCurrent roadmap:\n${JSON.stringify(currentCanonical, null, 2)}`,
+      }],
+      temperature: 0.1,
+      maxTokens: 8000,
+    });
+
+    let updatedCanonical: RoadmapArtifactContent;
+    try {
+      updatedCanonical = JSON.parse(changeResult.text.trim());
+    } catch {
+      host.log.warn('Failed to parse approve-with-changes result, approving original');
+      await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+      latestVersion.decision = 'approve' as RoadmapVersion['decision'];
+      project.approvedRoadmapPhases = currentCanonical.phases;
+      project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return {
+        success: true,
+        message: `Roadmap for "${project.name}" approved (change application failed, original preserved)`,
+        studioState: state,
+        artifactIds: [currentArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    await host.workspace.updateArtifact(currentArtifact.id, { status: 'superseded' });
+    const newVersionNumber = (project.roadmapVersions?.length ?? 0) + 1;
+    const roleFlow = latestVersion ? (currentCanonical.versionMetadata?.roleFlow ?? []) : [];
+    updatedCanonical.versionMetadata = {
+      generationRunId: generateId(),
+      version: newVersionNumber,
+      roleFlow: [...roleFlow, 'product-manager'],
+    };
+
+    const updatedRoadmap = deriveRoadmapEntries(updatedCanonical.phases);
+    project.roadmap = updatedRoadmap;
+    project.approvedRoadmapPhases = updatedCanonical.phases;
+    project.approvedRoadmapTopology = updatedCanonical.projectTopology ?? null;
+
+    const newVersion: RoadmapVersion = {
+      id: generateId(),
+      version: newVersionNumber,
+      entries: updatedRoadmap,
+      createdAt: new Date().toISOString(),
+      decision: 'approve' as RoadmapVersion['decision'],
+    };
+    project.roadmapVersions.push(newVersion);
+
+    const updatedCanonicalBody = JSON.stringify(updatedCanonical, null, 2);
+    const newArtifact = await host.workspace.createArtifact({
+      type: 'roadmap',
+      title: `Roadmap: ${project.name}`,
+      content: {
+        projectId: project.id,
+        projectName: project.name,
+        body: updatedCanonicalBody,
+        ...updatedCanonical,
+        generatedAt: new Date().toISOString(),
+      },
+      createdByRole: 'product-manager',
+      parentArtifactId: currentArtifact.id,
+    });
+    await host.workspace.updateArtifact(newArtifact.id, { status: 'approved' });
+    project.artifactIds.push(newArtifact.id);
+    project.artifactBodies[newArtifact.id] = { body: updatedCanonicalBody, type: 'roadmap', phase: 'roadmap-definition' };
+    project.updatedAt = new Date().toISOString();
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    host.events.emitProgress(1.0, 'Roadmap approved with changes applied');
+
+    return {
+      success: true,
+      message: `Roadmap for "${project.name}" approved with changes applied`,
+      studioState: state,
+      artifactIds: [newArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  // ── revise / reject — regenerate via handleGenerateRoadmap
+  if (decision === 'revise' || decision === 'reject') {
+    await host.workspace.updateArtifact(currentArtifact.id, {
+      status: 'superseded',
+      content: {
+        projectId: project.id,
+        projectName: project.name,
+        ...currentCanonical,
+        generatedAt: new Date().toISOString(),
+        userFeedback: feedback ?? '',
+      },
+    });
+    latestVersion.decision = decision as RoadmapVersion['decision'];
+    await host.workspace.setState(state);
+
+    const revisionCount = project.roadmapVersions.length - 1;
+    if (!hasBudgetFor(host, 3) || revisionCount >= 3) {
+      await host.run.checkpoint();
+      const reason = revisionCount >= 3
+        ? 'Maximum revision limit (3) reached'
+        : 'Insufficient step budget for regeneration';
+      return {
+        success: false,
+        message: `${reason} for "${project.name}". Last roadmap version preserved for manual redirect.`,
+        studioState: state,
+        artifactIds: [currentArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    // Delegate to full roadmap generation with feedback for revision
+    return handleGenerateRoadmap(
+      { feedback: feedback ?? '', previousCanonical: currentCanonical },
+      host,
+      state,
+    );
+  }
+
+  // Unknown decision — treat as approve
+  host.log.warn('Unknown roadmap gate decision, treating as approve', { decision });
+  await host.workspace.updateArtifact(currentArtifact.id, { status: 'approved' });
+  latestVersion.decision = 'approve' as RoadmapVersion['decision'];
+  project.approvedRoadmapPhases = currentCanonical.phases;
+  project.approvedRoadmapTopology = currentCanonical.projectTopology ?? null;
+  await host.workspace.setState(state);
+  await host.run.checkpoint();
+  return {
+    success: true,
+    message: `Roadmap for "${project.name}" approved`,
+    studioState: state,
+    artifactIds: [currentArtifact.id],
+    stepsUsed: host.run.getStepCount(),
+    phasesCompleted: [],
+  };
+}
+
+async function handleArchitectureGateResume(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  inputResponse: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const project = getActiveProject(state);
+  const projectContext = buildProjectContext(project);
+
+  // Reconstruct context from persisted state
+  const latestVersion = project.architecturePlanVersions[project.architecturePlanVersions.length - 1] ?? null;
+  const allArtifacts = await host.workspace.listArtifacts();
+  const currentArchArtifact = latestVersion
+    ? allArtifacts.find((a) => a.id === latestVersion.artifactId)
+    : allArtifacts.filter((a) => a.type === 'architecture-plan').pop();
+  const techStackArtifact = allArtifacts.find((a) => a.type === 'tech-stack-decision' && a.status !== 'rejected');
+
+  if (!currentArchArtifact || !techStackArtifact) {
+    host.log.warn('Cannot find architecture artifacts for gate resume, falling back');
+    return handleRunPhase({ targetPhase: project.currentPhase }, host, state);
+  }
+
+  const cachedBody = project.artifactBodies[currentArchArtifact.id];
+  let currentArchCanonical: ArchitecturePlanArtifactContent;
+  try {
+    currentArchCanonical = JSON.parse(cachedBody?.body ?? '{}');
+  } catch {
+    host.log.warn('Cannot parse cached architecture canonical, falling back');
+    return handleRunPhase({ targetPhase: project.currentPhase }, host, state);
+  }
+
+  const archDecision = (inputResponse.decision as string) ?? 'approve';
+  const archFeedback = inputResponse.feedback as string | undefined;
+  const archSectionEdits = inputResponse.sectionEdits as Array<{ sectionId: string; action: string; details: string }> | undefined;
+  const archTopologyChanges = inputResponse.topologyChanges as Record<string, unknown> | undefined;
+
+  project.validationHistory.push({
+    phase: 'architecture-definition',
+    decision: archDecision as ValidationEntry['decision'],
+    feedback: archFeedback ?? null,
+    timestamp: new Date().toISOString(),
+  });
+
+  // ── pause / cancel
+  if (archDecision === 'pause') {
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    return {
+      success: true,
+      message: `Architecture review paused for "${project.name}". Resume when ready.`,
+      studioState: state,
+      artifactIds: [currentArchArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  if (archDecision === 'cancel') {
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    return {
+      success: true,
+      message: `Architecture review cancelled for "${project.name}".`,
+      studioState: state,
+      artifactIds: [currentArchArtifact.id],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  // ── approve
+  if (archDecision === 'approve') {
+    await host.workspace.updateArtifact(currentArchArtifact.id, { status: 'approved' });
+    await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+    if (latestVersion) latestVersion.decision = 'approve';
+    project.approvedArchitecturePlan = currentArchCanonical;
+    host.log.info('Architecture plan approved (via resume)', { artifactId: currentArchArtifact.id });
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+
+    // Continue to the generic phase approval gate (architecture-definition has one)
+    // Set pendingGateType so the next resume knows
+    return handleRunPhaseAfterSpecificGate(host, state, 'architecture-definition');
+  }
+
+  // ── approve-with-changes
+  if (archDecision === 'approve-with-changes') {
+    if (!hasBudgetFor(host, 1)) {
+      await host.workspace.updateArtifact(currentArchArtifact.id, { status: 'approved' });
+      await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+      if (latestVersion) latestVersion.decision = 'approve';
+      project.approvedArchitecturePlan = currentArchCanonical;
+      host.log.warn('No budget for architecture approve-with-changes, approving as-is');
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return handleRunPhaseAfterSpecificGate(host, state, 'architecture-definition');
+    }
+
+    const archEditCtx = buildArchitectureEditContext(archSectionEdits, archTopologyChanges);
+    const archChangeInstructions = [
+      archFeedback ? `User feedback: ${archFeedback}` : '',
+      archEditCtx,
+    ].filter(Boolean).join('\n\n');
+
+    await host.workspace.setRole('software-architect');
+    host.run.reportStep('architect-apply-changes', 'software-architect');
+
+    const archChangeResult = await host.llm.complete({
+      purposeId: 'architecture-design',
+      systemPrompt: `${ROLE_PROMPTS['software-architect']}
+
+You are applying targeted changes to an approved architecture plan. Do NOT redesign the architecture. Only incorporate the specific adjustments requested. Output the COMPLETE updated architecture plan as valid JSON matching the same schema as the input (no markdown fences, no explanation).`,
+      messages: [{
+        role: 'user',
+        content: `Apply these changes to the architecture plan:\n\n${archChangeInstructions}\n\nCurrent architecture plan:\n${JSON.stringify(currentArchCanonical, null, 2)}`,
+      }],
+      temperature: 0.1,
+      maxTokens: 8000,
+    });
+
+    let updatedArchCanonical: ArchitecturePlanArtifactContent;
+    try {
+      updatedArchCanonical = JSON.parse(archChangeResult.text.trim());
+    } catch {
+      host.log.warn('Failed to parse architecture approve-with-changes result, approving original');
+      await host.workspace.updateArtifact(currentArchArtifact.id, { status: 'approved' });
+      await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+      if (latestVersion) latestVersion.decision = 'approve';
+      project.approvedArchitecturePlan = currentArchCanonical;
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      return handleRunPhaseAfterSpecificGate(host, state, 'architecture-definition');
+    }
+
+    validateArchitecturePlanCanonical(updatedArchCanonical);
+    await host.workspace.updateArtifact(currentArchArtifact.id, { status: 'superseded' });
+
+    const newArchVersionNumber = (project.architecturePlanVersions?.length ?? 0) + 1;
+    updatedArchCanonical.versionMetadata = {
+      version: newArchVersionNumber,
+      roleFlow: [...(currentArchCanonical.versionMetadata?.roleFlow ?? []), 'software-architect'],
+    };
+
+    const newArchArtifact = await host.workspace.createArtifact({
+      type: 'architecture-plan',
+      title: `Architecture Plan: ${project.name}`,
+      content: updatedArchCanonical as unknown as Record<string, unknown>,
+      createdByRole: 'software-architect',
+      parentArtifactId: currentArchArtifact.id,
+    });
+    await host.workspace.updateArtifact(newArchArtifact.id, { status: 'approved' });
+    await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+
+    const newArchVersion: ArchitecturePlanVersion = {
+      id: generateId(),
+      version: newArchVersionNumber,
+      artifactId: newArchArtifact.id,
+      createdAt: new Date().toISOString(),
+      decision: 'approve',
+    };
+    project.architecturePlanVersions.push(newArchVersion);
+    project.artifactIds.push(newArchArtifact.id);
+    project.artifactBodies[newArchArtifact.id] = { body: JSON.stringify(updatedArchCanonical, null, 2), type: 'architecture-plan', phase: 'architecture-definition' };
+    project.approvedArchitecturePlan = updatedArchCanonical;
+    project.updatedAt = new Date().toISOString();
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+
+    return handleRunPhaseAfterSpecificGate(host, state, 'architecture-definition');
+  }
+
+  // ── revise / reject — regenerate
+  if (archDecision === 'revise' || archDecision === 'reject') {
+    const archRevisionCount = project.architecturePlanVersions.length - 1;
+    await host.workspace.updateArtifact(currentArchArtifact.id, { status: 'superseded' });
+    await host.workspace.updateArtifact(techStackArtifact.id, { status: 'superseded' });
+    if (latestVersion) latestVersion.decision = archDecision as ValidationEntry['decision'];
+    host.log.info(`Architecture plan ${archDecision}ed (via resume), regenerating`, { feedback: archFeedback, revision: archRevisionCount + 1 });
+
+    if (!hasBudgetFor(host, 2) || archRevisionCount >= 3) {
+      await host.workspace.setState(state);
+      await host.run.checkpoint();
+      const reason = archRevisionCount >= 3
+        ? 'Maximum architecture revision limit (3) reached'
+        : 'Insufficient step budget for architecture regeneration';
+      return {
+        success: false,
+        message: `${reason} for "${project.name}". Last architecture version preserved.`,
+        studioState: state,
+        artifactIds: [currentArchArtifact.id],
+        stepsUsed: host.run.getStepCount(),
+        phasesCompleted: [],
+      };
+    }
+
+    const archEditCtx = buildArchitectureEditContext(archSectionEdits, archTopologyChanges);
+    const archCombinedFeedback = [
+      archFeedback ?? '',
+      archEditCtx,
+    ].filter(Boolean).join('\n\n');
+
+    await host.workspace.setRole('software-architect');
+    host.run.reportStep(`architect-revision-v${archRevisionCount + 2}`, 'software-architect');
+    host.events.emitProgress(0.3, `Software Architect: Regenerating architecture plan (revision ${archRevisionCount + 1})`);
+
+    const roadmapContext = project.approvedRoadmapPhases
+      ? `\n\nApproved Roadmap Phases:\n${JSON.stringify(project.approvedRoadmapPhases, null, 2)}`
+      : '';
+    const topologyContext = project.approvedRoadmapTopology
+      ? `\n\nApproved Project Topology:\n${JSON.stringify(project.approvedRoadmapTopology, null, 2)}`
+      : '';
+
+    const archRevisionResult = await host.llm.complete({
+      purposeId: 'architecture-design',
+      systemPrompt: `${ROLE_PROMPTS['software-architect']}
+
+You are REVISING an architecture plan based on user feedback. The user explicitly ${archDecision}ed the previous version. Address their feedback directly. Output ONLY valid JSON matching the canonical architecture plan schema (no markdown fences, no explanation).
+
+Quality requirements:
+- Address every point in the user's feedback
+- Maintain structural integrity (valid project IDs, proper references)
+- Do not introduce new issues while fixing requested changes
+- If the user asked to simplify, reduce complexity
+- If the user asked to change technology, update all affected sections
+- If the user asked to add/remove projects, update topology and all dependent sections`,
+      messages: [{
+        role: 'user',
+        content: `Revise this architecture plan based on user feedback:\n\n${projectContext}${roadmapContext}${topologyContext}\n\nUser feedback:\n${archCombinedFeedback}\n\nPrevious architecture plan to revise:\n${JSON.stringify(currentArchCanonical, null, 2)}`,
+      }],
+      temperature: 0.2,
+      maxTokens: 8000,
+    });
+
+    let revisedArchCanonical: ArchitecturePlanArtifactContent;
+    try {
+      revisedArchCanonical = JSON.parse(archRevisionResult.text.trim());
+    } catch {
+      throw new Error('Architecture plan revision failed: LLM returned invalid JSON. Checkpoint and retry.');
+    }
+    validateArchitecturePlanCanonical(revisedArchCanonical);
+
+    const newArchVersionNumber = (project.architecturePlanVersions?.length ?? 0) + 1;
+    revisedArchCanonical.versionMetadata = {
+      version: newArchVersionNumber,
+      roleFlow: [...(currentArchCanonical.versionMetadata?.roleFlow ?? []), 'software-architect'],
+    };
+
+    const newArchArtifact = await host.workspace.createArtifact({
+      type: 'architecture-plan',
+      title: `Architecture Plan: ${project.name}`,
+      content: revisedArchCanonical as unknown as Record<string, unknown>,
+      createdByRole: 'software-architect',
+      parentArtifactId: currentArchArtifact.id,
+    });
+
+    const newArchVersion: ArchitecturePlanVersion = {
+      id: generateId(),
+      version: newArchVersionNumber,
+      artifactId: newArchArtifact.id,
+      createdAt: new Date().toISOString(),
+      decision: null,
+    };
+    project.architecturePlanVersions.push(newArchVersion);
+    project.artifactIds.push(newArchArtifact.id);
+    project.artifactBodies[newArchArtifact.id] = { body: JSON.stringify(revisedArchCanonical, null, 2), type: 'architecture-plan', phase: 'architecture-definition' };
+    project.updatedAt = new Date().toISOString();
+
+    project.pendingGateType = 'architecture-gate';
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    host.run.reportStep(`architecture-approval-v${newArchVersionNumber}`, 'software-architect');
+
+    // This will pause and the next resume will re-enter handleArchitectureGateResume
+    await host.run.requestInput({
+      title: 'Review Revised Architecture Plan',
+      message: `Architecture plan v${newArchVersionNumber} has been generated for "${project.name}" (revision ${archRevisionCount + 1} of 3). Please review and decide.`,
+      inputSchema: buildArchitectureGateSchema(archRevisionCount + 1 < 3),
+    });
+
+    // If requestInput doesn't throw (inline mode), this shouldn't be reached normally
+    return { success: true, message: 'Architecture gate response pending', studioState: state, artifactIds: [], stepsUsed: host.run.getStepCount(), phasesCompleted: [] };
+  }
+
+  // Unknown decision — treat as approve
+  host.log.warn('Unknown architecture gate decision, treating as approve', { decision: archDecision });
+  await host.workspace.updateArtifact(currentArchArtifact.id, { status: 'approved' });
+  await host.workspace.updateArtifact(techStackArtifact.id, { status: 'approved' });
+  if (latestVersion) latestVersion.decision = 'approve';
+  project.approvedArchitecturePlan = currentArchCanonical;
+  await host.workspace.setState(state);
+  await host.run.checkpoint();
+  return handleRunPhaseAfterSpecificGate(host, state, 'architecture-definition');
+}
+
 /**
- * Resume handler: re-enters the phase dialogue state machine after user answered
- * an input request. The auto-resume mechanism in skill-ui-context-provider.tsx
- * calls this action after every answerUserInput.
+ * After a specific gate (roadmap or architecture) is approved within handleRunPhase,
+ * this function handles the remaining generic phase approval gate.
+ */
+async function handleRunPhaseAfterSpecificGate(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  targetPhase: PhaseId,
+): Promise<Record<string, unknown>> {
+  const project = getActiveProject(state);
+  const config = PHASE_CONFIGS[targetPhase];
+  if (!config) {
+    return { success: false, message: `Unknown phase: ${targetPhase}` };
+  }
+
+  // Find existing phase summary
+  const allArtifacts = await host.workspace.listArtifacts();
+  const existingSummary = allArtifacts.find(
+    (a) => a.type === 'phase-summary' && a.status !== 'rejected'
+      && project.artifactBodies[a.id]?.phase === targetPhase,
+  );
+
+  if (!existingSummary) {
+    // No summary yet — let handleRunPhase create it and request the phase gate
+    return handleRunPhase({ targetPhase }, host, state);
+  }
+
+  // Summary exists — go straight to the phase approval gate
+  const createdArtifactIds = project.artifactIds.filter((id) => project.artifactBodies[id]?.phase === targetPhase);
+
+  project.pendingGateType = 'phase-gate';
+  await host.workspace.setState(state);
+  host.run.reportStep(`${targetPhase}-approval`, config.primaryRole);
+  host.events.emitProgress(0.95, `${targetPhase}: Requesting approval`);
+
+  const approval = (await host.run.requestInput({
+    title: `Approve ${targetPhase} Phase`,
+    message: `The "${targetPhase}" phase for "${project.name}" is complete with ${createdArtifactIds.length} artifact(s). Review the phase summary and artifacts, then decide how to proceed.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        decision: {
+          type: 'string',
+          enum: ['approve', 'reject', 'revise', 'pause', 'cancel'],
+          description: 'Decision for this phase gate',
+        },
+        feedback: { type: 'string', description: 'Feedback or revision requests' },
+      },
+      required: ['decision'],
+    },
+  })) as { decision: string; feedback?: string };
+
+  // If requestInput doesn't throw, process inline
+  return handlePhaseGateResume(host, state, targetPhase, approval);
+}
+
+async function handlePhaseGateResume(
+  host: SkillHostCapabilities,
+  state: StudioState,
+  targetPhase: PhaseId,
+  inputResponse: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const project = getActiveProject(state);
+  const config = PHASE_CONFIGS[targetPhase];
+  if (!config) {
+    return { success: false, message: `Unknown phase: ${targetPhase}` };
+  }
+
+  const phaseDecision = (inputResponse.decision as string) ?? 'approve';
+  const feedback = inputResponse.feedback as string | undefined;
+
+  const createdArtifactIds = project.artifactIds.filter((id) => project.artifactBodies[id]?.phase === targetPhase);
+
+  // Find the phase summary artifact
+  const allArtifacts = await host.workspace.listArtifacts();
+  const summaryArtifact = allArtifacts.find(
+    (a) => a.type === 'phase-summary' && a.status !== 'rejected'
+      && project.artifactBodies[a.id]?.phase === targetPhase,
+  );
+
+  // Record in validation history
+  project.validationHistory.push({
+    phase: targetPhase,
+    decision: phaseDecision as ValidationEntry['decision'],
+    feedback: feedback ?? null,
+    timestamp: new Date().toISOString(),
+  });
+
+  if (phaseDecision === 'pause') {
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    return {
+      success: true,
+      message: `Phase "${targetPhase}" paused for "${project.name}". Resume when ready.`,
+      studioState: state,
+      artifactIds: createdArtifactIds,
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  if (phaseDecision === 'cancel') {
+    await host.workspace.setState(state);
+    await host.run.checkpoint();
+    return {
+      success: true,
+      message: `Phase "${targetPhase}" cancelled for "${project.name}".`,
+      studioState: state,
+      artifactIds: createdArtifactIds,
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [],
+    };
+  }
+
+  if (phaseDecision === 'approve') {
+    if (summaryArtifact) {
+      await host.workspace.updateArtifact(summaryArtifact.id, { status: 'approved' });
+    }
+    if (!project.completedPhases.includes(targetPhase)) {
+      project.completedPhases.push(targetPhase);
+    }
+    if (config.nextPhase) {
+      project.currentPhase = config.nextPhase;
+    }
+    project.updatedAt = new Date().toISOString();
+    await host.workspace.setState(state);
+    host.log.info('Phase approved (via resume)', { phase: targetPhase, nextPhase: config.nextPhase });
+  } else {
+    if (summaryArtifact) {
+      await host.workspace.updateArtifact(summaryArtifact.id, {
+        status: 'rejected',
+        content: {
+          projectId: project.id,
+          phase: targetPhase,
+          body: project.artifactBodies[summaryArtifact.id]?.body ?? '',
+          artifactCount: createdArtifactIds.length,
+          nextPhase: config.nextPhase,
+          userFeedback: feedback ?? '',
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    }
+    host.log.info('Phase rejected (via resume)', { phase: targetPhase, feedback });
+  }
+
+  await host.workspace.setState(state);
+  await host.run.checkpoint();
+  host.events.emitProgress(1.0, `${targetPhase} phase ${phaseDecision === 'approve' ? 'approved' : 'needs revision'}`);
+
+  // Roadmap-first: auto-trigger roadmap generation after discovery approval
+  if (targetPhase === 'discovery' && phaseDecision === 'approve' && hasBudgetFor(host, 4)) {
+    host.log.info('Auto-triggering roadmap generation after discovery approval');
+    const roadmapResult = await handleGenerateRoadmap({}, host, state);
+    if (roadmapResult.success) {
+      const roadmapArtifactIds = (roadmapResult.artifactIds as string[]) ?? [];
+      createdArtifactIds.push(...roadmapArtifactIds);
+
+      const roadmapProject = getActiveProject(state);
+      const roadmapApproved = roadmapProject.validationHistory.some(
+        (v) => v.phase === roadmapProject.currentPhase && v.decision === 'approve',
+      );
+      if (roadmapApproved) {
+        return {
+          success: true,
+          message: `Discovery approved and roadmap approved. Next phase: ${roadmapProject.currentPhase}`,
+          studioState: state,
+          artifactIds: createdArtifactIds,
+          stepsUsed: host.run.getStepCount(),
+          phasesCompleted: [targetPhase, 'roadmap-definition'],
+        };
+      }
+    }
+  }
+
+  return {
+    success: true,
+    message: phaseDecision === 'approve'
+      ? `Phase "${targetPhase}" approved. ${config.nextPhase ? `Next phase: ${config.nextPhase}` : 'All phases complete.'}`
+      : `Phase "${targetPhase}" ${phaseDecision}ed. Feedback: ${feedback ?? 'none'}`,
+    studioState: state,
+    artifactIds: createdArtifactIds,
+    stepsUsed: host.run.getStepCount(),
+    phasesCompleted: phaseDecision === 'approve' ? [targetPhase] : [],
+  };
+}
+
+/**
+ * Resume handler: re-enters the appropriate gate handler after user answered
+ * an input request. Uses pendingGateType to dispatch correctly instead of
+ * blindly re-running handleRunPhase (which caused infinite approval loops).
  */
 async function handleResumeAfterInput(
   host: SkillHostCapabilities,
@@ -4342,7 +5097,7 @@ async function handleResumeAfterInput(
   const project = getActiveProject(state);
   const currentPhase = project.currentPhase as PhaseId;
 
-  // If a dialogue config exists for this phase, populate the answer and delegate
+  // 1. Dialogue-based phases (discovery Q&A)
   const dialogueConfig = PHASE_DIALOGUE_CONFIGS[currentPhase];
   const dialogues = (project as Record<string, unknown>).phaseDialogues as Record<string, PhaseDialogue> | undefined;
 
@@ -4368,7 +5123,36 @@ async function handleResumeAfterInput(
     return handleRunPhaseDialogue(host, state, project, currentPhase, dialogueConfig);
   }
 
-  // Otherwise, re-run the batch phase handler (for existing gate-based flow)
+  // 2. Gate-type-aware dispatching
+  const gateType = project.pendingGateType;
+  project.pendingGateType = null;
+  await host.workspace.setState(state);
+
+  if (gateType === 'roadmap-gate' && inputResponse) {
+    return handleRoadmapGateResume(host, state, inputResponse);
+  }
+
+  if (gateType === 'architecture-gate' && inputResponse) {
+    return handleArchitectureGateResume(host, state, inputResponse);
+  }
+
+  if (gateType === 'phase-gate' && inputResponse) {
+    return handlePhaseGateResume(host, state, currentPhase, inputResponse);
+  }
+
+  // 3. Guard: phase already completed
+  if (project.completedPhases.includes(currentPhase)) {
+    return {
+      success: true,
+      message: `Phase "${currentPhase}" is already completed.`,
+      studioState: state,
+      artifactIds: [],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [currentPhase],
+    };
+  }
+
+  // 4. Legacy fallback (for projects created before pendingGateType existed)
   const config = PHASE_CONFIGS[currentPhase];
   if (!config) {
     return { success: false, message: `Cannot resume: unknown phase ${currentPhase}` };
@@ -4684,6 +5468,19 @@ async function handleRunPhase(
     return { success: false, message: `Unknown phase: ${targetPhase}` };
   }
 
+  // Guard: do not re-run already-completed phases
+  if (project.completedPhases.includes(targetPhase)) {
+    host.log.info('Phase already completed, skipping', { phase: targetPhase });
+    return {
+      success: true,
+      message: `Phase "${targetPhase}" is already completed.`,
+      studioState: state,
+      artifactIds: [],
+      stepsUsed: host.run.getStepCount(),
+      phasesCompleted: [targetPhase],
+    };
+  }
+
   // Delegate to interactive dialogue handler if a dialogue config exists for this phase
   const dialogueConfig = PHASE_DIALOGUE_CONFIGS[targetPhase];
   if (dialogueConfig) {
@@ -4822,47 +5619,59 @@ async function handleRunPhase(
     host.log.info('Step completed', { step: step.id, role: stepRole, artifactId: artifact.id });
   }
 
-  // Phase summary artifact
-  await host.workspace.setRole(config.primaryRole);
-  host.run.reportStep(`${targetPhase}-summary`, config.primaryRole);
-  host.events.emitProgress(
-    (totalSteps + 1) / (totalSteps + 2),
-    `${targetPhase}: Generating phase summary`,
+  // Phase summary artifact — with idempotency guard
+  const existingSummary = existingArtifacts.find(
+    (a) => a.type === 'phase-summary' && a.status !== 'rejected'
+      && project.artifactBodies[a.id]?.phase === targetPhase,
   );
 
-  // Rebuild artifact context so it includes artifacts created during this phase
-  const freshArtifactContext = buildArtifactContext(project, targetPhase);
+  let summaryArtifact: { id: string; type: string; title: string; status: string };
 
-  const summaryResult = await host.llm.complete({
-    purposeId: 'status-report',
-    systemPrompt: ROLE_PROMPTS[config.primaryRole],
-    messages: [{
-      role: 'user',
-      content: `${projectContext}${freshArtifactContext}\n\nSummarize the deliverables produced during the "${targetPhase}" phase. List key decisions made, artifacts created (${createdArtifactIds.length} total), and any open questions or risks that need user attention before proceeding to the next phase.`,
-    }],
-    temperature: 0.2,
-    maxTokens: 1500,
-    outputSchema: PHASE_ARTIFACT_SCHEMA,
-  });
+  if (existingSummary) {
+    host.log.info('Reusing existing phase summary', { artifactId: existingSummary.id });
+    summaryArtifact = existingSummary;
+  } else {
+    await host.workspace.setRole(config.primaryRole);
+    host.run.reportStep(`${targetPhase}-summary`, config.primaryRole);
+    host.events.emitProgress(
+      (totalSteps + 1) / (totalSteps + 2),
+      `${targetPhase}: Generating phase summary`,
+    );
 
-  const summaryBody = summaryResult.structured?.body as string ?? summaryResult.text.trim();
-  const summaryArtifact = await host.workspace.createArtifact({
-    type: 'phase-summary',
-    title: `Phase Summary: ${targetPhase} — ${project.name}`,
-    content: {
-      projectId: project.id,
-      phase: targetPhase,
-      body: summaryBody,
-      artifactCount: createdArtifactIds.length,
-      nextPhase: config.nextPhase,
-      generatedAt: new Date().toISOString(),
-    },
-    createdByRole: config.primaryRole,
-  });
-  createdArtifactIds.push(summaryArtifact.id);
-  project.artifactIds.push(summaryArtifact.id);
-  project.artifactBodies[summaryArtifact.id] = { body: summaryBody, type: 'phase-summary', phase: targetPhase };
-  await host.workspace.setState(state);
+    // Rebuild artifact context so it includes artifacts created during this phase
+    const freshArtifactContext = buildArtifactContext(project, targetPhase);
+
+    const summaryResult = await host.llm.complete({
+      purposeId: 'status-report',
+      systemPrompt: ROLE_PROMPTS[config.primaryRole],
+      messages: [{
+        role: 'user',
+        content: `${projectContext}${freshArtifactContext}\n\nSummarize the deliverables produced during the "${targetPhase}" phase. List key decisions made, artifacts created (${createdArtifactIds.length} total), and any open questions or risks that need user attention before proceeding to the next phase.`,
+      }],
+      temperature: 0.2,
+      maxTokens: 1500,
+      outputSchema: PHASE_ARTIFACT_SCHEMA,
+    });
+
+    const summaryBody = summaryResult.structured?.body as string ?? summaryResult.text.trim();
+    summaryArtifact = await host.workspace.createArtifact({
+      type: 'phase-summary',
+      title: `Phase Summary: ${targetPhase} — ${project.name}`,
+      content: {
+        projectId: project.id,
+        phase: targetPhase,
+        body: summaryBody,
+        artifactCount: createdArtifactIds.length,
+        nextPhase: config.nextPhase,
+        generatedAt: new Date().toISOString(),
+      },
+      createdByRole: config.primaryRole,
+    });
+    createdArtifactIds.push(summaryArtifact.id);
+    project.artifactIds.push(summaryArtifact.id);
+    project.artifactBodies[summaryArtifact.id] = { body: summaryBody, type: 'phase-summary', phase: targetPhase };
+    await host.workspace.setState(state);
+  }
 
   // Bridge-backed code execution for implementation phase
   if (targetPhase === 'implementation-phase') {
@@ -5009,6 +5818,8 @@ async function handleRunPhase(
       let currentArchArtifactId = archPlanArtifactInitial.id;
       let currentArchVersion = project.architecturePlanVersions[project.architecturePlanVersions.length - 1] ?? null;
 
+      project.pendingGateType = 'architecture-gate';
+      await host.workspace.setState(state);
       await host.run.checkpoint();
       host.run.reportStep('architecture-approval', 'software-architect');
       let archGateResponse = (await host.run.requestInput({
@@ -5259,6 +6070,8 @@ Quality requirements:
           currentArchArtifactId = newArchArtifact.id;
           currentArchVersion = newArchVersion;
 
+          project.pendingGateType = 'architecture-gate';
+          await host.workspace.setState(state);
           await host.run.checkpoint();
           host.run.reportStep(`architecture-approval-v${newArchVersionNumber}`, 'software-architect');
           archGateResponse = (await host.run.requestInput({
@@ -5284,6 +6097,8 @@ Quality requirements:
   }
 
   // Request user approval before phase completion
+  project.pendingGateType = 'phase-gate';
+  await host.workspace.setState(state);
   host.run.reportStep(`${targetPhase}-approval`, config.primaryRole);
   host.events.emitProgress(
     (totalSteps + 1.5) / (totalSteps + 2),
@@ -5358,7 +6173,7 @@ Quality requirements:
       content: {
         projectId: project.id,
         phase: targetPhase,
-        body: summaryResult.text.trim(),
+        body: project.artifactBodies[summaryArtifact.id]?.body ?? '',
         artifactCount: createdArtifactIds.length,
         nextPhase: config.nextPhase,
         userFeedback: approval.feedback ?? '',
